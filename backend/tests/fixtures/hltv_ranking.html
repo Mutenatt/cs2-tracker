@@ -1,0 +1,72 @@
+<!-- Recorte mínimo del markup real de hltv.org/ranking/teams (estructura
+     verificada contra el parser de gigobyte/HLTV): .ranked-team con
+     .position / .name / .points / .change y logo en img-cdn. -->
+<div class="ranking">
+  <div class="ranked-team standard-box">
+    <div class="ranking-header">
+      <span class="position">#1</span>
+      <div class="relative">
+        <div class="teamLine sectionTeamPlayers">
+          <img alt="Spirit" src="https://img-cdn.hltv.org/teamlogo/abc123spirit.png" class="team-logo" title="Spirit">
+          <span class="name">Spirit</span>
+          <span class="points">(945 points)</span>
+        </div>
+        <div class="changePositionWrapper">
+          <div class="change positive">+2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ranked-team standard-box">
+    <div class="ranking-header">
+      <span class="position">#2</span>
+      <div class="relative">
+        <div class="teamLine sectionTeamPlayers">
+          <img alt="Vitality" src="https://img-cdn.hltv.org/teamlogo/def456vitality.png" class="team-logo" title="Vitality">
+          <span class="name">Vitality</span>
+          <span class="points">(802 points)</span>
+        </div>
+        <div class="changePositionWrapper">
+          <div class="change">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Equipo nuevo en el ranking, sin logo de CDN (cubre logo_url=None). -->
+  <div class="ranked-team standard-box">
+    <div class="ranking-header">
+      <span class="position">#3</span>
+      <div class="relative">
+        <div class="teamLine sectionTeamPlayers">
+          <span class="name">9z Team</span>
+          <span class="points">(310 points)</span>
+        </div>
+        <div class="changePositionWrapper">
+          <div class="change neutral">NEW TEAM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Bloque roto (sin .points): el parser lo saltea sin romper el resto. -->
+  <div class="ranked-team standard-box">
+    <div class="ranking-header">
+      <span class="position">#4</span>
+      <span class="name">Equipo Roto</span>
+    </div>
+  </div>
+  <div class="ranked-team standard-box">
+    <div class="ranking-header">
+      <span class="position">#5</span>
+      <div class="relative">
+        <div class="teamLine sectionTeamPlayers">
+          <img alt="FURIA" src="https://img-cdn.hltv.org/teamlogo/ghi789furia.png" class="team-logo" title="FURIA">
+          <span class="name">FURIA</span>
+          <span class="points">(287 points)</span>
+        </div>
+        <div class="changePositionWrapper">
+          <div class="change negative">-3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

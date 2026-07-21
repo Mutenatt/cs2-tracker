@@ -1,0 +1,17 @@
+{
+  "name": "cs2tracker-gc-sidecar",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "csgo-sharecode": "^3.0.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "globaloffensive": "^3.0.0",
+    "steam-user": "^5.0.0"
+  }
+}

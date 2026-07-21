@@ -1,0 +1,40 @@
+# Datos y artefactos (nunca al repo)
+*.dem
+*.dem.bz2
+*.dem.info
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Secretos / config local
+.env
+.env.*
+!.env.example
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+*.local
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

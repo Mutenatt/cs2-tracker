@@ -1,0 +1,35 @@
+services:
+  # Opcional (perfil "autofetch"): sidecar Node que resuelve sharecodes
+  # contra el Game Coordinator de CS2. Necesita gc-sidecar/.env con las
+  # credenciales de la cuenta bot; en dev alcanza con `npm start`.
+  #   docker compose --profile autofetch up -d
+  gc-sidecar:
+    build: ./gc-sidecar
+    profiles: ["autofetch"]
+    restart: unless-stopped
+    env_file: ./gc-sidecar/.env
+    ports:
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - cs2tracker_gcdata:/app/data
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cs2tracker
+      POSTGRES_PASSWORD: cs2tracker
+      POSTGRES_DB: cs2tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - cs2tracker_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cs2tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  cs2tracker_pgdata:
+  cs2tracker_gcdata:
