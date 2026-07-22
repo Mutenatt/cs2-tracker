@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import select
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from cs2tracker.config import settings
@@ -127,13 +128,15 @@ class SteamAutoSource(Source):
         return self._played_at.get(dem.name)
 
     def poll(self) -> Iterator[Path]:
+        engine = init_db()
         if not self.api_key:
             print("[autofetch] sin CS2_STEAM_API_KEY; ciclo omitido")
+            self._mark_cycle_skipped(engine, "missing CS2_STEAM_API_KEY")
             return
         if not sidecar_healthy(base_url=self.sidecar_url):
             print("[autofetch] gc-sidecar no disponible; ciclo omitido")
+            self._mark_cycle_skipped(engine, "gc-sidecar unreachable")
             return
-        engine = init_db()
         with Session(engine) as s:
             users = s.execute(select(User).where(User.autofetch_status == "active")).scalars().all()
             for user in users:
@@ -142,14 +145,29 @@ class SteamAutoSource(Source):
                 except RateLimited:
                     # Afecta a la API key global: cortar el ciclo ENTERO.
                     print("[autofetch] rate limit de Steam; corto el ciclo")
+                    user.last_polled_at = datetime.now(UTC).isoformat()
+                    user.autofetch_error = "rate limited by Steam"
                     s.commit()
                     return
                 except SharecodeChainError as e:
                     print(f"[autofetch] {user.steamid}: {e}")
                     s.commit()
 
+    def _mark_cycle_skipped(self, engine: Engine, reason: str) -> None:
+        """Deja rastro de que el poller sigue vivo aunque el ciclo se haya
+        saltado entero, para que /autofetch/status distinga "nunca corrió"
+        de "corrió pero no había nada nuevo"."""
+        with Session(engine) as s:
+            users = s.execute(select(User).where(User.autofetch_status == "active")).scalars().all()
+            now = datetime.now(UTC).isoformat()
+            for user in users:
+                user.last_polled_at = now
+                user.autofetch_error = reason
+            s.commit()
+
     def _poll_user(self, s: Session, user: User) -> Iterator[Path]:
         user.last_polled_at = datetime.now(UTC).isoformat()
+        user.autofetch_error = None
         for step in range(self.max_per_cycle):
             if step > 0 and self.request_spacing > 0:
                 time.sleep(self.request_spacing)

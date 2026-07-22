@@ -443,15 +443,19 @@ def main(argv=None) -> int:
         # Subcarpeta propia: un FolderSource vigilando demos/ en paralelo no
         # procesa dos veces lo que baja el auto-fetch.
         src = SteamAutoSource(download_dir=args.demos / "autofetch")
-        src.run(
-            lambda dem: _on_demo(
+
+        def on_autofetch_demo(dem: Path) -> None:
+            _on_demo(
                 dem,
                 force=args.force,
                 ingested_by=src.owner_of(dem),
                 played_at=src.played_at_of(dem),
-            ),
-            interval=settings.autofetch_poll_interval,
-        )
+            )
+            # Los datos ya quedaron en la DB; no hace falta conservar el
+            # .dem crudo (si no, el disco crece sin límite en producción).
+            dem.unlink(missing_ok=True)
+
+        src.run(on_autofetch_demo, interval=settings.autofetch_poll_interval)
         return 0
 
     src = FolderSource(args.demos)

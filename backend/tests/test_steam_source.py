@@ -140,6 +140,8 @@ def test_429_corta_el_ciclo_sin_avanzar(engine, src, monkeypatch):
     u = _user(engine)
     assert u.autofetch_status == "active"
     assert u.last_sharecode == CODE_A
+    assert u.last_polled_at is not None
+    assert u.autofetch_error == "rate limited by Steam"
 
 
 def test_sidecar_caido_no_avanza_la_cadena(engine, src, monkeypatch):
@@ -213,9 +215,30 @@ def test_sin_api_key_ciclo_vacio(engine, tmp_path, monkeypatch):
     src = SteamAutoSource(download_dir=tmp_path / "dl", api_key=None, request_spacing=0)
     src.api_key = None  # settings puede tener una key real en .env
     assert list(src.poll()) == []
+    # El ciclo se salta entero, pero igual queda rastro de que el poller
+    # sigue vivo: /autofetch/status no debe verse indistinguible de
+    # "nunca corrió".
+    u = _user(engine)
+    assert u.last_polled_at is not None
+    assert u.autofetch_error == "missing CS2_STEAM_API_KEY"
 
 
 def test_sidecar_unhealthy_ciclo_vacio(engine, tmp_path, monkeypatch):
     monkeypatch.setattr(sources, "sidecar_healthy", lambda **kw: False)
     src = SteamAutoSource(download_dir=tmp_path / "dl", api_key="clave", request_spacing=0)
     assert list(src.poll()) == []
+    u = _user(engine)
+    assert u.last_polled_at is not None
+    assert u.autofetch_error == "gc-sidecar unreachable"
+
+
+def test_ciclo_ok_limpia_error_previo(engine, src, monkeypatch):
+    with Session(engine) as s:
+        u = s.get(User, STEAMID)
+        u.autofetch_error = "gc-sidecar unreachable"
+        s.commit()
+
+    _chain(monkeypatch, [None])
+
+    assert list(src.poll()) == []
+    assert _user(engine).autofetch_error is None

@@ -30,6 +30,58 @@ services:
       timeout: 5s
       retries: 10
 
+  # API (FastAPI). `restart: unless-stopped` para producción: si el proceso
+  # cae o el host reinicia, vuelve a levantar solo sin intervención manual.
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      # Overrides de red interna del compose (backend/.env trae los
+      # defaults de dev apuntando a localhost, que no resuelven entre
+      # contenedores).
+      CS2_DB_URL: postgresql+psycopg://cs2tracker:cs2tracker@db:5432/cs2tracker
+      CS2_API_HOST: 0.0.0.0
+      # OJO producción: si el dominio público sirve /api/* proxied al
+      # backend (ver frontend/Dockerfile), CS2_API_PUBLIC_URL debe incluir
+      # ese prefijo (ej. https://tu-dominio.com/api) -- Steam OpenID exige
+      # que return_to/realm sean la URL pública real donde vive /auth/*.
+      # CS2_SESSION_SECRET fijo es obligatorio en prod (ver .env.example);
+      # sin eso, cada restart del contenedor desloguea a todos los usuarios.
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  # Worker de auto-fetch (mismo Dockerfile que `api`, distinto comando).
+  # Vive del mismo perfil que gc-sidecar: no tiene sentido levantarlo sin
+  # el sidecar corriendo al lado.
+  autofetch-worker:
+    build: ./backend
+    profiles: ["autofetch"]
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      CS2_DB_URL: postgresql+psycopg://cs2tracker:cs2tracker@db:5432/cs2tracker
+      CS2_GC_SIDECAR_URL: http://gc-sidecar:9001
+    command: ["cs2-ingest", "--source", "steam"]
+    depends_on:
+      db:
+        condition: service_healthy
+      gc-sidecar:
+        condition: service_started
+
+  # Frontend (build de Vite servido por nginx), que a su vez proxea /api al
+  # servicio `api` -- mismo origen público para el navegador que en dev.
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:8080:80"
+
 volumes:
   cs2tracker_pgdata:
   cs2tracker_gcdata:
