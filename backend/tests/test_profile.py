@@ -1,6 +1,12 @@
 """Test de agregados de Perfil (lifetime, map pool, milestones) a partir de historial."""
 
-from cs2tracker.domain.profile import lifetime_stats, map_pool, milestones
+from cs2tracker.domain.profile import (
+    accuracy_stats,
+    lifetime_stats,
+    map_pool,
+    milestones,
+    top_weapons,
+)
 
 HISTORY = [
     {
@@ -144,3 +150,96 @@ def test_rank_history_invierte_y_proyecta():
     assert [p["match_id"] for p in rh] == ["m1", "m2"]  # oldest-first
     assert rh[0]["rank"] == 11500
     assert "kd" not in rh[0]  # proyección mínima
+
+
+def test_rank_history_calcula_rating_after_y_delta():
+    from cs2tracker.domain.profile import rank_history
+
+    # newest-first como viene de match_history: m3 (más nueva) -> m1 (más vieja).
+    history = [
+        {"match_id": "m3", "rank": 12641, "rank_type": 11},
+        {"match_id": "m2", "rank": 12327, "rank_type": 11},
+        {"match_id": "m1", "rank": 11500, "rank_type": 11},
+    ]
+    rh = {p["match_id"]: p for p in rank_history(history)}
+    # rating DESPUÉS de m1 = entrada de m2; delta = 12327 - 11500 = +827.
+    assert rh["m1"]["rating_after"] == 12327
+    assert rh["m1"]["rating_delta"] == 827
+    # m2 -> m3
+    assert rh["m2"]["rating_after"] == 12641
+    assert rh["m2"]["rating_delta"] == 314
+    # la más nueva no tiene partida siguiente: sin dato de salida.
+    assert rh["m3"]["rating_after"] is None
+    assert rh["m3"]["rating_delta"] is None
+
+
+def test_rank_history_saltea_calibrando_y_no_premier_al_parear():
+    from cs2tracker.domain.profile import rank_history
+
+    # Entre dos Premier válidas hay una calibrando (rank 0) y una no-Premier.
+    history = [
+        {"match_id": "nuevo", "rank": 13000, "rank_type": 11},
+        {"match_id": "no_premier", "rank": 5, "rank_type": 6},
+        {"match_id": "calibrando", "rank": 0, "rank_type": 11},
+        {"match_id": "viejo", "rank": 12500, "rank_type": 11},
+    ]
+    rh = {p["match_id"]: p for p in rank_history(history)}
+    # 'viejo' se empareja con 'nuevo' salteando las dos del medio.
+    assert rh["viejo"]["rating_after"] == 13000
+    assert rh["viejo"]["rating_delta"] == 500
+    # las inválidas no reciben delta.
+    assert rh["calibrando"]["rating_delta"] is None
+    assert rh["no_premier"]["rating_delta"] is None
+    assert rh["nuevo"]["rating_after"] is None
+
+
+def test_map_pool_losses_excluye_partidas_irresueltas():
+    history = HISTORY + [
+        {"map": "de_mirage", "won": None, "rating": 1.0, "adr": 80.0, "kd": 1.0, "kast": 70.0}
+    ]
+    pool = map_pool(history, ["de_mirage"])
+    mirage = next(p for p in pool if p["map"] == "de_mirage")
+    assert mirage["matches_played"] == 3
+    assert mirage["wins"] == 1
+    assert mirage["losses"] == 1  # la partida won=None no cuenta como derrota
+
+
+def test_accuracy_stats_bucketea_por_zona():
+    hitgroups = {
+        "head": 20,
+        "chest": 30,
+        "stomach": 10,
+        "generic": 5,
+        "neck": 5,
+        "left_arm": 5,
+        "right_arm": 5,
+        "left_leg": 10,
+        "right_leg": 10,
+    }
+    acc = accuracy_stats(hitgroups, hs_pct_series=[40.0, 50.0])
+    assert acc["head_hits"] == 20
+    assert acc["body_hits"] == 60  # chest+stomach+generic+neck+left_arm+right_arm
+    assert acc["legs_hits"] == 20
+    assert acc["head_pct"] == 20.0
+    assert acc["body_pct"] == 60.0
+    assert acc["legs_pct"] == 20.0
+    assert acc["hs_pct_series"] == [40.0, 50.0]
+
+
+def test_accuracy_stats_sin_datos():
+    acc = accuracy_stats({}, hs_pct_series=[])
+    assert acc["head_pct"] == 0.0
+    assert acc["head_hits"] == 0
+
+
+def test_top_weapons_ordena_y_categoriza():
+    weapons = top_weapons({"ak47": 50, "m4a1": 10, "deagle": 8, "knife": 3, "world": 1})
+    assert [w["name"] for w in weapons] == ["ak47", "m4a1", "deagle"]
+    assert weapons[0]["category"] == "rifle"
+    assert weapons[2]["category"] == "pistol"
+
+
+def test_top_weapons_corta_a_top_3():
+    weapons = top_weapons({"ak47": 5, "m4a1": 4, "deagle": 3, "awp": 2})
+    assert len(weapons) == 3
+    assert [w["name"] for w in weapons] == ["ak47", "m4a1", "deagle"]

@@ -6,7 +6,6 @@ export const ROUTE_FADE = 0.15;
 export const CARD_DURATION = 0.25;
 export const CARD_STAGGER = 0.05;
 export const COUNT_DURATION = 0.8;
-export const BAR_DURATION = 0.6;
 
 export const staggerList: Variants = {
   hidden: {},
@@ -17,9 +16,6 @@ export const cardRise: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: CARD_DURATION, ease: "easeOut" } },
 };
-
-// El contador de la tarjeta i arranca justo cuando su cardRise terminó de entrar.
-export const numberDelay = (index = 0) => index * CARD_STAGGER + CARD_DURATION;
 
 export const LIVE_PULSE_DURATION = 1.8;
 export const livePulse: Variants = {

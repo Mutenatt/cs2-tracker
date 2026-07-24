@@ -50,7 +50,11 @@ export function MonthlySummaryHero() {
               : `${data.totals.matches} partidas · ${data.totals.winrate}% winrate · K/D ${data.totals.kd.toFixed(2)}`}
           </p>
           {!empty && (
-            <Button variant={expanded ? "ghost" : "primary"} onClick={() => setExpanded((v) => !v)}>
+            <Button
+              variant={expanded ? "ghost" : "primary"}
+              className="monthly-hero-cta"
+              onClick={() => setExpanded((v) => !v)}
+            >
               {expanded ? "Ocultar detalles" : "Ver detalles"}{" "}
               <span className={`monthly-caret${expanded ? " up" : ""}`} aria-hidden="true">
                 ▾
@@ -60,7 +64,7 @@ export function MonthlySummaryHero() {
         </div>
         {!empty && (
           <div className="monthly-hero-stats">
-            <StatCard value={`${data.headline.best_streak_wins}W`} label="Mejor racha" />
+            <StatCard value={`${data.headline.best_streak_wins}W`} label="Mejor racha" highlight />
             <StatCard value={data.headline.rating.toFixed(2)} label="Rating" />
             <StatCard value={`${data.headline.hs_pct}%`} label="HS %" />
           </div>

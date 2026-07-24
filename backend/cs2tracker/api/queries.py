@@ -7,12 +7,15 @@ read-path barato) y player_map_events solo para el resumen de friendly-fire
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from cs2tracker.db import (
     Blind,
+    Damage,
+    GlobalMetricStats,
     Kill,
     Match,
     MatchPlayer,
@@ -21,9 +24,17 @@ from cs2tracker.db import (
     PlayerMapEvent,
     PlayerMapZone,
     PlayerMatchStats,
+    PlayerProfileTag,
     Round,
+    RoundEconomy,
 )
+from cs2tracker.domain import economia as economia_domain
 from cs2tracker.domain import find_flash_assists
+from cs2tracker.domain import highlights as highlights_domain
+from cs2tracker.domain import lurker as lurker_domain
+from cs2tracker.domain import percentiles as percentiles_domain
+from cs2tracker.domain import social as social_domain
+from cs2tracker.domain.badges import catalog as badges_catalog
 
 MIN_SAMPLE = 5  # celdas con menos eventos que esto no se muestran (ruido)
 
@@ -153,9 +164,40 @@ def match_history(s: Session, steamid: str, limit: int = 1000) -> list[dict]:
                 "kd": stats.kd if stats else 0.0,
                 "kast": stats.kast if stats else 0.0,
                 "rating": stats.rating if stats else 0.0,
+                "hs_pct": stats.hs_pct if stats else 0.0,
             }
         )
     return out
+
+
+def lifetime_weapon_kills(s: Session, steamid: str) -> dict[str, int]:
+    """Kills lifetime por arma (todas las partidas), para TopWeaponsPanel.
+    Excluye suicidio, igual que role_inputs."""
+    rows = s.execute(
+        select(Kill.weapon, func.count())
+        .where(Kill.attacker == steamid, Kill.attacker != Kill.victim)
+        .group_by(Kill.weapon)
+    ).all()
+    return {weapon: count for weapon, count in rows if weapon}
+
+
+def recent_hitgroup_counts(s: Session, steamid: str, n_matches: int = 16) -> dict[str, int]:
+    """Cantidad de impactos por hitgroup crudo en las últimas `n_matches`
+    partidas del jugador, para AccuracyPanel (no lifetime completo: el panel
+    pide una ventana reciente, a diferencia de TopWeaponsPanel)."""
+    recent_match_ids = (
+        select(MatchPlayer.match_id)
+        .join(Match, Match.match_id == MatchPlayer.match_id)
+        .where(MatchPlayer.steamid == steamid)
+        .order_by(Match.match_id.desc())
+        .limit(n_matches)
+    )
+    rows = s.execute(
+        select(Damage.hitgroup, func.count())
+        .where(Damage.attacker == steamid, Damage.match_id.in_(recent_match_ids))
+        .group_by(Damage.hitgroup)
+    ).all()
+    return {hitgroup: count for hitgroup, count in rows if hitgroup}
 
 
 def lifetime_trade_kills(s: Session, steamid: str) -> int:
@@ -372,6 +414,46 @@ def compare_players(s: Session, steamid_a: str, steamid_b: str) -> dict | None:
     }
 
 
+def winrate_conjunto(s: Session, steamid_a: str, steamid_b: str) -> dict | None:
+    """Partidas donde `steamid_a` y `steamid_b` jugaron en el MISMO equipo
+    (mismo patrón `my_teams` que rivals(), líneas 302-344 -- no el SQL
+    crudo con alias inválido del doc original). None si nunca compartieron
+    equipo (pueden haber sido siempre rivales, o nunca haber compartido
+    partida). Partidas con resultado irresoluto no cuentan ni como
+    victoria ni como derrota."""
+    my_teams = dict(
+        s.execute(
+            select(MatchPlayer.match_id, MatchPlayer.team_num).where(
+                MatchPlayer.steamid == steamid_a
+            )
+        ).all()
+    )
+    if not my_teams:
+        return None
+    their_teams = dict(
+        s.execute(
+            select(MatchPlayer.match_id, MatchPlayer.team_num).where(
+                MatchPlayer.steamid == steamid_b, MatchPlayer.match_id.in_(my_teams.keys())
+            )
+        ).all()
+    )
+    same_team_matches = [
+        match_id for match_id, team in my_teams.items() if their_teams.get(match_id) == team
+    ]
+    if not same_team_matches:
+        return None
+
+    partidas = []
+    for match_id in same_team_matches:
+        scores = _match_scores(s, match_id)
+        my_score = scores.get(my_teams[match_id])
+        opp_score = next((v for k, v in scores.items() if k != my_teams[match_id]), None)
+        if my_score is None or opp_score is None:
+            continue  # ronda/partida sin resolver -- no cuenta
+        partidas.append({"won": my_score > opp_score})
+    return social_domain.calcular_winrate_conjunto(partidas)
+
+
 def flash_assist_count(s: Session, thrower_steamid: str) -> int:
     """Kills de un compaÃ±ero mientras el rival estaba cegado por una flash de
     `thrower_steamid`, sumado en todas sus partidas (ver
@@ -496,6 +578,10 @@ def badge_inputs(s: Session, match_id: str, steamid: str) -> dict:
         or 0
     )
 
+    lurker_rounds = lurker_inputs(s, steamid, [match_id])
+    lurker_rate = lurker_domain.tasa_lurker(lurker_rounds) if lurker_rounds else None
+    economia = economia_inputs(s, match_id, steamid)
+
     return {
         "entry_kills": entry_kills,
         "entry_kill_win_rate": entry_kill_win_rate,
@@ -504,6 +590,349 @@ def badge_inputs(s: Session, match_id: str, steamid: str) -> dict:
         "grenade_damage": grenade_damage,
         "team_flashes": team_flashes,
         "team_flashes_total": team_flashes_total,
+        "lurker_rate": lurker_rate,
+        "force_buy_wins": economia["force_buy_wins"],
+        "eco_frags": economia["eco_frags"],
+        "millonario_weapon": economia["millonario_weapon"],
+        "economia_rate": economia["economia_rate"],
+    }
+
+
+def lurker_inputs(s: Session, steamid: str, match_ids: list[str]) -> list[dict]:
+    """Por cada (partida, ronda) de `match_ids` donde el roster de
+    `steamid` atacaba (Round.attacker_roster == su team_num en ESA
+    partida), su evento kill/death más temprano + los de sus compañeros de
+    roster en esa misma ronda. Insumo de domain.lurker.tasa_lurker. Sirve
+    tanto para el badge de una partida (match_ids=[match_id]) como para el
+    tag de perfil sobre una ventana de partidas -- agrupa por
+    (match_id, round_num), no solo round_num, porque ese número se repite
+    entre partidas distintas. Sin datos: la ronda queda sin fila (no se
+    puede evaluar aislamiento/timing sin al menos un evento propio)."""
+    if not match_ids:
+        return []
+    my_teams = dict(
+        s.execute(
+            select(MatchPlayer.match_id, MatchPlayer.team_num).where(
+                MatchPlayer.steamid == steamid, MatchPlayer.match_id.in_(match_ids)
+            )
+        ).all()
+    )
+    if not my_teams:
+        return []
+
+    attacker_rounds = {
+        (mid, round_num)
+        for mid, round_num, attacker in s.execute(
+            select(Round.match_id, Round.round_num, Round.attacker_roster).where(
+                Round.match_id.in_(my_teams.keys())
+            )
+        ).all()
+        if attacker == my_teams.get(mid)
+    }
+    if not attacker_rounds:
+        return []
+
+    rows = s.execute(
+        select(
+            PlayerMapEvent.steamid,
+            PlayerMapEvent.match_id,
+            PlayerMapEvent.round_num,
+            PlayerMapEvent.team_num,
+            PlayerMapEvent.seconds_into_round,
+            PlayerMapEvent.u,
+            PlayerMapEvent.v,
+        )
+        .where(
+            PlayerMapEvent.match_id.in_(my_teams.keys()),
+            PlayerMapEvent.event_type.in_(("kill", "death")),
+        )
+        .order_by(PlayerMapEvent.match_id, PlayerMapEvent.round_num, PlayerMapEvent.tick)
+    ).all()
+
+    by_round: dict[tuple[str, int], list[dict]] = defaultdict(list)
+    for sid, mid, round_num, team_num, sir, u, v in rows:
+        if (mid, round_num) not in attacker_rounds or team_num != my_teams.get(mid):
+            continue
+        by_round[(mid, round_num)].append(
+            {"steamid": sid, "seconds_into_round": sir, "u": u, "v": v}
+        )
+
+    out = []
+    for (mid, round_num), events in by_round.items():
+        mios = [e for e in events if e["steamid"] == steamid]
+        if not mios:
+            continue
+        out.append(
+            {
+                "match_id": mid,
+                "round_num": round_num,
+                "mi_evento": mios[0],  # ya viene ordenado por tick
+                "eventos_equipo": [e for e in events if e["steamid"] != steamid],
+            }
+        )
+    return out
+
+
+def lurker_rate_ventana(s: Session, steamid: str, ventana: int = 20) -> float | None:
+    """tasa_lurker sobre las últimas `ventana` partidas del jugador. None
+    si no hay ninguna ronda de ataque evaluable en esa ventana (insumo del
+    tag de perfil "lurkea_mucho" -- ver recompute_profile_tags)."""
+    match_ids = [
+        mid
+        for (mid,) in s.execute(
+            select(MatchPlayer.match_id)
+            .join(Match, Match.match_id == MatchPlayer.match_id)
+            .where(MatchPlayer.steamid == steamid)
+            .order_by(Match.match_id.desc())
+            .limit(ventana)
+        ).all()
+    ]
+    rounds = lurker_inputs(s, steamid, match_ids)
+    return lurker_domain.tasa_lurker(rounds) if rounds else None
+
+
+DEFAULT_VENTANA_TAGS = 20
+
+# Expresiones de métrica compartidas entre el agregado global (todos los
+# jugadores) y el de la ventana de un usuario -- misma base en ambos lados
+# o el percentil no significa nada.
+_METRIC_EXPRS = {
+    "adr": func.avg(PlayerMatchStats.adr),
+    "entry_attempts": func.avg(PlayerMatchStats.entry_kills + PlayerMatchStats.entry_deaths),
+    "kill_participation": func.avg(PlayerMatchStats.kills + PlayerMatchStats.assists),
+}
+
+
+def recompute_global_percentiles(s: Session) -> None:
+    """Recalcula global_metric_stats: percentiles de cada métrica sobre el
+    promedio por-jugador de player_match_stats (una fila-fuente por
+    jugador, no por partida -- un jugador con 100 partidas no pesa 100
+    veces más). Delete+reinsert completo; se dispara una vez por ingesta."""
+    rows = s.execute(
+        select(PlayerMatchStats.steamid, *_METRIC_EXPRS.values()).group_by(PlayerMatchStats.steamid)
+    ).all()
+    por_metrica: dict[str, list[float]] = {m: [] for m in _METRIC_EXPRS}
+    for row in rows:
+        for metric, valor in zip(_METRIC_EXPRS, row[1:], strict=True):
+            por_metrica[metric].append(float(valor or 0.0))
+
+    now = datetime.now(UTC).isoformat()
+    s.execute(delete(GlobalMetricStats))
+    for metric, valores in por_metrica.items():
+        p = percentiles_domain.calcular_percentiles(valores)
+        s.add(GlobalMetricStats(metric=metric, **p, n_players=len(valores), calculado_en=now))
+
+
+def recompute_profile_tags(s: Session, steamid: str, ventana: int = DEFAULT_VENTANA_TAGS) -> None:
+    """Recalcula profile_tags_cache para `steamid`: borra e inserta de
+    nuevo (idempotente, mismo patrón que ingest_demo con match_id). Se
+    dispara al final de ingest_demo para cada jugador de la partida
+    recién ingerida -- no hay cron aparte. Emite: lurkea_mucho (mismo
+    umbral que el badge de partida, sobre la ventana) + los tags
+    relativos-a-global (domain/percentiles.py, contra global_metric_stats
+    -- correr recompute_global_percentiles antes)."""
+    s.execute(delete(PlayerProfileTag).where(PlayerProfileTag.steamid == steamid))
+    now = datetime.now(UTC).isoformat()
+
+    lurker_rate = lurker_rate_ventana(s, steamid, ventana)
+    if lurker_rate is not None and lurker_rate >= badges_catalog.LURKEA_MUCHO_MIN_RATE:
+        s.add(
+            PlayerProfileTag(
+                steamid=steamid,
+                tag_id="lurkea_mucho",
+                detalle={"lurker_rate": lurker_rate},
+                calculado_en=now,
+                ventana_partidas=ventana,
+            )
+        )
+
+    globales = {
+        g.metric: {"p25": g.p25, "p50": g.p50, "p75": g.p75, "p90": g.p90}
+        for g in s.execute(select(GlobalMetricStats)).scalars()
+    }
+    n_players = s.scalar(select(func.max(GlobalMetricStats.n_players))) or 0
+    if globales:
+        ventana_ids = (
+            select(MatchPlayer.match_id)
+            .join(Match, Match.match_id == MatchPlayer.match_id)
+            .where(MatchPlayer.steamid == steamid)
+            .order_by(Match.match_id.desc())
+            .limit(ventana)
+        )
+        row = s.execute(
+            select(*_METRIC_EXPRS.values()).where(
+                PlayerMatchStats.steamid == steamid, PlayerMatchStats.match_id.in_(ventana_ids)
+            )
+        ).one()
+        stats_usuario = {
+            metric: float(valor) if valor is not None else None
+            for metric, valor in zip(_METRIC_EXPRS, row, strict=True)
+        }
+        for tag in percentiles_domain.evaluar_tags_globales(stats_usuario, globales, n_players):
+            s.add(
+                PlayerProfileTag(
+                    steamid=steamid,
+                    tag_id=tag["tag_id"],
+                    detalle=tag["detalle"],
+                    calculado_en=now,
+                    ventana_partidas=ventana,
+                )
+            )
+
+
+def profile_tags_for(s: Session, steamid: str) -> list[PlayerProfileTag]:
+    """Lectura del cache -- no recalcula nada (ver recompute_profile_tags)."""
+    return list(
+        s.execute(select(PlayerProfileTag).where(PlayerProfileTag.steamid == steamid)).scalars()
+    )
+
+
+def highlight_moments(
+    s: Session, steamid: str, ventana: int = DEFAULT_VENTANA_TAGS, top_n: int = 10
+) -> list[dict]:
+    """Momentos clipeables del jugador en sus últimas `ventana` partidas:
+    kills por ronda (player_map_events) + clutches ganados
+    (player_clutches), puntuados por domain/highlights.py. Incluye mapa y
+    demo_file para que el render sepa de dónde sacar las posiciones."""
+    match_ids = [
+        mid
+        for (mid,) in s.execute(
+            select(MatchPlayer.match_id)
+            .join(Match, Match.match_id == MatchPlayer.match_id)
+            .where(MatchPlayer.steamid == steamid)
+            .order_by(Match.match_id.desc())
+            .limit(ventana)
+        ).all()
+    ]
+    if not match_ids:
+        return []
+
+    kills_por_ronda = {
+        (mid, rnd): count
+        for mid, rnd, count in s.execute(
+            select(PlayerMapEvent.match_id, PlayerMapEvent.round_num, func.count())
+            .where(
+                PlayerMapEvent.steamid == steamid,
+                PlayerMapEvent.event_type == "kill",
+                PlayerMapEvent.match_id.in_(match_ids),
+            )
+            .group_by(PlayerMapEvent.match_id, PlayerMapEvent.round_num)
+        ).all()
+    }
+    clutches = {
+        (c.match_id, c.round_num): c.enemies_at_start
+        for c in s.execute(
+            select(PlayerClutch).where(
+                PlayerClutch.steamid == steamid,
+                PlayerClutch.outcome == "won",
+                PlayerClutch.match_id.in_(match_ids),
+            )
+        ).scalars()
+    }
+
+    rondas = [
+        {
+            "match_id": mid,
+            "round_num": rnd,
+            "steamid": steamid,
+            "kills": kills_por_ronda.get((mid, rnd), 0),
+            "clutch_enemies": clutches.get((mid, rnd)),
+        }
+        for mid, rnd in set(kills_por_ronda) | set(clutches)
+    ]
+    moments = highlights_domain.score_moments(rondas, top_n)
+
+    match_meta = {
+        m.match_id: m
+        for m in s.execute(select(Match).where(Match.match_id.in_(match_ids))).scalars()
+    }
+    for mo in moments:
+        meta = match_meta.get(mo["match_id"])
+        mo["map"] = meta.map if meta else None
+        mo["demo_file"] = meta.demo_file if meta else None
+    return moments
+
+
+def economia_inputs(s: Session, match_id: str, steamid: str) -> dict:
+    """Insumos de domain/economia.py para los badges de esta partida:
+    clasificación de compra ronda a ronda, victorias en force_buy, eco
+    frags conectados, y si compró un arma cara estando en eco/semi_eco
+    (Millonario). None en `millonario_weapon`/`economia_rate` si el
+    jugador no tiene filas en round_economy (partida no re-ingerida con
+    --force desde que existe esta feature)."""
+    rows = (
+        s.execute(
+            select(RoundEconomy).where(
+                RoundEconomy.match_id == match_id, RoundEconomy.steamid == steamid
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if not rows:
+        return {
+            "force_buy_wins": 0,
+            "eco_frags": 0,
+            "millonario_weapon": None,
+            "economia_rate": None,
+        }
+
+    all_rows = (
+        s.execute(select(RoundEconomy).where(RoundEconomy.match_id == match_id)).scalars().all()
+    )
+    tipo_compra_por_ronda: dict[int, dict[str, str]] = defaultdict(dict)
+    for r in all_rows:
+        tipo_compra_por_ronda[r.round_num][r.steamid] = economia_domain.clasificar_tipo_compra(
+            r.equip_value
+        )
+
+    round_winners = dict(
+        s.execute(select(Round.round_num, Round.winner_num).where(Round.match_id == match_id)).all()
+    )
+    team_num = s.scalar(
+        select(MatchPlayer.team_num).where(
+            MatchPlayer.match_id == match_id, MatchPlayer.steamid == steamid
+        )
+    )
+
+    force_buy_wins = 0
+    clasificaciones = []
+    millonario_weapon = None
+    for r in rows:
+        tipo = tipo_compra_por_ronda[r.round_num][steamid]
+        clasificaciones.append(tipo)
+        if (
+            tipo == "force_buy"
+            and team_num is not None
+            and round_winners.get(r.round_num) == team_num
+        ):
+            force_buy_wins += 1
+        if millonario_weapon is None and r.armas_compradas:
+            compras_ronda = [{"steamid": steamid, "item": item} for item in r.armas_compradas]
+            hits = economia_domain.detectar_millonario(
+                compras_ronda, tipo_compra_por_ronda[r.round_num]
+            )
+            if hits:
+                millonario_weapon = hits[0]["arma"]
+
+    kills_por_ronda: dict[int, list[dict]] = defaultdict(list)
+    for k in s.execute(
+        select(Kill.round_num, Kill.attacker, Kill.victim).where(
+            Kill.match_id == match_id, Kill.attacker == steamid
+        )
+    ).all():
+        kills_por_ronda[k.round_num].append({"attacker": k.attacker, "victim": k.victim})
+
+    eco_frags = sum(
+        len(economia_domain.detectar_eco_frag(ks, tipo_compra_por_ronda.get(rnd, {})))
+        for rnd, ks in kills_por_ronda.items()
+    )
+
+    return {
+        "force_buy_wins": force_buy_wins,
+        "eco_frags": eco_frags,
+        "millonario_weapon": millonario_weapon,
+        "economia_rate": economia_domain.tasa_buena_economia(clasificaciones),
     }
 
 

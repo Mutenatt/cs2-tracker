@@ -60,3 +60,35 @@ def resolve_demo(
         raise SidecarUnavailable("respuesta del sidecar sin demoUrl")
     match_time = body.get("matchTime")
     return url, (int(match_time) if match_time else None)
+
+
+def fetch_premier_profile(
+    steamid: str,
+    *,
+    base_url: str,
+    client: httpx.Client | None = None,
+    timeout: float = 40.0,
+) -> dict | None:
+    """CS Rating Premier vigente del jugador vía el GC (requestPlayersProfile
+    en el sidecar). None si el GC no lo devolvió (usuario no amigo de la bot,
+    offline, o sin Premier) -- caso esperado, best-effort: nunca rompe la
+    ingesta. Devuelve {'rating', 'rank_change', 'wins'} si vino."""
+    try:
+        if client is not None:
+            resp = client.post(f"{base_url}/profile", json={"steamid": steamid})
+        else:
+            with httpx.Client(timeout=timeout) as c:
+                resp = c.post(f"{base_url}/profile", json={"steamid": steamid})
+    except httpx.HTTPError:
+        return None
+    if resp.status_code != 200:
+        return None
+    body = resp.json()
+    rating = body.get("rating")
+    if not rating:
+        return None
+    return {
+        "rating": int(rating),
+        "rank_change": body.get("rankChange"),
+        "wins": body.get("wins"),
+    }

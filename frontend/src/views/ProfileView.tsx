@@ -2,14 +2,19 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { getProfile } from "../api";
-import { AnimatedNumber } from "../components/AnimatedNumber";
+import { AccuracyPanel } from "../components/AccuracyPanel";
 import { AutoFetchSettings } from "../components/AutoFetchSettings";
+import { ClipsPanel } from "../components/ClipsPanel";
+import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
+import { ProfileTagChips } from "../components/ProfileTagChips";
+import { SquadCard } from "../components/SquadCard";
 import { CoachCorner } from "../components/CoachCorner";
 import { tierClass } from "../components/RankBadge";
 import { RankHistoryCard } from "../components/RankHistoryCard";
+import { TopMapsPanel } from "../components/TopMapsPanel";
+import { TopWeaponsPanel } from "../components/TopWeaponsPanel";
 import { useUser } from "../context/UserContext";
-import { FillBar } from "../components/motion/FillBar";
-import { cardRise, numberDelay, staggerList } from "../components/motion/presets";
+import { cardRise, staggerList } from "../components/motion/presets";
 import type { ProfileResponse } from "../types";
 
 const SIDE_LABEL: Record<number, string> = { 2: "T", 3: "CT" };
@@ -78,11 +83,21 @@ export function ProfileView() {
   const user = useUser();
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [typeFilter, setTypeFilter] = useState<MatchTypeFilterValue>({
+    premier: true,
+    competitivo: true,
+  });
+
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [typeFilter]);
 
   useEffect(() => {
     if (!steamid) return;
     setData(null);
     setError(null);
+    setVisibleCount(10);
     (async () => {
       try {
         setData(await getProfile(steamid));
@@ -103,14 +118,33 @@ export function ProfileView() {
     coach_insights,
     rank_history,
     tactical_snapshot,
+    accuracy,
+    top_weapons,
   } = data;
-  const mapsWithData = map_pool.filter((m) => m.has_data).length;
   // Rating Premier vigente: último punto válido de la historia de rank
   // (mismo filtro que RankHistoryCard: >0 y tipo Premier o desconocido).
   const rated = rank_history.filter(
     (p) => p.rank !== null && p.rank > 0 && (p.rank_type === null || p.rank_type === 11)
   );
-  const currentRank = rated.length ? rated[rated.length - 1].rank : null;
+  const entryRank = rated.length ? rated[rated.length - 1].rank : null;
+  // Rating vivo del GC (Capa 2) si está; si no, el de entrada a la última
+  // partida derivado del demo (Capa 1).
+  const liveRating = data.current_premier_rating;
+  const currentRank = liveRating ?? entryRank;
+  // Delta a mostrar: con rating vivo cerramos el gap y mostramos el cambio de
+  // la ÚLTIMA partida (vivo − entrada de esa partida). Sin vivo, lo más nuevo
+  // que podemos afirmar es el delta de la penúltima (última resuelta).
+  const lastResolvedDelta =
+    [...rated].reverse().find((p) => p.rating_delta !== null)?.rating_delta ?? null;
+  const heroDelta =
+    liveRating !== null && entryRank !== null ? liveRating - entryRank : lastResolvedDelta;
+
+  // rank_type === null: demo vieja sin re-ingerir, no se puede clasificar ->
+  // se muestra siempre para no ocultar historial existente.
+  const filteredHistory = match_history.filter((m) => {
+    if (m.rank_type === null) return true;
+    return m.rank_type === 11 ? typeFilter.premier : typeFilter.competitivo;
+  });
 
   return (
     <>
@@ -127,11 +161,7 @@ export function ProfileView() {
           </div>
           <div className="pmeta">
             <b>{lifetime.matches_played}</b> partidas jugadas ·{" "}
-            <b>{lifetime.win_rate.toFixed(0)}%</b> win rate ·{" "}
-            <b>
-              {mapsWithData} mapa{mapsWithData === 1 ? "" : "s"}
-            </b>{" "}
-            con datos
+            <b>{lifetime.win_rate.toFixed(0)}%</b> win rate
           </div>
           {currentRank !== null && (
             <div className="premier-hero">
@@ -139,22 +169,35 @@ export function ProfileView() {
               <span className={`ph-num mono ${tierClass(currentRank)}`}>
                 {currentRank.toLocaleString("en-US")}
               </span>
+              {heroDelta !== null && heroDelta !== 0 && (
+                <span
+                  className={`ph-delta mono ${heroDelta > 0 ? "up" : "down"}`}
+                  title={
+                    liveRating !== null
+                      ? "Cambio en tu última partida (rating vivo del Game Coordinator)"
+                      : "Cambio en tu última partida con resultado ya calculado"
+                  }
+                >
+                  {heroDelta > 0 ? "▲" : "▼"} {Math.abs(heroDelta).toLocaleString("en-US")}
+                </span>
+              )}
             </div>
           )}
+          {steamid && <ProfileTagChips steamid={steamid} />}
         </div>
       </div>
 
       <div className="section-note" style={{ marginTop: -8 }}>
         {lifetime.matches_played <= 5 ? (
           <>
-            Solo <b>{lifetime.matches_played} partidas reales</b> ingeridas hasta ahora — los
-            promedios y el rendimiento por mapa de abajo son reales sobre esa base chica, no
-            proyecciones. Con más demos, esto gana solidez estadística solo.
+            Solo <b>{lifetime.matches_played} partidas reales</b> ingeridas hasta ahora — las
+            estadísticas de abajo son reales sobre esa base chica, no proyecciones. Con más demos,
+            esto gana solidez estadística solo.
           </>
         ) : (
           <>
-            Promedios y rendimiento por mapa calculados sobre tus{" "}
-            <b>{lifetime.matches_played} partidas</b> reales ingeridas.
+            Estadísticas calculadas sobre tus <b>{lifetime.matches_played} partidas</b> reales
+            ingeridas.
           </>
         )}
       </div>
@@ -164,12 +207,18 @@ export function ProfileView() {
           <div className="section-head">
             <span className="display">Historial de partidas</span>
             <span className="rule" />
+            <MatchTypeFilter value={typeFilter} onChange={setTypeFilter} />
           </div>
           <motion.div className="mh-list" variants={staggerList} initial="hidden" animate="show">
-            {match_history.map((m) => (
+            {filteredHistory.slice(0, visibleCount).map((m) => (
               <MatchHistoryCard key={m.match_id} m={m} />
             ))}
           </motion.div>
+          {visibleCount < filteredHistory.length && (
+            <button className="panel-cta" onClick={() => setVisibleCount((v) => v + 10)}>
+              Cargar más partidas
+            </button>
+          )}
           <div className="mh-note">
             El historial crece con cada demo que ingerís (ver <code>INGESTA_MANUAL.md</code>) —
             click en una tarjeta para ver su Match Detail.
@@ -183,105 +232,41 @@ export function ProfileView() {
             snapshot={tactical_snapshot}
           />
 
+          <AccuracyPanel data={accuracy} />
+
+          {steamid && <SquadCard steamid={steamid} />}
+
+          <CoachCorner insights={coach_insights} />
+        </div>
+
+        <div>
           <div className="section-head">
             <span className="display">Lifetime</span>
             <span className="rule" />
           </div>
-          <motion.div
-            className="lifetime-grid"
-            variants={staggerList}
-            initial="hidden"
-            animate="show"
-          >
-            <motion.div className="lt-card" variants={cardRise}>
-              <div
-                className="label tip"
-                data-tip={`Promedio de Rating en tus ${lifetime.matches_played} partidas ingeridas.`}
-              >
-                Rating promedio
-              </div>
-              <div className="v mono">
-                <AnimatedNumber value={lifetime.avg_rating} decimals={2} delay={numberDelay(0)} />
-              </div>
-            </motion.div>
-            <motion.div className="lt-card" variants={cardRise}>
-              <div className="label">ADR promedio</div>
-              <div className="v mono">
-                <AnimatedNumber value={lifetime.avg_adr} decimals={1} delay={numberDelay(1)} />
-              </div>
-            </motion.div>
-            <motion.div className="lt-card" variants={cardRise}>
-              <div className="label">K/D promedio</div>
-              <div className="v mono">
-                <AnimatedNumber value={lifetime.avg_kd} decimals={2} delay={numberDelay(2)} />
-              </div>
-            </motion.div>
-            <motion.div className="lt-card" variants={cardRise}>
-              <div className="label">KAST promedio</div>
-              <div className="v mono">
-                <AnimatedNumber
-                  value={lifetime.avg_kast}
-                  decimals={1}
-                  suffix="%"
-                  delay={numberDelay(3)}
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-
-          <div className="section-head">
-            <span className="display">Rendimiento por mapa</span>
-            <span className="rule" />
-          </div>
-          {mapsWithData === 0 ? (
-            <p className="muted">Todavía no hay mapas con partidas cargadas.</p>
+          {milestones.length === 0 ? (
+            <p className="muted">Todavía no hay suficientes partidas para milestones.</p>
           ) : (
-            <div className="legend-card">
-              <div className="mp-list">
-                {map_pool
-                  .filter((mp) => mp.has_data)
-                  .map((mp) => {
-                    const winRate = (100 * mp.wins) / mp.matches_played;
-                    return (
-                      <div className="mp-row" key={mp.map}>
-                        <div className="mp-top">
-                          <span className="mp-name">{mp.map}</span>
-                          <span className="mp-kd">
-                            K/D {mp.avg_kd?.toFixed(2)} · {mp.matches_played} partida
-                            {mp.matches_played === 1 ? "" : "s"}
-                          </span>
-                        </div>
-                        <div className="mp-bar">
-                          <FillBar width={`${winRate}%`} />
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
+            <motion.div
+              className="lifetime-grid"
+              variants={staggerList}
+              initial="hidden"
+              animate="show"
+            >
+              {milestones.map((ms) => (
+                <motion.div className="lt-card" variants={cardRise} key={ms.key}>
+                  <div className="label">{ms.label}</div>
+                  <div className="v mono">{ms.value}</div>
+                </motion.div>
+              ))}
+            </motion.div>
           )}
 
-          {milestones.length > 0 && (
-            <>
-              <div className="section-head">
-                <span className="display">Milestones</span>
-                <span className="rule" />
-              </div>
-              <div className="milestones-card">
-                {milestones.map((ms) => (
-                  <div className="ms-row" key={ms.key}>
-                    <span className="k">{ms.label}</span>
-                    <span className="v mono">
-                      {ms.value}
-                      {ms.context && <span className="ctx">{ms.context}</span>}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <TopWeaponsPanel weapons={top_weapons} />
 
-          <CoachCorner insights={coach_insights} />
+          <TopMapsPanel mapPool={map_pool} />
+
+          {user.steamid === steamid && steamid && <ClipsPanel steamid={steamid} />}
 
           {user.steamid === steamid && <AutoFetchSettings />}
         </div>

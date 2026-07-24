@@ -17,7 +17,7 @@ from dataclasses import dataclass
 @dataclass
 class TeamResolution:
     player_roster: dict[str, int]  # steamid -> roster_id (bando 1a ronda: 2/3)
-    rounds: list[dict]  # {round_num, tick, winner_roster}
+    rounds: list[dict]  # {round_num, tick, winner_roster, attacker_roster}
     score: dict[int, int]  # roster_id -> rondas ganadas
 
 
@@ -46,11 +46,19 @@ def resolve_teams(
             (player_roster.get(sid) for sid, t in at.items() if t == side and sid in player_roster),
             None,
         )
+        # Mismo lookup pero fijo al bando T (2, convención de arriba) -- qué
+        # roster atacaba esa ronda. Insumo de domain/lurker.py: el rol solo
+        # se evalúa en rondas de ataque.
+        attacker_roster = next(
+            (player_roster.get(sid) for sid, t in at.items() if t == 2 and sid in player_roster),
+            None,
+        )
         rounds.append(
             {
                 "round_num": e["round_num"],
                 "tick": e["tick"],
                 "winner_roster": winner_roster,
+                "attacker_roster": attacker_roster,
             }
         )
         if winner_roster is not None:

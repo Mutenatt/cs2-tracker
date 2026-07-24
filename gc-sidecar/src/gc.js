@@ -19,6 +19,11 @@ const RECONNECT_DELAY_MS = 30_000;
 
 export class DemoExpiredError extends Error {}
 export class GcNotReadyError extends Error {}
+// El GC no devolvió perfil: el jugador no es amigo de la bot, no está
+// online, o no tiene rating Premier todavía.
+export class ProfileUnavailableError extends Error {}
+
+const PREMIER_RANK_TYPE = 11;
 
 export class GcSession {
   constructor({ accountName, password, dataDir = "data" }) {
@@ -81,7 +86,12 @@ export class GcSession {
     this.user.on("disconnected", (_eresult, msg) => {
       console.warn("[steam] desconectado:", msg ?? "");
     });
-    this.csgo.on("connectedToGC", () => console.log("[gc] conectado al Game Coordinator"));
+    this.csgo.on("connectedToGC", () => {
+      // El steamid de la bot: el usuario tiene que AGREGARLO de amigo para
+      // que requestPlayersProfile devuelva su rating Premier (ver Capa 2).
+      const botId = this.user.steamID ? this.user.steamID.getSteamID64() : "?";
+      console.log(`[gc] conectado al Game Coordinator (bot steamid: ${botId})`);
+    });
     this.csgo.on("disconnectedFromGC", (reason) => console.warn("[gc] desconectado:", reason));
     // Trazas internas de steam-user para diagnosticar logins que se quedan
     // mudos: GC_SIDECAR_DEBUG=1 npm start
@@ -102,6 +112,49 @@ export class GcSession {
     const run = this.queue.then(() => this._resolveNow(shareCode));
     this.queue = run.catch(() => {});
     return run;
+  }
+
+  profile(steamid) {
+    const run = this.queue.then(() => this._profileNow(steamid));
+    this.queue = run.catch(() => {});
+    return run;
+  }
+
+  async _profileNow(steamid) {
+    if (!this.ready) throw new GcNotReadyError("sin sesión con el Game Coordinator");
+
+    const wait = this.lastRequestAt + REQUEST_SPACING_MS - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    this.lastRequestAt = Date.now();
+
+    const profile = await new Promise((resolveProfile, rejectProfile) => {
+      const timer = setTimeout(
+        () => rejectProfile(new ProfileUnavailableError("timeout esperando playersProfile")),
+        REQUEST_TIMEOUT_MS
+      );
+      const ok = this.csgo.requestPlayersProfile(steamid, (p) => {
+        clearTimeout(timer);
+        resolveProfile(p);
+      });
+      // steamid inválido: requestPlayersProfile devuelve false y no llama callback.
+      if (ok === false) {
+        clearTimeout(timer);
+        rejectProfile(new ProfileUnavailableError("steamid inválido"));
+      }
+    });
+
+    // El rating Premier vive en el ranking con rank_type_id === 11. Puede
+    // venir en `ranking` (uno) o `rankings` (varios, distintos modos).
+    const rankings = [profile.ranking, ...(profile.rankings ?? [])].filter(Boolean);
+    const premier = rankings.find((r) => r.rank_type_id === PREMIER_RANK_TYPE);
+    if (!premier || !premier.rank_id) {
+      throw new ProfileUnavailableError("el perfil no trae rating Premier");
+    }
+    return {
+      rating: premier.rank_id, // CS Rating actual (número grande)
+      rankChange: premier.rank_change ?? null,
+      wins: premier.wins ?? null,
+    };
   }
 
   async _resolveNow(shareCode) {

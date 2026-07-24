@@ -93,6 +93,7 @@ export interface MapPoolEntry {
   map: string;
   matches_played: number;
   wins: number;
+  losses: number;
   avg_kd: number | null;
   has_data: boolean;
 }
@@ -113,6 +114,8 @@ export interface MatchHistoryEntry {
   adr: number;
   kd: number;
   rating: number;
+  hs_pct: number;
+  rank_type: number | null; // 11 = Premier; otro no-null = Competitivo; null = sin clasificar
 }
 
 export interface Badge {
@@ -150,6 +153,24 @@ export interface CoachInsight {
   matches_analyzed: number;
 }
 
+export interface AccuracyStats {
+  head_pct: number;
+  head_hits: number;
+  body_pct: number;
+  body_hits: number;
+  legs_pct: number;
+  legs_hits: number;
+  hs_pct_series: number[]; // oldest-first, últimas N partidas
+}
+
+export type WeaponCategory = "rifle" | "pistol" | "smg" | "sniper" | "shotgun";
+
+export interface TopWeaponEntry {
+  name: string;
+  category: WeaponCategory;
+  kills: number;
+}
+
 export interface ProfileResponse {
   steamid: string;
   display_name: string | null;
@@ -161,6 +182,10 @@ export interface ProfileResponse {
   coach_insights: CoachInsight[];
   rank_history: RankPoint[];
   tactical_snapshot: TacticalSnapshot;
+  accuracy: AccuracyStats;
+  top_weapons: TopWeaponEntry[];
+  current_premier_rating: number | null; // rating vivo del GC (solo perfil propio)
+  current_premier_updated_at: string | null;
 }
 
 export interface DuelRosterPlayer {
@@ -215,11 +240,108 @@ export interface RankPoint {
   rank: number | null; // NULL = demo viejo sin re-ingerir; 0 = calibrando
   rank_type: number | null; // 11 = Premier
   comp_wins: number | null;
+  rating_after: number | null; // CS Rating resultante (entrada de la partida siguiente)
+  rating_delta: number | null; // +/- de esta partida; NULL en la última y no-Premier
 }
 
 export interface TacticalSnapshot {
   best_map: string | null;
   dominant_role: string | null; // "awper" | "entry" | "support" | "rifler"
+}
+
+export interface ComparisonMetric {
+  key: string;
+  label: string;
+  value_a: number;
+  value_b: number;
+}
+
+export interface TradeUtilitySummary {
+  trade_kills: number;
+  flash_assists: number;
+}
+
+export interface WinrateTogetherSummary {
+  matches_together: number; // solo partidas en el MISMO equipo, resultado resuelto
+  wins: number;
+  losses: number;
+  win_rate: number; // 0..100
+}
+
+export interface CompareResponse {
+  steamid_a: string;
+  name_a: string | null;
+  team_num_a: number | null;
+  steamid_b: string;
+  name_b: string | null;
+  team_num_b: number | null;
+  matches_compared: number;
+  metrics: ComparisonMetric[];
+  trade_utility: TradeUtilitySummary;
+  winrate_together: WinrateTogetherSummary | null; // null = nunca compartieron equipo
+}
+
+export interface RivalSummary {
+  steamid: string;
+  name: string | null;
+  matches_together: number;
+  matches_opposed: number;
+  avg_rating: number;
+}
+
+export interface RivalsResponse {
+  rivals: RivalSummary[];
+}
+
+export interface ProfileTag {
+  tag_id: string;
+  detalle: Record<string, number | string> | null;
+  calculado_en: string;
+  ventana_partidas: number;
+}
+
+export interface ProfileTagsResponse {
+  tags: ProfileTag[];
+}
+
+export type TipoCompra = "full_buy" | "force_buy" | "semi_eco" | "eco";
+
+export interface RoundEconomyEntry {
+  round_num: number;
+  steamid: string;
+  equip_value: number;
+  tipo_compra: TipoCompra;
+}
+
+export interface MatchEconomyResponse {
+  rounds: RoundEconomyEntry[];
+}
+
+export interface HighlightMoment {
+  match_id: string;
+  round_num: number;
+  score: number;
+  label: string;
+  map: string | null;
+  demo_available: boolean; // false = el .dem ya no está en disco, no clipeable
+}
+
+export interface HighlightsResponse {
+  moments: HighlightMoment[];
+}
+
+export interface ClipJob {
+  id: number;
+  match_id: string;
+  round_num: number;
+  label: string;
+  status: "pending" | "rendering" | "done" | "error";
+  error: string | null;
+  created_at: string;
+}
+
+export interface ClipsResponse {
+  clips: ClipJob[];
 }
 
 export interface AutofetchStatus {

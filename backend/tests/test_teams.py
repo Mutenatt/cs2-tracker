@@ -20,6 +20,9 @@ def test_score_con_swap():
     assert r.score[2] == 2
     assert r.score[3] == 1
     assert [x["winner_roster"] for x in r.rounds] == [2, 3, 2]
+    # Roster A (id=2) ataca en las rondas 0-1; tras el swap de la ronda 2,
+    # el roster B (id=3) es quien juega T.
+    assert [x["attacker_roster"] for x in r.rounds] == [2, 2, 3]
 
 
 def test_vacio():

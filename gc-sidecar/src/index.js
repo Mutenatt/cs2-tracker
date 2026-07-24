@@ -6,7 +6,12 @@
 import "dotenv/config";
 import express from "express";
 
-import { DemoExpiredError, GcNotReadyError, GcSession } from "./gc.js";
+import {
+  DemoExpiredError,
+  GcNotReadyError,
+  GcSession,
+  ProfileUnavailableError,
+} from "./gc.js";
 
 const port = Number(process.env.GC_SIDECAR_PORT ?? 9001);
 // 127.0.0.1 salvo en Docker (el Dockerfile setea 0.0.0.0; el mapeo de puerto
@@ -30,8 +35,31 @@ const app = express();
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  const body = { steam: gc.user.steamID !== null, gc: gc.csgo.haveGCSession };
+  const body = {
+    steam: gc.user.steamID !== null,
+    gc: gc.csgo.haveGCSession,
+    // El usuario tiene que agregar este steamid de amigo para que /profile
+    // devuelva su rating Premier (ver Capa 2).
+    botSteamId: gc.user.steamID ? gc.user.steamID.getSteamID64() : null,
+  };
   res.status(body.steam && body.gc ? 200 : 503).json(body);
+});
+
+app.post("/profile", async (req, res) => {
+  const steamid = req.body?.steamid;
+  if (typeof steamid !== "string" || !/^\d{17}$/.test(steamid)) {
+    return res.status(400).json({ error: "BAD_STEAMID" });
+  }
+  try {
+    res.json(await gc.profile(steamid));
+  } catch (err) {
+    if (err instanceof GcNotReadyError) return res.status(503).json({ error: "GC_NOT_READY" });
+    // No amigo / offline / sin Premier: 404 (esperable, no es error del server).
+    if (err instanceof ProfileUnavailableError)
+      return res.status(404).json({ error: "PROFILE_UNAVAILABLE", detail: err.message });
+    console.error("[profile] fallo:", err.message);
+    res.status(502).json({ error: "GC_ERROR", detail: err.message });
+  }
 });
 
 app.post("/resolve", async (req, res) => {

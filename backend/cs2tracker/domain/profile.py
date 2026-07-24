@@ -8,6 +8,112 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+# Categorías por arma (para TopWeaponsPanel). Claves = valores crudos de
+# demoparser2 en kills.weapon/damages.weapon (ver Weapons.tsx::NICE para las
+# mismas claves). Causas de muerte que no son un arma de fuego propiamente
+# dicha (cuchillo, granadas, caída, taser, C4) se filtran antes de llegar acá.
+WEAPON_CATEGORY: dict[str, str] = {
+    "ak47": "rifle",
+    "m4a1": "rifle",
+    "m4a1_silencer": "rifle",
+    "galilar": "rifle",
+    "famas": "rifle",
+    "sg556": "rifle",
+    "aug": "rifle",
+    "awp": "sniper",
+    "ssg08": "sniper",
+    "scar20": "sniper",
+    "g3sg1": "sniper",
+    "deagle": "pistol",
+    "glock": "pistol",
+    "hkp2000": "pistol",
+    "usp_silencer": "pistol",
+    "usp_silencer_off": "pistol",
+    "elite": "pistol",
+    "fiveseven": "pistol",
+    "p250": "pistol",
+    "tec9": "pistol",
+    "revolver": "pistol",
+    "mac10": "smg",
+    "mp5sd": "smg",
+    "mp7": "smg",
+    "mp9": "smg",
+    "bizon": "smg",
+    "p90": "smg",
+    "ump45": "smg",
+    "negev": "smg",  # no hay categoría "lmg" en el diseño; fallback razonable
+    "mag7": "shotgun",
+    "nova": "shotgun",
+    "sawedoff": "shotgun",
+    "xm1014": "shotgun",
+}
+
+# Causas de muerte/daño que no representan un arma de fuego -- se excluyen
+# de top_weapons (un cuchillazo o una caída no es un "arma principal").
+_NON_WEAPON_CAUSES = {
+    "knife",
+    "knife_falchion",
+    "knife_kukri",
+    "knife_t",
+    "hegrenade",
+    "inferno",
+    "world",
+    "taser",
+    "planted_c4",
+}
+
+# Bucketing de hitgroups crudos (ver damages.hitgroup) a las 3 zonas de la
+# silueta de AccuracyPanel. "neck" y "generic" no tienen polígono propio en
+# la silueta -- van a torso por ser la asignación menos arbitraria.
+_HITGROUP_ZONE: dict[str, str] = {
+    "head": "head",
+    "chest": "body",
+    "stomach": "body",
+    "generic": "body",
+    "neck": "body",
+    "left_arm": "body",
+    "right_arm": "body",
+    "left_leg": "legs",
+    "right_leg": "legs",
+}
+
+
+def accuracy_stats(hitgroup_counts: dict[str, int], hs_pct_series: list[float]) -> dict:
+    """Bucketea conteos de hitgroups crudos a head/body/legs y calcula %.
+    `hs_pct_series` es la serie oldest-first de HS% por partida (últimas N)
+    para el sparkline -- se pasa tal cual, no se recalcula acá."""
+    zones = {"head": 0, "body": 0, "legs": 0}
+    for hg, count in hitgroup_counts.items():
+        zone = _HITGROUP_ZONE.get(hg)
+        if zone:
+            zones[zone] += count
+    total = sum(zones.values())
+
+    def pct(zone: str) -> float:
+        return round(100.0 * zones[zone] / total, 1) if total else 0.0
+
+    return {
+        "head_pct": pct("head"),
+        "head_hits": zones["head"],
+        "body_pct": pct("body"),
+        "body_hits": zones["body"],
+        "legs_pct": pct("legs"),
+        "legs_hits": zones["legs"],
+        "hs_pct_series": hs_pct_series,
+    }
+
+
+def top_weapons(kill_weapon_counts: dict[str, int]) -> list[dict]:
+    """Top 3 armas por kills lifetime, con categoría. Filtra causas que no
+    son un arma de fuego (cuchillo, granadas, caída, taser, C4)."""
+    rows = [
+        {"name": w, "category": WEAPON_CATEGORY.get(w, "rifle"), "kills": kills}
+        for w, kills in kill_weapon_counts.items()
+        if w not in _NON_WEAPON_CAUSES and kills > 0
+    ]
+    rows.sort(key=lambda r: -r["kills"])
+    return rows[:3]
+
 
 def lifetime_stats(history: list[dict]) -> dict:
     played = len(history)
@@ -59,19 +165,31 @@ def map_pool(history: list[dict], known_maps: list[str]) -> list[dict]:
         rows = by_map.get(mp, [])
         if rows:
             wins = sum(1 for r in rows if r.get("won"))
+            # Distinto de matches_played - wins: partidas con won=None (ronda
+            # sin resolver) no cuentan como derrota -- TopMapsPanel necesita
+            # wins/losses reales para no ensuciar el win% con irresueltas.
+            losses = sum(1 for r in rows if r.get("won") is False)
             avg_kd = sum(r["kd"] for r in rows) / len(rows)
             out.append(
                 {
                     "map": mp,
                     "matches_played": len(rows),
                     "wins": wins,
+                    "losses": losses,
                     "avg_kd": round(avg_kd, 2),
                     "has_data": True,
                 }
             )
         else:
             out.append(
-                {"map": mp, "matches_played": 0, "wins": 0, "avg_kd": None, "has_data": False}
+                {
+                    "map": mp,
+                    "matches_played": 0,
+                    "wins": 0,
+                    "losses": 0,
+                    "avg_kd": None,
+                    "has_data": False,
+                }
             )
     out.sort(key=lambda e: (not e["has_data"], -e["matches_played"]))
     return out
@@ -89,11 +207,26 @@ def best_map(pool: list[dict]) -> str | None:
     )["map"]
 
 
+def _is_valid_premier(p: dict) -> bool:
+    """Punto con un CS Rating Premier real: >0 (no calibrando) y de tipo
+    Premier (11) o desconocido (demos viejos sin rank_type explícito).
+    Mismo criterio que usa el frontend para filtrar el sparkline."""
+    r = p.get("rank")
+    return r is not None and r > 0 and p.get("rank_type") in (None, 11)
+
+
 def rank_history(history: list[dict]) -> list[dict]:
     """Serie de rank para el sparkline: oldest-first (match_history viene
     newest-first), proyectando solo lo que el gráfico necesita. Serie
-    COMPLETA, no el slice de 20 del historial visible."""
-    return [
+    COMPLETA, no el slice de 20 del historial visible.
+
+    Cada punto además trae `rating_after`/`rating_delta`: el CS Rating con
+    el que TERMINÓ esa partida y cuánto ganó/perdió. GOTV solo graba el
+    rating de ENTRADA a cada partida, así que el rating resultante de la
+    partida N = el rating de entrada de la partida Premier N+1. El último
+    punto queda con `rating_after=None` (todavía no hay partida siguiente
+    ingerida: ese gap lo cubre el rating vivo del GC, ver Capa 2)."""
+    serie = [
         {
             "match_id": h["match_id"],
             "ingested_at": h.get("ingested_at"),
@@ -102,9 +235,23 @@ def rank_history(history: list[dict]) -> list[dict]:
             "rank": h.get("rank"),
             "rank_type": h.get("rank_type"),
             "comp_wins": h.get("comp_wins"),
+            "rating_after": None,
+            "rating_delta": None,
         }
         for h in reversed(history)
     ]
+    # Recorremos de la más nueva a la más vieja arrastrando el rank de
+    # entrada de la siguiente partida Premier válida (= rating de salida de
+    # la actual). Se asigna ANTES de actualizar el acumulador con el rank
+    # propio, para que cada punto se empareje con el POSTERIOR, no consigo.
+    next_valid_rank: int | None = None
+    for p in reversed(serie):
+        if _is_valid_premier(p):
+            if next_valid_rank is not None:
+                p["rating_after"] = next_valid_rank
+                p["rating_delta"] = next_valid_rank - p["rank"]
+            next_valid_rank = p["rank"]
+    return serie
 
 
 def _result_ctx(h: dict) -> str:

@@ -5,7 +5,7 @@ Portable a Postgres/Supabase: tipos genéricos, sin dialecto específico.
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -69,6 +69,13 @@ class User(Base):
     last_polled_at: Mapped[str | None] = mapped_column(String)
     last_fetched_at: Mapped[str | None] = mapped_column(String)
 
+    # CS Rating Premier VIGENTE, consultado en vivo al GC tras cada ingesta
+    # (ver ingest.py + infra/gc_client.fetch_premier_profile). Cierra el gap
+    # que el demo no puede: el rating resultante de la última partida. None
+    # si nunca se pudo consultar (bot no amiga / offline).
+    current_premier_rating: Mapped[int | None] = mapped_column(Integer)
+    current_premier_updated_at: Mapped[str | None] = mapped_column(String)
+
 
 class MatchPlayer(Base):
     __tablename__ = "match_players"
@@ -94,6 +101,10 @@ class Round(Base):
     end_tick: Mapped[int | None] = mapped_column(Integer)
     winner_num: Mapped[int | None] = mapped_column(Integer)
     win_reason: Mapped[int | None] = mapped_column(Integer)
+    # Roster (2=T/3=CT, ver domain/teams.py) que atacaba esta ronda. NULL en
+    # partidas ingeridas antes de este campo -- se completa re-ingiriendo con
+    # --force, mismo criterio que MatchPlayer.rank. Insumo de domain/lurker.py.
+    attacker_roster: Mapped[int | None] = mapped_column(Integer)
 
 
 class Kill(Base):
@@ -186,10 +197,16 @@ class PlayerMapEvent(Base):
     is_trade_kill: Mapped[bool | None] = mapped_column(Boolean)  # solo event_type='kill'
     avenged_steamid: Mapped[str | None] = mapped_column(String)  # a quién vengó (si is_trade_kill)
     # Segundos desde que la ronda se volvió "viva" (fin de freezetime) hasta
-    # esta muerte. Solo event_type='death'; None si el demo no expuso
-    # round_freeze_end (ver infra/parser.py). Insumo de Coach's Corner.
+    # este evento. event_type='death' (insumo de Coach's Corner) y
+    # event_type='kill' (insumo de domain/lurker.py: timing tardío); None si
+    # el demo no expuso round_freeze_end (ver infra/parser.py).
     seconds_into_round: Mapped[float | None] = mapped_column(Float)
     map: Mapped[str] = mapped_column(String, nullable=False)  # denormalizado de matches.map
+    # Zona nombrada del engine (BombsiteA, Mid, TSpawn...) donde ocurrió el
+    # evento -- prop last_place_name del tick (ver infra/parser.py::
+    # _annotate_places). Solo kill/death; NULL en partidas ingeridas antes
+    # de este campo (re-ingerir con --force) o demos sin la prop.
+    place: Mapped[str | None] = mapped_column(String)
     team_num: Mapped[int | None] = mapped_column(Integer)  # denormalizado de match_players
     round_won: Mapped[bool | None] = mapped_column(Boolean)  # denormalizado de rounds
     weapon: Mapped[str | None] = mapped_column(String)
@@ -267,3 +284,83 @@ class PlayerMatchStats(Base):
     rating: Mapped[float] = mapped_column(Float, default=0.0)
 
     match: Mapped[Match] = relationship(back_populates="stats")
+
+
+class PlayerProfileTag(Base):
+    """Cache de tags de perfil estilo Porofessor (rendimiento sobre una
+    ventana de N partidas, no una sola partida -- ver domain/badges con
+    UmbralTipo.RELATIVO_PARTIDA para el caso de una sola partida). Se
+    borra y reinserta por usuario en cada recálculo (trigger: fin de
+    ingest_demo), mismo patrón idempotente que ingest_demo con match_id.
+    Siempre reconstruible desde player_match_stats/player_map_events -- es
+    cache, no fuente de verdad."""
+
+    __tablename__ = "player_profile_tags"
+    __table_args__ = (Index("idx_ppt_steamid", "steamid"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    steamid: Mapped[str] = mapped_column(ForeignKey("players.steamid"), nullable=False)
+    tag_id: Mapped[str] = mapped_column(String, nullable=False)
+    detalle: Mapped[dict | None] = mapped_column(JSON)
+    calculado_en: Mapped[str] = mapped_column(String, nullable=False)
+    ventana_partidas: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class GlobalMetricStats(Base):
+    """Percentiles globales por métrica, sobre TODOS los jugadores de la
+    base (una fila-fuente por jugador: su promedio en player_match_stats).
+    Cache chico (una fila por métrica), recomputado al final de cada
+    ingesta -- insumo de los tags de perfil relativos-a-global (ver
+    domain/percentiles.py). Delete+reinsert completo, patrón idempotente."""
+
+    __tablename__ = "global_metric_stats"
+
+    metric: Mapped[str] = mapped_column(String, primary_key=True)
+    p25: Mapped[float] = mapped_column(Float, nullable=False)
+    p50: Mapped[float] = mapped_column(Float, nullable=False)
+    p75: Mapped[float] = mapped_column(Float, nullable=False)
+    p90: Mapped[float] = mapped_column(Float, nullable=False)
+    n_players: Mapped[int] = mapped_column(Integer, nullable=False)
+    calculado_en: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class ClipJob(Base):
+    """Job de render de clip 2D (ver infra/clips.py). El render corre como
+    BackgroundTask de FastAPI tras el POST (segundos de CPU, no amerita
+    cola externa); la fila persiste el estado para listar/descargar.
+    file_path relativo a settings.clips_dir; el MP4 es regenerable
+    mientras el .dem siga en disco."""
+
+    __tablename__ = "clip_jobs"
+    __table_args__ = (Index("idx_clip_jobs_steamid", "steamid"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    steamid: Mapped[str] = mapped_column(ForeignKey("players.steamid"), nullable=False)
+    match_id: Mapped[str] = mapped_column(ForeignKey("matches.match_id"), nullable=False)
+    round_num: Mapped[int] = mapped_column(Integer, nullable=False)
+    label: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)  # pending|rendering|done|error
+    error: Mapped[str | None] = mapped_column(String)
+    file_path: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class RoundEconomy(Base):
+    """Snapshot de economía por jugador por ronda: equipment value YA con
+    lo comprado (muestreado al mismo tick de fin de freezetime que ya usa
+    seconds_into_round -- ver infra/parser.py::_extract_economy), plata
+    gastada/disponible, y las armas reales compradas esa ronda (jsonb,
+    NO una tabla de items -- mismo criterio que ya aplicaron con
+    positions: no crear una tabla hasta que un feature concreto la
+    necesite). Cache reconstruible desde el demo -- requiere re-ingerir
+    con --force partidas ingeridas antes de este campo."""
+
+    __tablename__ = "round_economy"
+
+    match_id: Mapped[str] = mapped_column(ForeignKey("matches.match_id"), primary_key=True)
+    round_num: Mapped[int] = mapped_column(Integer, primary_key=True)
+    steamid: Mapped[str] = mapped_column(ForeignKey("players.steamid"), primary_key=True)
+    equip_value: Mapped[int] = mapped_column(Integer, nullable=False)
+    cash_spent: Mapped[int] = mapped_column(Integer, nullable=False)
+    start_account: Mapped[int] = mapped_column(Integer, nullable=False)
+    armas_compradas: Mapped[list | None] = mapped_column(JSON)

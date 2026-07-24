@@ -13,14 +13,14 @@ function NavPill({ to, end, label }: { to: string; end?: boolean; label: string 
     >
       {({ isActive }) => (
         <>
-          <span className="cs-nav-tab-label">{label}</span>
           {isActive && (
             <motion.span
-              className="cs-nav-underline"
-              layoutId="nav-underline"
+              className="cs-nav-active-bg"
+              layoutId="nav-active-bg"
               transition={{ type: "spring", stiffness: 500, damping: 40 }}
             />
           )}
+          <span className="cs-nav-tab-label">{label}</span>
         </>
       )}
     </NavLink>
@@ -51,13 +51,8 @@ export function Topbar({ onLogout }: { onLogout: () => void }) {
       </div>
       <div className="nav-tabs">
         <NavPill to="/" end label="Inicio" />
-        <span className="cs-nav-tab inert" aria-disabled="true" title="Próximamente">
-          Historial
-        </span>
-        <span className="cs-nav-tab inert" aria-disabled="true" title="Próximamente">
-          Line ups
-        </span>
         <NavPill to={`/profile/${user.steamid}`} label="Perfil" />
+        <NavPill to="/lineups" label="Line ups" />
       </div>
     </>
   );

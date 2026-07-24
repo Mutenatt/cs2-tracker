@@ -3,7 +3,9 @@
 from cs2tracker.db.models import (
     Base,
     Blind,
+    ClipJob,
     Damage,
+    GlobalMetricStats,
     Grenade,
     Kill,
     Match,
@@ -13,7 +15,9 @@ from cs2tracker.db.models import (
     PlayerMapEvent,
     PlayerMapZone,
     PlayerMatchStats,
+    PlayerProfileTag,
     Round,
+    RoundEconomy,
     User,
 )
 from cs2tracker.db.session import get_engine, get_session, init_db
@@ -33,6 +37,10 @@ __all__ = [
     "PlayerMapZone",
     "PlayerMatchStats",
     "PlayerClutch",
+    "ClipJob",
+    "GlobalMetricStats",
+    "PlayerProfileTag",
+    "RoundEconomy",
     "get_engine",
     "get_session",
     "init_db",

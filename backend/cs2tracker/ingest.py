@@ -18,6 +18,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from cs2tracker import maps
+from cs2tracker.api.queries import recompute_global_percentiles, recompute_profile_tags
 from cs2tracker.config import settings
 from cs2tracker.db import (
     Blind,
@@ -32,6 +33,7 @@ from cs2tracker.db import (
     PlayerMapZone,
     PlayerMatchStats,
     Round,
+    RoundEconomy,
     init_db,
 )
 from cs2tracker.domain import (
@@ -47,6 +49,7 @@ from cs2tracker.domain import (
     find_traded_deaths,
     seconds_into_round,
 )
+from cs2tracker.domain.economia import filtrar_compras_reales
 from cs2tracker.infra.parser import ParsedDemo, match_id_from_name, parse_demo
 from cs2tracker.infra.sources import FolderSource, SteamAutoSource
 
@@ -79,6 +82,10 @@ def ingest_demo(
 
         parsed = parse_demo(dem_path)
         _persist(s, parsed, ingested_by=ingested_by, played_at=played_at)
+        s.flush()  # los percentiles/tags leen player_match_stats recién insertado
+        recompute_global_percentiles(s)
+        for steamid in parsed.players:
+            recompute_profile_tags(s, steamid)
         s.commit()
         return {
             "match_id": parsed.match_id,
@@ -101,6 +108,7 @@ def _purge(s: Session, match_id: str) -> None:
         Kill,
         Damage,
         PlayerMatchStats,
+        RoundEconomy,
         Round,
         MatchPlayer,
         Match,
@@ -152,10 +160,17 @@ def _persist(
                 round_num=rnd["round_num"],
                 end_tick=rnd["tick"],
                 winner_num=rnd["winner_roster"],
+                attacker_roster=rnd.get("attacker_roster"),
             )
         )
 
-    s.add_all(Kill(match_id=p.match_id, **k) for k in p.kills)
+    # attacker_place/victim_place son anotaciones para player_map_events
+    # (ver _annotate_places), no columnas de kills.
+    _PLACE_KEYS = ("attacker_place", "victim_place")
+    s.add_all(
+        Kill(match_id=p.match_id, **{key: v for key, v in k.items() if key not in _PLACE_KEYS})
+        for k in p.kills
+    )
     s.add_all(Damage(match_id=p.match_id, **d) for d in p.damages)
     s.add_all(
         Grenade(
@@ -180,6 +195,20 @@ def _persist(
             duration=b["duration"],
         )
         for b in p.blinds
+    )
+
+    weapons_por_ronda = filtrar_compras_reales(p.purchases, p.round_freeze_ticks, p.round_economy)
+    s.add_all(
+        RoundEconomy(
+            match_id=p.match_id,
+            round_num=e["round_num"],
+            steamid=e["steamid"],
+            equip_value=e["equip_value"],
+            cash_spent=e["cash_spent"],
+            start_account=e["start_account"],
+            armas_compradas=weapons_por_ronda.get((e["round_num"], e["steamid"]), []),
+        )
+        for e in p.round_economy
     )
 
     stats = compute_stats(p.kills, p.damages, p.n_rounds, names=p.players)
@@ -297,6 +326,8 @@ def _persist_map_events(
                 weapon=k.get("weapon"),
                 headshot=k.get("headshot"),
                 distance=k.get("distance"),
+                seconds_into_round=seconds_into_round(rnd, tick, p.round_freeze_ticks),
+                place=k.get("attacker_place"),
             )
         if vic:
             add_event(
@@ -312,6 +343,7 @@ def _persist_map_events(
                 headshot=k.get("headshot"),
                 distance=k.get("distance"),
                 seconds_into_round=seconds_into_round(rnd, tick, p.round_freeze_ticks),
+                place=k.get("victim_place"),
             )
 
     for idx, g in enumerate(p.grenades):
@@ -423,6 +455,29 @@ def _on_demo(
     print(f"[{tag}] {dem.name} -> {res}")
 
 
+def _update_premier_rating(steamid: str) -> None:
+    """Consulta al GC el CS Rating Premier vigente del usuario y lo persiste
+    en users. Best-effort: cualquier fallo (sidecar caído, usuario no amigo,
+    offline) se traga -- la Capa 1 (rating derivado del demo) es el fallback."""
+    from cs2tracker.db import User
+    from cs2tracker.infra.gc_client import fetch_premier_profile
+
+    try:
+        prof = fetch_premier_profile(steamid, base_url=settings.gc_sidecar_url)
+    except Exception:
+        return
+    if not prof:
+        print(f"[premier] {steamid}: sin rating vivo del GC (no amigo/offline)")
+        return
+    with Session(init_db()) as s:
+        user = s.get(User, steamid)
+        if user is not None:
+            user.current_premier_rating = prof["rating"]
+            user.current_premier_updated_at = datetime.now(UTC).isoformat()
+            s.commit()
+            print(f"[premier] {steamid}: rating vigente {prof['rating']}")
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="CS2 Tracker - ingesta")
     ap.add_argument("--demo", type=Path, help="Ingesta un solo .dem")
@@ -445,12 +500,18 @@ def main(argv=None) -> int:
         src = SteamAutoSource(download_dir=args.demos / "autofetch")
 
         def on_autofetch_demo(dem: Path) -> None:
+            owner = src.owner_of(dem)
             _on_demo(
                 dem,
                 force=args.force,
-                ingested_by=src.owner_of(dem),
+                ingested_by=owner,
                 played_at=src.played_at_of(dem),
             )
+            # Rating Premier VIGENTE post-partida vía el GC (Capa 2). Best-effort:
+            # si la bot no es amiga del usuario o está offline, no pasa nada, la
+            # serie derivada del demo (Capa 1) sigue cubriendo.
+            if owner:
+                _update_premier_rating(owner)
             # Los datos ya quedaron en la DB; no hace falta conservar el
             # .dem crudo (si no, el disco crece sin límite en producción).
             dem.unlink(missing_ok=True)

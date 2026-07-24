@@ -60,6 +60,13 @@ class ParsedDemo:
     ranks: dict[str, int] = field(default_factory=dict)
     rank_types: dict[str, int] = field(default_factory=dict)
     comp_wins: dict[str, int] = field(default_factory=dict)
+    # Economía (ver domain/economia.py). equip_value = valor de equipo YA
+    # con lo comprado esa ronda (muestreado al mismo tick de fin de
+    # freezetime que round_freeze_ticks -- la ventana de compra ya cerró).
+    round_economy: list[dict] = field(default_factory=list)
+    # Items levantados (comprados o recogidos del piso -- ver nota en
+    # _extract_purchases sobre por qué no se distinguen acá).
+    purchases: list[dict] = field(default_factory=list)
 
 
 _SIDE = {"CT": 3, "T": 2}  # winner string -> team_num
@@ -88,7 +95,7 @@ def parse_demo(dem_path: Path) -> ParsedDemo:
 
     n_rounds = (
         int(deaths["total_rounds_played"].max()) + 1
-        if "total_rounds_played" in deaths.columns and len(deaths)
+        if hasattr(deaths, "columns") and "total_rounds_played" in deaths.columns and len(deaths)
         else 1
     )
 
@@ -111,7 +118,7 @@ def parse_demo(dem_path: Path) -> ParsedDemo:
             if name and sid not in parsed.players:
                 parsed.players[sid] = name
 
-    for _, r in deaths.iterrows():
+    for _, r in _iter_rows(deaths):
         atk, vic, ast = (
             _val(r, "attacker_steamid"),
             _val(r, "user_steamid"),
@@ -144,7 +151,7 @@ def parse_demo(dem_path: Path) -> ParsedDemo:
             }
         )
 
-    for _, r in hurt.iterrows():
+    for _, r in _iter_rows(hurt):
         atk, vic = _val(r, "attacker_steamid"), _val(r, "user_steamid")
         rnd = _val(r, "total_rounds_played")
         parsed.damages.append(
@@ -164,7 +171,35 @@ def parse_demo(dem_path: Path) -> ParsedDemo:
     _extract_grenades(parser, parsed)
     _extract_blinds(parser, parsed)
     _extract_round_freeze_ticks(parser, parsed)
+    _extract_economy(parser, parsed)
+    _extract_purchases(parser, parsed)
+    _annotate_places(parser, parsed)
     return parsed
+
+
+def _annotate_places(parser, parsed: ParsedDemo) -> None:
+    """Anota cada kill con la zona nombrada del engine (BombsiteA, Mid,
+    TSpawn...) donde estaban atacante y víctima en ese tick, vía la prop
+    m_szLastPlaceName (friendly name: last_place_name -- verificado contra
+    demoparser2 0.41.4 con una demo real). Sin polígonos propios ni awpy:
+    el nombre lo pone el propio mapa. Si la prop no está disponible en
+    esta demo, los kills quedan sin place -- no se inventa la zona."""
+    ticks = sorted({k["tick"] for k in parsed.kills if k.get("tick")})
+    if not ticks:
+        return
+    try:
+        df = parser.parse_ticks(["last_place_name"], ticks=ticks)
+    except Exception:
+        return
+    place_at: dict[tuple[int, str], str] = {}
+    for _, r in _iter_rows(df):
+        tick, sid, place = _val(r, "tick"), _val(r, "steamid"), _val(r, "last_place_name")
+        if tick is not None and sid is not None and place:
+            place_at[(int(tick), str(sid))] = str(place)
+    for k in parsed.kills:
+        tick = k.get("tick")
+        k["attacker_place"] = place_at.get((tick, k["attacker"])) if k.get("attacker") else None
+        k["victim_place"] = place_at.get((tick, k["victim"])) if k.get("victim") else None
 
 
 def _extract_round_freeze_ticks(parser, parsed: ParsedDemo) -> None:
@@ -182,6 +217,80 @@ def _extract_round_freeze_ticks(parser, parsed: ParsedDemo) -> None:
         tick = _val(r, "tick")
         if rnd is not None and tick is not None:
             parsed.round_freeze_ticks[int(rnd)] = int(tick)
+
+
+# Nombres verificados contra demoparser2 0.41.4 con list_updated_fields() sobre
+# una demo real -- el doc de diseño original asumía un evento "item_purchase"
+# que NO existe; esto es lo que realmente expone la librería (props de tick,
+# mismo mecanismo que ya usan team_num/rank arriba).
+_EQUIP_VALUE_PROP = "CCSPlayerPawn.m_unFreezetimeEndEquipmentValue"
+_CASH_SPENT_PROP = (
+    "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iCashSpentThisRound"
+)
+_START_ACCOUNT_PROP = "CCSPlayerController.CCSPlayerController_InGameMoneyServices.m_iStartAccount"
+
+
+def _extract_economy(parser, parsed: ParsedDemo) -> None:
+    """Equipment value post-compra + plata gastada/disponible por ronda,
+    muestreado en el mismo tick de fin de freezetime que round_freeze_ticks
+    -- ahí la ventana de compra ya cerró y el valor de equipo refleja lo
+    comprado esa ronda (verificado contra una demo real: equip_value ==
+    valor de arranque + cash_spent). Si el demo no expone round_freeze_end,
+    tampoco hay estos datos -- no se fabrica un tick aproximado."""
+    ticks = sorted(set(parsed.round_freeze_ticks.values()))
+    if not ticks:
+        return
+    try:
+        df = parser.parse_ticks(
+            [_EQUIP_VALUE_PROP, _CASH_SPENT_PROP, _START_ACCOUNT_PROP], ticks=ticks
+        )
+    except Exception:
+        return
+    tick_to_round = {tick: rnd for rnd, tick in parsed.round_freeze_ticks.items()}
+    for _, r in _iter_rows(df):
+        tick = _val(r, "tick")
+        sid = _val(r, "steamid")
+        if tick is None or sid is None:
+            continue
+        rnd = tick_to_round.get(int(tick))
+        if rnd is None:
+            continue
+        parsed.round_economy.append(
+            {
+                "round_num": rnd,
+                "steamid": str(sid),
+                "equip_value": int(_val(r, _EQUIP_VALUE_PROP) or 0),
+                "cash_spent": int(_val(r, _CASH_SPENT_PROP) or 0),
+                "start_account": int(_val(r, _START_ACCOUNT_PROP) or 0),
+            }
+        )
+
+
+def _extract_purchases(parser, parsed: ParsedDemo) -> None:
+    """Items levantados por ronda (evento item_pickup). demoparser2 no
+    distingue explícitamente "compra deliberada" de "recogida del piso" --
+    el campo `silent` no lo hace de forma confiable (se probó contra una
+    demo real: el auto-equip inicial de ronda también llega silent=False).
+    domain/economia.py acota esto a lo que sí se puede afirmar con
+    confianza (ver docstring de detecta_millonario)."""
+    try:
+        df = parser.parse_event("item_pickup", other=["total_rounds_played"])
+    except Exception:
+        return
+    for _, r in _iter_rows(df):
+        sid = _val(r, "user_steamid")
+        rnd = _val(r, "total_rounds_played")
+        item = _val(r, "item")
+        if sid is None or rnd is None or item is None:
+            continue
+        parsed.purchases.append(
+            {
+                "round_num": int(rnd),
+                "tick": int(_val(r, "tick") or 0),
+                "steamid": str(sid),
+                "item": item,
+            }
+        )
 
 
 def _extract_grenades(parser, parsed: ParsedDemo) -> None:
@@ -272,9 +381,15 @@ def _resolve_teams_and_score(parser, parsed: ParsedDemo) -> None:
             continue
         tick = int(tick)
         ticks.append(tick)
+        # El campo `round` de round_end es 1-based (numeración de Valve);
+        # kills/damages/grenades/blinds/freeze_ticks usan total_rounds_played,
+        # que es 0-based. Se normaliza TODO a 0-based acá -- si no, cualquier
+        # join rounds<->eventos queda corrido una ronda (bug real detectado:
+        # round_won de player_map_events venía desplazado).
+        raw_round = _val(row, "round")
         round_events.append(
             {
-                "round_num": int(_val(row, "round") or i),
+                "round_num": int(raw_round) - 1 if raw_round is not None else i,
                 "tick": tick,
                 "winner_side": side,
             }

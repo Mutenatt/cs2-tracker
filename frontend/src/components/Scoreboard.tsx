@@ -6,7 +6,7 @@ import type { PlayerRow } from "../types";
 const SIDE: Record<number, "t" | "ct"> = { 2: "t", 3: "ct" };
 const SIDE_LABEL: Record<number, string> = { 2: "Equipo T", 3: "Equipo CT" };
 
-function ratingColor(rating: number): string | undefined {
+export function ratingColor(rating: number): string | undefined {
   if (rating >= 1.3) return "var(--signal)";
   if (rating < 1) return "var(--text-dim)";
   return undefined;

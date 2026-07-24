@@ -1,14 +1,21 @@
 import type {
   AutofetchStatus,
   BadgesResponse,
+  ClipJob,
+  ClipsResponse,
   ClutchTimelineResponse,
+  CompareResponse,
+  HighlightsResponse,
   DuelsResponse,
   KillsResponse,
   MatchDetail,
+  MatchEconomyResponse,
   MatchSummary,
   MonthlySummaryResponse,
   NewsResponse,
   ProfileResponse,
+  ProfileTagsResponse,
+  RivalsResponse,
   StreamsResponse,
   TeamRankingResponse,
   User,
@@ -101,6 +108,60 @@ export async function getProfile(steamid: string): Promise<ProfileResponse> {
   const r = await fetch(`${BASE}/players/${steamid}/profile`);
   if (!r.ok) throw new Error(`GET profile -> ${r.status}`);
   return r.json();
+}
+
+export async function getProfileTags(steamid: string): Promise<ProfileTagsResponse> {
+  const r = await fetch(`${BASE}/players/${steamid}/profile-tags`);
+  if (!r.ok) throw new Error(`GET profile-tags -> ${r.status}`);
+  return r.json();
+}
+
+export async function getRivals(steamid: string): Promise<RivalsResponse> {
+  const r = await fetch(`${BASE}/players/${steamid}/rivals`);
+  if (!r.ok) throw new Error(`GET rivals -> ${r.status}`);
+  return r.json();
+}
+
+export async function getCompare(steamidA: string, steamidB: string): Promise<CompareResponse> {
+  const r = await fetch(`${BASE}/players/${steamidA}/compare/${steamidB}`);
+  if (!r.ok) throw new Error(`GET compare -> ${r.status}`);
+  return r.json();
+}
+
+export async function getMatchEconomy(matchId: string): Promise<MatchEconomyResponse> {
+  const r = await fetch(`${BASE}/matches/${matchId}/economy`);
+  if (!r.ok) throw new Error(`GET economy -> ${r.status}`);
+  return r.json();
+}
+
+export async function getHighlights(steamid: string): Promise<HighlightsResponse> {
+  const r = await fetch(`${BASE}/players/${steamid}/highlights`);
+  if (!r.ok) throw new Error(`GET highlights -> ${r.status}`);
+  return r.json();
+}
+
+export async function getClips(steamid: string): Promise<ClipsResponse> {
+  const r = await fetch(`${BASE}/players/${steamid}/clips`);
+  if (!r.ok) throw new Error(`GET clips -> ${r.status}`);
+  return r.json();
+}
+
+export async function createClip(
+  steamid: string,
+  matchId: string,
+  roundNum: number
+): Promise<ClipJob> {
+  const r = await fetch(`${BASE}/players/${steamid}/clips`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ match_id: matchId, round_num: roundNum }),
+  });
+  if (!r.ok) throw new Error(`POST clips -> ${r.status}`);
+  return r.json();
+}
+
+export function clipDownloadUrl(jobId: number): string {
+  return `${BASE}/clips/${jobId}/download`;
 }
 
 export async function getMonthlySummary(steamid: string): Promise<MonthlySummaryResponse> {

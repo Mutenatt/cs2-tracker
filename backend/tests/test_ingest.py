@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from cs2tracker.db import MatchPlayer, PlayerMapEvent, PlayerMapZone, init_db
+from cs2tracker.db import MatchPlayer, PlayerMapEvent, PlayerMapZone, Round, init_db
 from cs2tracker.infra.parser import ParsedDemo
 from cs2tracker.ingest import _persist
 
@@ -26,7 +26,8 @@ def _demo() -> ParsedDemo:
     p.ranks = {"A": 14655, "A2": 0}
     p.rank_types = {"A": 11, "A2": 11}
     p.comp_wins = {"A": 120, "A2": 4}
-    p.rounds = [{"round_num": 0, "tick": 500, "winner_roster": 2}]
+    p.rounds = [{"round_num": 0, "tick": 500, "winner_roster": 2, "attacker_roster": 2}]
+    p.round_freeze_ticks = {0: 50}  # ronda 0 "viva" desde el tick 50
     # Ronda 0: B mata a A2 (entry). A vengó a A2 matando a B enseguida (trade).
     p.kills = [
         {
@@ -108,6 +109,12 @@ def test_persist_crea_kill_y_death_events(session):
     kills = session.scalars(select(PlayerMapEvent).where(PlayerMapEvent.event_type == "kill")).all()
     assert {e.steamid for e in kills} == {"A", "B"}
 
+    # seconds_into_round ya no es exclusivo de 'death' -- insumo de
+    # domain/lurker.py (timing tardío del atacante), no solo Coach's Corner.
+    kill_b = next(e for e in kills if e.steamid == "B")  # B mató a A2, tick 100
+    assert kill_b.seconds_into_round == round((100 - 50) / 64, 1)
+    assert kill_b.seconds_into_round == a2.seconds_into_round  # mismo tick, mismo delta
+
 
 def test_persist_crea_flash_thrown_con_efectividad(session):
     _persist(session, _demo())
@@ -142,3 +149,23 @@ def test_persist_agrega_player_map_zones(session):
     assert zones[0].event_type == "death"
     assert zones[0].count == 1
     assert zones[0].entry_count == 1
+
+
+def test_persist_guarda_attacker_roster_por_ronda(session):
+    _persist(session, _demo())
+    session.commit()
+
+    rnd = session.get(Round, ("m1", 0))
+    assert rnd.attacker_roster == 2
+
+
+def test_persist_attacker_roster_es_none_si_el_dict_no_lo_trae(session):
+    # Compatibilidad: p.rounds construido sin la clave nueva (ej. fixtures
+    # viejas o un ParsedDemo de una versión anterior de resolve_teams).
+    demo = _demo()
+    demo.rounds = [{"round_num": 0, "tick": 500, "winner_roster": 2}]
+    _persist(session, demo)
+    session.commit()
+
+    rnd = session.get(Round, ("m1", 0))
+    assert rnd.attacker_roster is None

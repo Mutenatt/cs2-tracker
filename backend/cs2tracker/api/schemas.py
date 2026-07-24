@@ -157,6 +157,7 @@ class MapPoolEntry(BaseModel):
     map: str
     matches_played: int
     wins: int
+    losses: int
     avg_kd: float | None
     has_data: bool
 
@@ -177,6 +178,8 @@ class MatchHistoryEntry(BaseModel):
     adr: float
     kd: float
     rating: float
+    hs_pct: float
+    rank_type: int | None = None  # 11 = Premier; otro no-null = Competitivo; None = sin clasificar
 
 
 class MilestoneEntry(BaseModel):
@@ -200,11 +203,32 @@ class RankPoint(BaseModel):
     rank: int | None  # NULL = demo viejo sin re-ingerir; 0 = calibrando
     rank_type: int | None  # 11 = Premier
     comp_wins: int | None
+    # CS Rating resultante de esta partida y su delta (ver profile.rank_history):
+    # el rating de entrada de la partida Premier siguiente. NULL en la última
+    # (todavía sin partida posterior) y en puntos no-Premier/calibrando.
+    rating_after: int | None = None
+    rating_delta: int | None = None
 
 
 class TacticalSnapshot(BaseModel):
     best_map: str | None
     dominant_role: str | None  # "awper" | "entry" | "support" | "rifler"
+
+
+class AccuracyStats(BaseModel):
+    head_pct: float
+    head_hits: int
+    body_pct: float
+    body_hits: int
+    legs_pct: float
+    legs_hits: int
+    hs_pct_series: list[float]  # oldest-first, últimas N partidas
+
+
+class TopWeaponEntry(BaseModel):
+    name: str
+    category: str  # 'rifle' | 'pistol' | 'smg' | 'sniper' | 'shotgun'
+    kills: int
 
 
 class ProfileResponse(BaseModel):
@@ -218,6 +242,13 @@ class ProfileResponse(BaseModel):
     coach_insights: list[CoachInsight]
     rank_history: list[RankPoint]
     tactical_snapshot: TacticalSnapshot
+    accuracy: AccuracyStats
+    top_weapons: list[TopWeaponEntry]
+    # CS Rating Premier vigente consultado en vivo al GC (Capa 2). None si
+    # nunca se pudo (bot no amiga/offline); ahí el frontend cae al rating de
+    # entrada de la última partida (Capa 1). Solo se sirve en el perfil propio.
+    current_premier_rating: int | None = None
+    current_premier_updated_at: str | None = None
 
 
 class BadgeOut(BaseModel):
@@ -230,6 +261,60 @@ class BadgeOut(BaseModel):
 
 class BadgesResponse(BaseModel):
     badges: list[BadgeOut]
+
+
+class ProfileTagOut(BaseModel):
+    tag_id: str
+    detalle: dict | None
+    calculado_en: str
+    ventana_partidas: int
+
+
+class ProfileTagsResponse(BaseModel):
+    tags: list[ProfileTagOut]
+
+
+class RoundEconomyOut(BaseModel):
+    round_num: int
+    steamid: str
+    equip_value: int
+    tipo_compra: str  # 'full_buy' | 'force_buy' | 'semi_eco' | 'eco'
+
+
+class MatchEconomyResponse(BaseModel):
+    rounds: list[RoundEconomyOut]
+
+
+class HighlightMomentOut(BaseModel):
+    match_id: str
+    round_num: int
+    score: int
+    label: str
+    map: str | None
+    demo_available: bool  # False = el .dem ya no está en disco, no se puede clipear
+
+
+class HighlightsResponse(BaseModel):
+    moments: list[HighlightMomentOut]
+
+
+class ClipJobOut(BaseModel):
+    id: int
+    match_id: str
+    round_num: int
+    label: str
+    status: str  # 'pending' | 'rendering' | 'done' | 'error'
+    error: str | None
+    created_at: str
+
+
+class ClipsResponse(BaseModel):
+    clips: list[ClipJobOut]
+
+
+class ClipCreateRequest(BaseModel):
+    match_id: str
+    round_num: int
 
 
 class ClutchEntry(BaseModel):
@@ -266,6 +351,13 @@ class TradeUtilitySummary(BaseModel):
     flash_assists: int
 
 
+class WinrateTogetherSummary(BaseModel):
+    matches_together: int  # solo partidas en el MISMO equipo, resultado resuelto
+    wins: int
+    losses: int
+    win_rate: float  # 0..100
+
+
 class CompareResponse(BaseModel):
     steamid_a: str
     name_a: str | None
@@ -276,6 +368,8 @@ class CompareResponse(BaseModel):
     matches_compared: int
     metrics: list[ComparisonMetric]
     trade_utility: TradeUtilitySummary
+    # None = nunca compartieron equipo (pueden haber sido siempre rivales).
+    winrate_together: WinrateTogetherSummary | None
 
 
 class DuelRosterPlayer(BaseModel):

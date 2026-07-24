@@ -6,10 +6,11 @@ from collections import defaultdict
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -18,8 +19,12 @@ from cs2tracker.api import queries
 from cs2tracker.api.autofetch import router as autofetch_router
 from cs2tracker.api.scene import router as scene_router
 from cs2tracker.api.schemas import (
+    AccuracyStats,
     BadgeOut,
     BadgesResponse,
+    ClipCreateRequest,
+    ClipJobOut,
+    ClipsResponse,
     ClutchEntry,
     ClutchTimelineResponse,
     CoachInsight,
@@ -34,11 +39,14 @@ from cs2tracker.api.schemas import (
     FriendlyFireSummary,
     HeatmapCell,
     HeatmapResponse,
+    HighlightMomentOut,
+    HighlightsResponse,
     KillPoint,
     KillsResponse,
     LifetimeStats,
     MapPoolEntry,
     MatchDetail,
+    MatchEconomyResponse,
     MatchesPerDayEntry,
     MatchHistoryEntry,
     MatchSummary,
@@ -54,17 +62,22 @@ from cs2tracker.api.schemas import (
     PlayerRow,
     PlayerWeapons,
     ProfileResponse,
+    ProfileTagOut,
+    ProfileTagsResponse,
     RankPoint,
     RivalsResponse,
     RivalSummary,
+    RoundEconomyOut,
     TacticalSnapshot,
     TeamScore,
     TopMapEntry,
+    TopWeaponEntry,
     TradeUtilitySummary,
     UserOut,
     UtilityHeatmapResponse,
     WeaponsResponse,
     WeaponStat,
+    WinrateTogetherSummary,
 )
 from cs2tracker.auth import (
     COOKIE_NAME,
@@ -78,6 +91,7 @@ from cs2tracker.auth import (
 )
 from cs2tracker.config import settings
 from cs2tracker.db import (
+    ClipJob,
     Damage,
     Kill,
     Match,
@@ -86,6 +100,7 @@ from cs2tracker.db import (
     PlayerMapZone,
     PlayerMatchStats,
     Round,
+    RoundEconomy,
     User,
     init_db,
 )
@@ -93,6 +108,7 @@ from cs2tracker.db.session import get_engine
 from cs2tracker.domain import badges as badges_domain
 from cs2tracker.domain import coach as coach_domain
 from cs2tracker.domain import duels as duels_domain
+from cs2tracker.domain import economia as economia_domain
 from cs2tracker.domain import monthly as monthly_domain
 from cs2tracker.domain import profile as profile_domain
 from cs2tracker.domain import roles as roles_domain
@@ -712,6 +728,11 @@ def player_compare(
                 trade_kills=queries.lifetime_trade_kills(s, steamid_a),
                 flash_assists=queries.flash_assist_count(s, steamid_a),
             ),
+            winrate_together=(
+                WinrateTogetherSummary(**wt)
+                if (wt := queries.winrate_conjunto(s, steamid_a, steamid_b)) is not None
+                else None
+            ),
         )
 
 
@@ -744,17 +765,246 @@ def player_profile(
             dominant_role=roles_domain.dominant_role(**queries.role_inputs(s, steamid)),
         )
 
+        # AccuracyPanel: ventana de últimas 16 partidas (no lifetime, a
+        # diferencia de top_weapons), oldest-first para el sparkline.
+        hs_pct_series = [h["hs_pct"] for h in reversed(history[:16])]
+        accuracy = profile_domain.accuracy_stats(
+            queries.recent_hitgroup_counts(s, steamid), hs_pct_series
+        )
+        top_weapons_list = profile_domain.top_weapons(queries.lifetime_weapon_kills(s, steamid))
+
         return ProfileResponse(
             steamid=steamid,
             display_name=(user.display_name if user else None) or (player.name if player else None),
             avatar_url=user.avatar_url if user else None,
             lifetime=LifetimeStats(**lifetime),
-            match_history=[MatchHistoryEntry(**h) for h in history[:20]],
+            match_history=[MatchHistoryEntry(**h) for h in history[:200]],
             map_pool=[MapPoolEntry(**mp) for mp in pool],
             milestones=[MilestoneEntry(**m) for m in ms],
             coach_insights=coach_insights,
             rank_history=[RankPoint(**p) for p in rank_hist],
             tactical_snapshot=snapshot,
+            accuracy=AccuracyStats(**accuracy),
+            top_weapons=[TopWeaponEntry(**w) for w in top_weapons_list],
+            # Rating vivo del GC solo en el perfil propio (es dato consultado
+            # para ese usuario, no scouting de terceros).
+            current_premier_rating=(
+                user.current_premier_rating if user and viewer == steamid else None
+            ),
+            current_premier_updated_at=(
+                user.current_premier_updated_at if user and viewer == steamid else None
+            ),
+        )
+
+
+@app.get("/matches/{match_id}/economy", response_model=MatchEconomyResponse)
+def match_economy(
+    match_id: str, viewer: str = Depends(get_current_steamid)
+) -> MatchEconomyResponse:
+    """Economía por jugador por ronda (equip value post-compra + tipo de
+    compra derivado). Vacío en partidas ingeridas antes de round_economy
+    (re-ingerir con --force). Misma visibilidad que el resto del match."""
+    with Session(get_engine()) as s:
+        _authorize_match(s, viewer, match_id)
+        rows = (
+            s.execute(
+                select(RoundEconomy)
+                .where(RoundEconomy.match_id == match_id)
+                .order_by(RoundEconomy.round_num)
+            )
+            .scalars()
+            .all()
+        )
+        return MatchEconomyResponse(
+            rounds=[
+                RoundEconomyOut(
+                    round_num=r.round_num,
+                    steamid=r.steamid,
+                    equip_value=r.equip_value,
+                    tipo_compra=economia_domain.clasificar_tipo_compra(r.equip_value),
+                )
+                for r in rows
+            ]
+        )
+
+
+@app.get("/players/{steamid}/profile-tags", response_model=ProfileTagsResponse)
+def player_profile_tags(
+    steamid: str, viewer: str = Depends(get_current_steamid)
+) -> ProfileTagsResponse:
+    """Lectura del cache de tags de perfil (ver
+    queries.recompute_profile_tags -- se recalcula al ingerir, no acá).
+    Mismo modelo de autorización que el resto del perfil: alcanza con
+    compartir una partida con el dueño, no hace falta ser el dueño (es un
+    perfil de scouting, no un dato privado)."""
+    with Session(get_engine()) as s:
+        _authorize_view(s, viewer, steamid)
+        tags = queries.profile_tags_for(s, steamid)
+        return ProfileTagsResponse(
+            tags=[
+                ProfileTagOut(
+                    tag_id=t.tag_id,
+                    detalle=t.detalle,
+                    calculado_en=t.calculado_en,
+                    ventana_partidas=t.ventana_partidas,
+                )
+                for t in tags
+            ]
+        )
+
+
+def _find_demo(demo_file: str) -> Path | None:
+    """Busca el .dem por nombre bajo demos_dir (los de autofetch viven en
+    un subdirectorio). None = ya no está en disco (retención/limpieza) y
+    el clip no se puede generar."""
+    for p in settings.demos_dir.rglob(demo_file):
+        return p
+    return None
+
+
+def _render_clip_job(job_id: int) -> None:
+    """BackgroundTask: renderiza el clip del job y actualiza su estado.
+    Sesión propia (corre después de que el request cerró la suya)."""
+    from cs2tracker.infra import clips as clips_infra
+
+    with Session(get_engine()) as s:
+        job = s.get(ClipJob, job_id)
+        if job is None:
+            return
+        m = s.get(Match, job.match_id)
+        player = s.get(Player, job.steamid)
+        dem = _find_demo(m.demo_file) if m else None
+        if m is None or m.map is None or dem is None:
+            job.status, job.error = "error", "demo no disponible en disco"
+            s.commit()
+            return
+        job.status = "rendering"
+        s.commit()
+        settings.clips_dir.mkdir(parents=True, exist_ok=True)
+        out = settings.clips_dir / f"clip_{job.id}_{job.match_id}_r{job.round_num}.mp4"
+        try:
+            clips_infra.render_clip(
+                dem_path=dem,
+                map_name=m.map,
+                round_num=job.round_num,
+                steamid=job.steamid,
+                label=job.label,
+                player_name=(player.name if player else None) or job.steamid,
+                out_path=out,
+            )
+        except Exception as exc:  # noqa: BLE001 -- el error se persiste, no se pierde
+            job.status, job.error = "error", str(exc)
+        else:
+            job.status, job.file_path = "done", str(out)
+        s.commit()
+
+
+@app.get("/players/{steamid}/highlights", response_model=HighlightsResponse)
+def player_highlights(
+    steamid: str, viewer: str = Depends(get_current_steamid)
+) -> HighlightsResponse:
+    """Momentos clipeables del usuario (privado, como monthly: los clips
+    son SU contenido para SUS redes, no scouting)."""
+    _authorize_self(viewer, steamid)
+    with Session(get_engine()) as s:
+        moments = queries.highlight_moments(s, steamid)
+        return HighlightsResponse(
+            moments=[
+                HighlightMomentOut(
+                    match_id=m["match_id"],
+                    round_num=m["round_num"],
+                    score=m["score"],
+                    label=m["label"],
+                    map=m["map"],
+                    demo_available=bool(m["demo_file"] and _find_demo(m["demo_file"])),
+                )
+                for m in moments
+            ]
+        )
+
+
+@app.post("/players/{steamid}/clips", response_model=ClipJobOut)
+def create_clip(
+    steamid: str,
+    body: ClipCreateRequest,
+    background: BackgroundTasks,
+    viewer: str = Depends(get_current_steamid),
+) -> ClipJobOut:
+    _authorize_self(viewer, steamid)
+    with Session(get_engine()) as s:
+        # Solo momentos detectados: evita renders arbitrarios de cualquier
+        # ronda (costo de CPU) y garantiza que el label sea real.
+        moment = next(
+            (
+                m
+                for m in queries.highlight_moments(s, steamid)
+                if m["match_id"] == body.match_id and m["round_num"] == body.round_num
+            ),
+            None,
+        )
+        if moment is None:
+            raise HTTPException(404, "ese momento no está entre tus highlights")
+        job = ClipJob(
+            steamid=steamid,
+            match_id=body.match_id,
+            round_num=body.round_num,
+            label=moment["label"],
+            status="pending",
+            created_at=datetime.now(UTC).isoformat(),
+        )
+        s.add(job)
+        s.commit()
+        s.refresh(job)
+        background.add_task(_render_clip_job, job.id)
+        return ClipJobOut(
+            id=job.id,
+            match_id=job.match_id,
+            round_num=job.round_num,
+            label=job.label,
+            status=job.status,
+            error=None,
+            created_at=job.created_at,
+        )
+
+
+@app.get("/players/{steamid}/clips", response_model=ClipsResponse)
+def list_clips(steamid: str, viewer: str = Depends(get_current_steamid)) -> ClipsResponse:
+    _authorize_self(viewer, steamid)
+    with Session(get_engine()) as s:
+        jobs = (
+            s.execute(select(ClipJob).where(ClipJob.steamid == steamid).order_by(ClipJob.id.desc()))
+            .scalars()
+            .all()
+        )
+        return ClipsResponse(
+            clips=[
+                ClipJobOut(
+                    id=j.id,
+                    match_id=j.match_id,
+                    round_num=j.round_num,
+                    label=j.label,
+                    status=j.status,
+                    error=j.error,
+                    created_at=j.created_at,
+                )
+                for j in jobs
+            ]
+        )
+
+
+@app.get("/clips/{job_id}/download")
+def download_clip(job_id: int, viewer: str = Depends(get_current_steamid)) -> FileResponse:
+    with Session(get_engine()) as s:
+        job = s.get(ClipJob, job_id)
+        if job is None or job.steamid != viewer:
+            # 404 también para clips ajenos: no filtrar su existencia.
+            raise HTTPException(404, "clip no encontrado")
+        if job.status != "done" or not job.file_path:
+            raise HTTPException(409, f"clip no listo (estado: {job.status})")
+        return FileResponse(
+            job.file_path,
+            media_type="video/mp4",
+            filename=f"cstats_{job.label.replace(' ', '_')}_r{job.round_num + 1}.mp4",
         )
 
 

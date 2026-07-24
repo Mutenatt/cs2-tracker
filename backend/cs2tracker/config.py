@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Carpeta que vigila FolderSource (Camino 1).
     demos_dir: Path = Path("demos")
 
+    # Salida de clips renderizados (MP4, gitignored -- regenerables).
+    clips_dir: Path = Path("clips")
+
     # Submuestreo de posiciones (Fase 3): 1 de cada N ticks.
     positions_tick_stride: int = 16
 

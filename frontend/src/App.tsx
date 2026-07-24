@@ -6,7 +6,8 @@ import { Topbar } from "./components/Topbar";
 import { ROUTE_FADE } from "./components/motion/presets";
 import { UserContext } from "./context/UserContext";
 import { HomeView } from "./views/HomeView";
-import { LoginView } from "./views/LoginView";
+import { LandingView } from "./views/LandingView";
+import { LineUps } from "./views/LineUps";
 import { MatchDetailView } from "./views/MatchDetailView";
 import { ProfileView } from "./views/ProfileView";
 import type { User } from "./types";
@@ -41,7 +42,7 @@ export function App() {
     );
   }
   if (user === undefined) return <div className="wrap center">Cargando…</div>;
-  if (user === null) return <LoginView />;
+  if (user === null) return <LandingView />;
 
   const handleLogout = async () => {
     await logout();
@@ -62,6 +63,7 @@ export function App() {
           >
             <Routes location={location}>
               <Route path="/" element={<HomeView />} />
+              <Route path="/lineups" element={<LineUps />} />
               <Route path="/profile/:steamid" element={<ProfileView />} />
               <Route path="/match/:matchId" element={<MatchDetailView />} />
             </Routes>

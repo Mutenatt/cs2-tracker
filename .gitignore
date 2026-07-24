@@ -5,6 +5,7 @@
 *.sqlite
 *.sqlite-journal
 *.db
+clips/
 
 # Secretos / config local
 .env
