@@ -227,8 +227,37 @@ class AccuracyStats(BaseModel):
 
 class TopWeaponEntry(BaseModel):
     name: str
-    category: str  # 'rifle' | 'pistol' | 'smg' | 'sniper' | 'shotgun'
+    category: str  # 'rifle' | 'pistol' | 'smg' | 'sniper' | 'shotgun' | 'heavy'
     kills: int
+
+
+class WeaponDetailEntry(BaseModel):
+    name: str
+    category: str  # ídem TopWeaponEntry, + 'melee'
+    kills: int
+    deaths: int
+    hs_pct: float
+    adr: float
+    kills_per_round: float
+    longest_kill_m: float
+
+
+class LoadoutTierStats(BaseModel):
+    tier: str  # 'pistol' | 'full_buy' | 'semi_buy' | 'eco'
+    rounds: int
+    kills: int
+    deaths: int
+    kd: float
+    adr: float
+    acs: float  # aproximación propia -- ver domain/loadouts.py
+    dd: float  # DDΔ: ADR de este tier menos el ADR lifetime del jugador
+    kast_pct: float
+    esr_pct: float  # entry success rate
+
+
+class WeaponsPageResponse(BaseModel):
+    weapons: list[WeaponDetailEntry]
+    loadouts: list[LoadoutTierStats]
 
 
 class ProfileResponse(BaseModel):

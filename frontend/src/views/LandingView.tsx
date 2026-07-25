@@ -14,9 +14,6 @@ export function LandingView() {
           <motion.span className="dot" variants={livePulse} animate="pulse" />
           <span>Datos en vivo</span>
         </div>
-        <Button as="a" href={loginUrl()} className="landing-topbar-cta">
-          Iniciar con Steam
-        </Button>
       </div>
 
       <div className="landing-hero">
@@ -24,17 +21,15 @@ export function LandingView() {
           Estadísticas y trackeo de rendimiento, <span>con tus clutches listos para subir</span>
         </h1>
         <p className="landing-hero-sub">
-          cStats analiza cada demo de CS2, extrae tus métricas de rendimiento y detecta
-          automáticamente tus clutches y duelos clave — recortados y listos para publicar.
+          Soñar con jugar profesional es fácil. Ser lo suficientemente crítico con vos mismo para
+          lograrlo, no tanto.
         </p>
+        <span className="landing-hero-kicker">Empezá el camino a tu sueño</span>
         <div className="landing-hero-ctas">
           <Button as="a" href={loginUrl()} className="landing-hero-cta">
             Iniciar sesión con Steam
           </Button>
         </div>
-        <a href="#demo" className="landing-anchor-link">
-          Ver cómo funciona ↓
-        </a>
       </div>
 
       <div id="demo" className="landing-section">
@@ -65,27 +60,25 @@ export function LandingView() {
             </p>
           </Card>
           <Card className="landing-feature-card">
-            <div className="landing-feature-icon landing-feature-icon-signal">
-              <span className="landing-feature-icon-vs">VS</span>
+            <span className="landing-feature-pro-badge">Pro · Próximamente</span>
+            <div className="landing-feature-icon landing-feature-icon-gold">
+              <span className="landing-feature-icon-play" />
             </div>
-            <div className="landing-feature-title">Head-to-head narrable</div>
+            <div className="landing-feature-title">Clip 2D de tu radar</div>
             <p className="landing-feature-desc">
-              La matriz de duelos contra cada rival, con arma y distancia. Material listo para
-              contarle la historia de la ronda a tu chat.
+              Cada ACE, multi-kill o clutch se detecta solo y se renderiza en video vertical con el
+              radar, las posiciones y el killfeed — sin tocar un editor.
             </p>
           </Card>
           <Card className="landing-feature-card">
-            <div className="landing-feature-icon landing-feature-icon-recon">
-              <span className="landing-feature-icon-bars">
-                <span />
-                <span />
-                <span />
-              </span>
+            <span className="landing-feature-pro-badge">Pro · Próximamente</span>
+            <div className="landing-feature-icon landing-feature-icon-go">
+              <span className="landing-feature-icon-phone" />
             </div>
-            <div className="landing-feature-title">Rank history en vivo</div>
+            <div className="landing-feature-title">Recortes listos para tu feed</div>
             <p className="landing-feature-desc">
-              Mostrale a tu comunidad la curva completa de tu Premier Rating, partida a partida — tu
-              propia narrativa de progreso.
+              Bajá el clip en vertical (TikTok/Reels/Shorts) apenas termina de renderizar. Tu
+              nombre, el mapa y la ronda ya vienen encima — subilo tal cual.
             </p>
           </Card>
         </div>
@@ -118,7 +111,9 @@ export function LandingView() {
           <br />
           Solo falta encontrarlo.
         </h2>
-        <p className="landing-final-cta-sub">Sin tarjeta. Sin publicidad. Tus datos son tuyos.</p>
+        <p className="landing-final-cta-sub">
+          Perfecciona tu gameplay con cStats y comparti al mundo tus momentos más destacados.{" "}
+        </p>
         <Button as="a" href={loginUrl()} className="landing-hero-cta">
           Iniciar sesión con Steam
         </Button>

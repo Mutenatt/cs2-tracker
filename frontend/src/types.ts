@@ -163,12 +163,43 @@ export interface AccuracyStats {
   hs_pct_series: number[]; // oldest-first, últimas N partidas
 }
 
-export type WeaponCategory = "rifle" | "pistol" | "smg" | "sniper" | "shotgun";
+export type WeaponCategory = "rifle" | "pistol" | "smg" | "sniper" | "shotgun" | "heavy" | "melee";
 
 export interface TopWeaponEntry {
   name: string;
   category: WeaponCategory;
   kills: number;
+}
+
+export interface WeaponDetailEntry {
+  name: string;
+  category: WeaponCategory;
+  kills: number;
+  deaths: number;
+  hs_pct: number;
+  adr: number;
+  kills_per_round: number;
+  longest_kill_m: number;
+}
+
+export type LoadoutTier = "pistol" | "full_buy" | "semi_buy" | "eco";
+
+export interface LoadoutTierStats {
+  tier: LoadoutTier;
+  rounds: number;
+  kills: number;
+  deaths: number;
+  kd: number;
+  adr: number;
+  acs: number;
+  dd: number;
+  kast_pct: number;
+  esr_pct: number;
+}
+
+export interface WeaponsPageResponse {
+  weapons: WeaponDetailEntry[];
+  loadouts: LoadoutTierStats[];
 }
 
 export interface ProfileResponse {

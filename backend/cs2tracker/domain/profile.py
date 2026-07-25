@@ -41,26 +41,36 @@ WEAPON_CATEGORY: dict[str, str] = {
     "bizon": "smg",
     "p90": "smg",
     "ump45": "smg",
-    "negev": "smg",  # no hay categoría "lmg" en el diseño; fallback razonable
     "mag7": "shotgun",
     "nova": "shotgun",
     "sawedoff": "shotgun",
     "xm1014": "shotgun",
+    "negev": "heavy",
+    "m249": "heavy",
 }
+
+# Cuchillos: excluidos de WEAPON_CATEGORY/top_weapons (no son "arma
+# principal" para el resto de la app), pero la landing de armas nueva
+# (domain/profile.py::weapon_breakdown) SÍ los muestra en su tab "Melee".
+MELEE_WEAPONS = {"knife", "knife_falchion", "knife_kukri", "knife_t"}
 
 # Causas de muerte/daño que no representan un arma de fuego -- se excluyen
 # de top_weapons (un cuchillazo o una caída no es un "arma principal").
-_NON_WEAPON_CAUSES = {
-    "knife",
-    "knife_falchion",
-    "knife_kukri",
-    "knife_t",
+_NON_WEAPON_CAUSES = MELEE_WEAPONS | {
     "hegrenade",
     "inferno",
     "world",
     "taser",
     "planted_c4",
 }
+
+# Causas de muerte/daño que tampoco son "un arma" en weapon_breakdown, pero
+# a diferencia de _NON_WEAPON_CAUSES NO incluye cuchillo (ver MELEE_WEAPONS).
+_ENV_CAUSES = _NON_WEAPON_CAUSES - MELEE_WEAPONS
+
+# Conversión de unidades Hammer/Source (las que trae crudo demoparser2 en
+# kills.distance) a metros: 1 unit = 0.75 pulgadas = 0.01905 m.
+HAMMER_UNIT_TO_METERS = 0.01905
 
 # Bucketing de hitgroups crudos (ver damages.hitgroup) a las 3 zonas de la
 # silueta de AccuracyPanel. "neck" y "generic" no tienen polígono propio en
@@ -113,6 +123,58 @@ def top_weapons(kill_weapon_counts: dict[str, int]) -> list[dict]:
     ]
     rows.sort(key=lambda r: -r["kills"])
     return rows[:3]
+
+
+def _category_for(weapon: str) -> str:
+    if weapon in MELEE_WEAPONS:
+        return "melee"
+    return WEAPON_CATEGORY.get(weapon, "rifle")
+
+
+def weapon_breakdown(
+    kills_by: list[dict],
+    deaths_by: list[dict],
+    damage_by: dict[str, int],
+    rounds_played: int,
+) -> list[dict]:
+    """Detalle COMPLETO por arma (a diferencia de top_weapons, que corta en
+    3 y excluye cuchillo): kills, deaths, HS%, ADR, kills por ronda y
+    distancia de kill más larga (en metros). `kills_by`: kills que hizo el
+    jugador, [{"weapon","headshot","distance"}]. `deaths_by`: kills que le
+    hicieron A ÉL, [{"weapon"}] (solo importa con qué lo mataron).
+    `damage_by`: daño total infligido por arma, {weapon: dmg_health}.
+    Devuelve todas las armas que aparezcan en kills/deaths/daño, INCLUYE
+    cuchillo (categoría "melee") -- a diferencia de top_weapons/badges, acá
+    sí se muestra (ver landing de armas, tab Melee)."""
+    weapons = {k["weapon"] for k in kills_by if k.get("weapon")}
+    weapons |= {d["weapon"] for d in deaths_by if d.get("weapon")}
+    weapons |= {w for w in damage_by if w}
+    weapons -= _ENV_CAUSES
+
+    rows = []
+    for w in weapons:
+        wk = [k for k in kills_by if k.get("weapon") == w]
+        kills = len(wk)
+        hs = sum(1 for k in wk if k.get("headshot"))
+        deaths = sum(1 for d in deaths_by if d.get("weapon") == w)
+        dmg = damage_by.get(w, 0)
+        distances = [k["distance"] for k in wk if k.get("distance")]
+        rows.append(
+            {
+                "name": w,
+                "category": _category_for(w),
+                "kills": kills,
+                "deaths": deaths,
+                "hs_pct": round(100.0 * hs / kills, 1) if kills else 0.0,
+                "adr": round(dmg / rounds_played, 1) if rounds_played else 0.0,
+                "kills_per_round": round(kills / rounds_played, 2) if rounds_played else 0.0,
+                "longest_kill_m": (
+                    round(max(distances) * HAMMER_UNIT_TO_METERS, 1) if distances else 0.0
+                ),
+            }
+        )
+    rows.sort(key=lambda r: -r["kills"])
+    return rows
 
 
 def lifetime_stats(history: list[dict]) -> dict:

@@ -1458,11 +1458,14 @@ footer {
   border-radius: 6px;
   padding: 8px;
   cursor: default;
+  text-decoration: none;
 }
-button.panel-cta {
+button.panel-cta,
+a.panel-cta {
   cursor: pointer;
 }
-button.panel-cta:hover {
+button.panel-cta:hover,
+a.panel-cta:hover {
   border-color: var(--recon);
   color: var(--recon);
 }
@@ -2453,6 +2456,16 @@ button.map-pool-card.lineup-map-card {
   background: var(--recon);
   border-color: var(--recon);
 }
+.lineup-filter-side.active-t {
+  color: var(--ink);
+  background: var(--signal);
+  border-color: var(--signal);
+}
+.lineup-filter-side.active-ct {
+  color: var(--ink);
+  background: var(--recon);
+  border-color: var(--recon);
+}
 
 .lineup-grid {
   display: grid;
@@ -2501,7 +2514,7 @@ button.map-pool-card.lineup-map-card {
   color: var(--alert);
   background: color-mix(in srgb, var(--alert) 15%, transparent);
 }
-.lineup-tag-boost {
+.lineup-tag-he {
   color: var(--go);
   background: color-mix(in srgb, var(--go) 15%, transparent);
 }
@@ -2555,6 +2568,171 @@ button.map-pool-card.lineup-map-card {
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 11.5px;
+}
+
+/* ---------- landing de armas (Loadouts + Weapons, estilo tracker.gg) ---------- */
+.loadout-table {
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+.loadout-row {
+  display: grid;
+  grid-template-columns: 1.7fr repeat(8, 0.85fr);
+  align-items: center;
+  gap: 4px;
+  min-width: 620px;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  text-align: center;
+}
+.loadout-row:last-child {
+  border-bottom: none;
+}
+.loadout-head {
+  color: var(--text-faint);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--line);
+}
+.loadout-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+.loadout-name-label {
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.loadout-name-sub {
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+.loadout-dd-pos {
+  color: var(--go);
+}
+.loadout-dd-neg {
+  color: var(--alert);
+}
+
+.weapons-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.weapons-hero-card {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.weapon-rank-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: var(--ink);
+}
+.weapon-rank-badge.rank-1 {
+  background: var(--gold);
+}
+.weapon-rank-badge.rank-2 {
+  background: #c7cdd6;
+}
+.weapon-rank-badge.rank-3 {
+  background: #c98a52;
+}
+.weapons-hero-name {
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  text-transform: uppercase;
+}
+.weapons-hero-stats {
+  display: flex;
+  gap: 22px;
+}
+.weapons-hero-stats b {
+  display: block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 18px;
+}
+.weapons-hero-stats span {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.weapons-table {
+  overflow-x: auto;
+  margin-top: 4px;
+}
+.weapons-table-row {
+  display: grid;
+  grid-template-columns: 2.2fr repeat(6, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 640px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  font-size: 12.5px;
+}
+.weapons-table-row:last-child {
+  border-bottom: none;
+}
+.weapons-table-weapon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+.weapons-table-head {
+  padding-bottom: 6px;
+}
+.weapons-table-sort {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0;
+}
+.weapons-table-sort:hover {
+  color: var(--text-dim);
+}
+.weapons-table-sort.active {
+  color: var(--recon);
+}
+.weapons-table-sort-arrow {
+  font-size: 9px;
+}
+
+@media (max-width: 760px) {
+  .weapons-hero-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---------- home: bento news grid ---------- */
@@ -3156,6 +3334,26 @@ button.map-pool-card.lineup-map-card {
    diseñado contra CS2OPS. Los overrides sobre .cs-logo/.cs-btn quedan
    scopeados bajo .landing-view para no tocar Topbar/nav ya shippeados.
    ===================================================================== */
+
+/* Fondo fijo difuminado (captura de mapa CS2) detrás de toda la landing.
+   ::before en vez de background-image directo en .landing-view: así el
+   blur/scale no afecta el contenido, solo la imagen -- .landing-view
+   necesita "isolation" para que el z-index negativo quede contenido en su
+   propio stacking context y no se cuele detrás del body. */
+.landing-view {
+  position: relative;
+  isolation: isolate;
+}
+.landing-view::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("/fondo/landing-bg.jpg") center / cover no-repeat;
+  filter: blur(6px) brightness(0.35);
+  transform: scale(1.1); /* tapa el borde nítido que deja el blur */
+  z-index: -1;
+}
+
 .landing-view .cs-logo {
   font-family: "Oswald", "Arial Narrow", sans-serif;
   font-weight: 600;
@@ -3243,15 +3441,14 @@ button.map-pool-card.lineup-map-card {
 .landing-view .cs-btn.landing-hero-cta:hover {
   background: color-mix(in srgb, var(--recon) 82%, white);
 }
-.landing-anchor-link {
+.landing-hero-kicker {
+  display: block;
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;
-  letter-spacing: 0.05em;
-  color: var(--text-dim);
-  text-decoration: none;
-}
-.landing-anchor-link:hover {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--recon);
+  margin-bottom: 14px;
 }
 
 /* ---------- landing: secciones genéricas ---------- */
@@ -3313,10 +3510,25 @@ button.map-pool-card.lineup-map-card {
   gap: 16px;
 }
 .landing-view .cs-card.landing-feature-card {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 24px;
+}
+.landing-feature-pro-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--gold);
+  border-radius: 20px;
+  padding: 3px 9px;
 }
 .landing-feature-icon {
   width: 38px;
@@ -3336,6 +3548,12 @@ button.map-pool-card.lineup-map-card {
 }
 .landing-feature-icon-recon {
   border-color: var(--recon);
+}
+.landing-feature-icon-gold {
+  border-color: var(--gold);
+}
+.landing-feature-icon-go {
+  border-color: var(--go);
 }
 .landing-feature-icon-dot {
   width: 14px;
@@ -3367,6 +3585,20 @@ button.map-pool-card.lineup-map-card {
 }
 .landing-feature-icon-bars span:nth-child(3) {
   height: 11px;
+}
+.landing-feature-icon-play {
+  width: 0;
+  height: 0;
+  margin-left: 3px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 12px solid var(--gold);
+}
+.landing-feature-icon-phone {
+  width: 13px;
+  height: 20px;
+  border: 2px solid var(--go);
+  border-radius: 3px;
 }
 .landing-feature-title {
   font-family: "Oswald", "Arial Narrow", sans-serif;

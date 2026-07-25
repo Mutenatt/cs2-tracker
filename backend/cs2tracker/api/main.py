@@ -44,6 +44,7 @@ from cs2tracker.api.schemas import (
     KillPoint,
     KillsResponse,
     LifetimeStats,
+    LoadoutTierStats,
     MapPoolEntry,
     MatchDetail,
     MatchEconomyResponse,
@@ -75,6 +76,8 @@ from cs2tracker.api.schemas import (
     TradeUtilitySummary,
     UserOut,
     UtilityHeatmapResponse,
+    WeaponDetailEntry,
+    WeaponsPageResponse,
     WeaponsResponse,
     WeaponStat,
     WinrateTogetherSummary,
@@ -109,6 +112,7 @@ from cs2tracker.domain import badges as badges_domain
 from cs2tracker.domain import coach as coach_domain
 from cs2tracker.domain import duels as duels_domain
 from cs2tracker.domain import economia as economia_domain
+from cs2tracker.domain import loadouts as loadouts_domain
 from cs2tracker.domain import monthly as monthly_domain
 from cs2tracker.domain import profile as profile_domain
 from cs2tracker.domain import roles as roles_domain
@@ -794,6 +798,35 @@ def player_profile(
             current_premier_updated_at=(
                 user.current_premier_updated_at if user and viewer == steamid else None
             ),
+        )
+
+
+@app.get("/players/{steamid}/weapons-detail", response_model=WeaponsPageResponse)
+def player_weapons_detail(
+    steamid: str,
+    viewer: str = Depends(get_current_steamid),
+) -> WeaponsPageResponse:
+    """Landing de armas completa (estilo tracker.gg): detalle por arma
+    (incluye cuchillo, a diferencia de ProfileResponse.top_weapons) y
+    agregado LOADOUTS por tipo de compra. Misma visibilidad que el resto
+    del perfil (pertenencia, no ownership)."""
+    with Session(get_engine()) as s:
+        _authorize_view(s, viewer, steamid)
+
+        rounds_played = queries.lifetime_rounds_played(s, steamid)
+        wb_inputs = queries.weapon_breakdown_inputs(s, steamid)
+        weapons = profile_domain.weapon_breakdown(
+            wb_inputs["kills_by"], wb_inputs["deaths_by"], wb_inputs["damage_by"], rounds_played
+        )
+
+        history = queries.match_history(s, steamid)
+        lifetime_adr = profile_domain.lifetime_stats(history)["avg_adr"]
+        loadout_rows = queries.loadout_breakdown_inputs(s, steamid)
+        loadouts = loadouts_domain.aggregate_loadout_stats(loadout_rows, lifetime_adr)
+
+        return WeaponsPageResponse(
+            weapons=[WeaponDetailEntry(**w) for w in weapons],
+            loadouts=[LoadoutTierStats(**t) for t in loadouts],
         )
 
 

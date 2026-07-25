@@ -19,6 +19,7 @@ import type {
   StreamsResponse,
   TeamRankingResponse,
   User,
+  WeaponsPageResponse,
   WeaponsResponse,
 } from "./types";
 
@@ -107,6 +108,12 @@ export async function getLatamStreams(): Promise<StreamsResponse> {
 export async function getProfile(steamid: string): Promise<ProfileResponse> {
   const r = await fetch(`${BASE}/players/${steamid}/profile`);
   if (!r.ok) throw new Error(`GET profile -> ${r.status}`);
+  return r.json();
+}
+
+export async function getWeaponsDetail(steamid: string): Promise<WeaponsPageResponse> {
+  const r = await fetch(`${BASE}/players/${steamid}/weapons-detail`);
+  if (!r.ok) throw new Error(`GET weapons-detail -> ${r.status}`);
   return r.json();
 }
 

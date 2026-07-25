@@ -109,6 +109,40 @@ def find_trade_kills(
     return result
 
 
+def kast_rounds_for_player(
+    kills: Iterable[dict],
+    teams: dict[str, int],
+    steamid: str,
+    trade_ticks: int = DEFAULT_TRADE_TICKS,
+) -> set[int]:
+    """round_num de las rondas donde `steamid` tuvo Kill/Assist/Survived o
+    fue Traded, de UNA partida. Misma lógica que compute_kast, pero para un
+    solo jugador y devolviendo el set de rondas en vez del %agregado de
+    todos -- lo usa domain/loadouts.py vía api/queries.py para bucketear
+    KAST por tipo de compra (necesita saber EN QUÉ rondas, no solo cuántas)."""
+    by_round: dict[int, list[dict]] = {}
+    for k in kills:
+        by_round.setdefault(k.get("round_num"), []).append(k)
+
+    out: set[int] = set()
+    for rnd, rk in by_round.items():
+        if rnd is None:
+            continue
+        got_kill = any(k.get("attacker") == steamid for k in rk)
+        got_assist = any(k.get("assister") == steamid for k in rk)
+        died = any(k.get("victim") == steamid for k in rk)
+        ok = got_kill or got_assist or not died
+        if not ok:
+            death = next(k for k in rk if k.get("victim") == steamid)
+            killer = death.get("attacker")
+            dtick = death.get("tick") or 0
+            team = teams.get(steamid)
+            ok = _was_traded(killer, dtick, team, rk, teams, trade_ticks)
+        if ok:
+            out.add(rnd)
+    return out
+
+
 def compute_kast(
     kills: Iterable[dict],
     teams: dict[str, int],

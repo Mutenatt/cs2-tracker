@@ -31,6 +31,8 @@ from cs2tracker.db import (
 from cs2tracker.domain import economia as economia_domain
 from cs2tracker.domain import find_flash_assists
 from cs2tracker.domain import highlights as highlights_domain
+from cs2tracker.domain import kast as kast_domain
+from cs2tracker.domain import loadouts as loadouts_domain
 from cs2tracker.domain import lurker as lurker_domain
 from cs2tracker.domain import percentiles as percentiles_domain
 from cs2tracker.domain import social as social_domain
@@ -179,6 +181,154 @@ def lifetime_weapon_kills(s: Session, steamid: str) -> dict[str, int]:
         .group_by(Kill.weapon)
     ).all()
     return {weapon: count for weapon, count in rows if weapon}
+
+
+def lifetime_rounds_played(s: Session, steamid: str) -> int:
+    """Suma de Match.n_rounds de todas las partidas del jugador -- el
+    denominador de ADR/kills-por-ronda en domain/profile.py::
+    weapon_breakdown y del ADR lifetime que alimenta DDΔ en loadouts."""
+    return (
+        s.scalar(
+            select(func.coalesce(func.sum(Match.n_rounds), 0))
+            .select_from(MatchPlayer)
+            .join(Match, Match.match_id == MatchPlayer.match_id)
+            .where(MatchPlayer.steamid == steamid)
+        )
+        or 0
+    )
+
+
+def weapon_breakdown_inputs(s: Session, steamid: str) -> dict:
+    """Kills/deaths/daño lifetime por arma, para domain/profile.py::
+    weapon_breakdown. Se lee de player_map_events en vez de kills/damages
+    crudas: esa tabla ya denormaliza weapon/headshot/distance tanto en la
+    fila 'kill' del atacante como en la fila 'death' de la víctima (mismo
+    evento de kill, ver ingest.py) -- da kills Y deaths por arma sin
+    cruzar attacker/victim a mano como sí hace lifetime_weapon_kills."""
+    kills_by = [
+        {"weapon": w, "headshot": bool(hs), "distance": d}
+        for w, hs, d in s.execute(
+            select(PlayerMapEvent.weapon, PlayerMapEvent.headshot, PlayerMapEvent.distance).where(
+                PlayerMapEvent.steamid == steamid, PlayerMapEvent.event_type == "kill"
+            )
+        ).all()
+    ]
+    deaths_by = [
+        {"weapon": w}
+        for (w,) in s.execute(
+            select(PlayerMapEvent.weapon).where(
+                PlayerMapEvent.steamid == steamid, PlayerMapEvent.event_type == "death"
+            )
+        ).all()
+    ]
+    damage_by = {
+        w: int(dmg)
+        for w, dmg in s.execute(
+            select(Damage.weapon, func.coalesce(func.sum(Damage.dmg_health), 0))
+            .where(Damage.attacker == steamid)
+            .group_by(Damage.weapon)
+        ).all()
+        if w
+    }
+    return {"kills_by": kills_by, "deaths_by": deaths_by, "damage_by": damage_by}
+
+
+def loadout_breakdown_inputs(s: Session, steamid: str) -> list[dict]:
+    """Una fila por (partida, ronda) donde `steamid` tiene economía
+    registrada (round_economy), con kills/deaths/assists/daño de esa
+    ronda, KAST (bool) y si fue su entry attempt/win -- insumo de
+    domain/loadouts.py::aggregate_loadout_stats. KAST se reconstruye por
+    partida (mismo patrón de loop que flash_assist_count: recorre las
+    partidas del jugador trayendo los kills crudos + teams de CADA una,
+    porque KAST necesita ver a todo el roster, no solo lo propio).
+    Rondas sin round_economy (demo ingerido antes de esa tabla) quedan
+    afuera -- no se inventa una fila."""
+    econ_rows = (
+        s.execute(select(RoundEconomy).where(RoundEconomy.steamid == steamid)).scalars().all()
+    )
+    if not econ_rows:
+        return []
+    match_ids = {r.match_id for r in econ_rows}
+
+    kills_count: dict[tuple[str, int], int] = defaultdict(int)
+    deaths_count: dict[tuple[str, int], int] = defaultdict(int)
+    assists_count: dict[tuple[str, int], int] = defaultdict(int)
+    for mid, rnd, attacker, victim, assister in s.execute(
+        select(Kill.match_id, Kill.round_num, Kill.attacker, Kill.victim, Kill.assister).where(
+            Kill.match_id.in_(match_ids)
+        )
+    ).all():
+        if rnd is None:
+            continue
+        if attacker == steamid and attacker != victim:
+            kills_count[(mid, rnd)] += 1
+        if victim == steamid:
+            deaths_count[(mid, rnd)] += 1
+        if assister == steamid:
+            assists_count[(mid, rnd)] += 1
+
+    damage_count: dict[tuple[str, int], int] = defaultdict(int)
+    for mid, rnd, dmg in s.execute(
+        select(Damage.match_id, Damage.round_num, Damage.dmg_health).where(
+            Damage.attacker == steamid, Damage.match_id.in_(match_ids)
+        )
+    ).all():
+        if rnd is not None:
+            damage_count[(mid, rnd)] += dmg or 0
+
+    entry_attempt: set[tuple[str, int]] = set()
+    entry_win: set[tuple[str, int]] = set()
+    for mid, rnd, event_type in s.execute(
+        select(PlayerMapEvent.match_id, PlayerMapEvent.round_num, PlayerMapEvent.event_type).where(
+            PlayerMapEvent.steamid == steamid,
+            PlayerMapEvent.event_type.in_(("kill", "death")),
+            PlayerMapEvent.is_entry.is_(True),
+            PlayerMapEvent.match_id.in_(match_ids),
+        )
+    ).all():
+        if rnd is None:
+            continue
+        entry_attempt.add((mid, rnd))
+        if event_type == "kill":
+            entry_win.add((mid, rnd))
+
+    kast_rounds: set[tuple[str, int]] = set()
+    for match_id in match_ids:
+        teams = {
+            mp.steamid: mp.team_num
+            for mp in s.execute(
+                select(MatchPlayer).where(MatchPlayer.match_id == match_id)
+            ).scalars()
+        }
+        kills = [
+            {
+                "round_num": k.round_num,
+                "tick": k.tick,
+                "attacker": k.attacker,
+                "victim": k.victim,
+                "assister": k.assister,
+            }
+            for k in s.execute(select(Kill).where(Kill.match_id == match_id)).scalars()
+        ]
+        for rnd in kast_domain.kast_rounds_for_player(kills, teams, steamid):
+            kast_rounds.add((match_id, rnd))
+
+    rows = []
+    for r in econ_rows:
+        key = (r.match_id, r.round_num)
+        rows.append(
+            {
+                "tier": loadouts_domain.loadout_tier(r.round_num, r.equip_value),
+                "kills": kills_count.get(key, 0),
+                "deaths": deaths_count.get(key, 0),
+                "assists": assists_count.get(key, 0),
+                "damage": damage_count.get(key, 0),
+                "kast": key in kast_rounds,
+                "entry_attempt": key in entry_attempt,
+                "entry_win": key in entry_win,
+            }
+        )
+    return rows
 
 
 def recent_hitgroup_counts(s: Session, steamid: str, n_matches: int = 16) -> dict[str, int]:

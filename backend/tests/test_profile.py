@@ -6,6 +6,7 @@ from cs2tracker.domain.profile import (
     map_pool,
     milestones,
     top_weapons,
+    weapon_breakdown,
 )
 
 HISTORY = [
@@ -243,3 +244,60 @@ def test_top_weapons_corta_a_top_3():
     weapons = top_weapons({"ak47": 5, "m4a1": 4, "deagle": 3, "awp": 2})
     assert len(weapons) == 3
     assert [w["name"] for w in weapons] == ["ak47", "m4a1", "deagle"]
+
+
+def test_weapon_breakdown_calcula_hs_pct_adr_y_kills_por_ronda():
+    kills_by = [
+        {"weapon": "ak47", "headshot": True, "distance": 500.0},
+        {"weapon": "ak47", "headshot": False, "distance": 1200.0},
+    ]
+    deaths_by = [{"weapon": "awp"}]
+    damage_by = {"ak47": 200}
+    rows = weapon_breakdown(kills_by, deaths_by, damage_by, rounds_played=10)
+    by_name = {r["name"]: r for r in rows}
+
+    assert by_name["ak47"]["kills"] == 2
+    assert by_name["ak47"]["hs_pct"] == 50.0
+    assert by_name["ak47"]["adr"] == 20.0
+    assert by_name["ak47"]["kills_per_round"] == 0.2
+    assert by_name["ak47"]["category"] == "rifle"
+    # 1200 unidades Hammer -> metros (0.01905 por unidad).
+    assert by_name["ak47"]["longest_kill_m"] == round(1200 * 0.01905, 1)
+
+    assert by_name["awp"]["kills"] == 0
+    assert by_name["awp"]["deaths"] == 1
+    assert by_name["awp"]["longest_kill_m"] == 0.0
+
+
+def test_weapon_breakdown_incluye_cuchillo_como_melee():
+    rows = weapon_breakdown(
+        kills_by=[{"weapon": "knife", "headshot": False, "distance": 30.0}],
+        deaths_by=[],
+        damage_by={},
+        rounds_played=5,
+    )
+    assert len(rows) == 1
+    assert rows[0]["name"] == "knife"
+    assert rows[0]["category"] == "melee"
+
+
+def test_weapon_breakdown_excluye_causas_no_arma():
+    rows = weapon_breakdown(
+        kills_by=[{"weapon": "world", "headshot": False, "distance": None}],
+        deaths_by=[{"weapon": "hegrenade"}],
+        damage_by={"inferno": 40},
+        rounds_played=5,
+    )
+    assert rows == []
+
+
+def test_weapon_breakdown_sin_rondas_no_divide_por_cero():
+    rows = weapon_breakdown(
+        kills_by=[{"weapon": "ak47", "headshot": False, "distance": None}],
+        deaths_by=[],
+        damage_by={},
+        rounds_played=0,
+    )
+    assert rows[0]["adr"] == 0.0
+    assert rows[0]["kills_per_round"] == 0.0
+    assert rows[0]["longest_kill_m"] == 0.0

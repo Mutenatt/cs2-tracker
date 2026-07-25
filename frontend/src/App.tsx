@@ -10,6 +10,7 @@ import { LandingView } from "./views/LandingView";
 import { LineUps } from "./views/LineUps";
 import { MatchDetailView } from "./views/MatchDetailView";
 import { ProfileView } from "./views/ProfileView";
+import { WeaponsView } from "./views/WeaponsView";
 import type { User } from "./types";
 
 export function App() {
@@ -65,6 +66,7 @@ export function App() {
               <Route path="/" element={<HomeView />} />
               <Route path="/lineups" element={<LineUps />} />
               <Route path="/profile/:steamid" element={<ProfileView />} />
+              <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
               <Route path="/match/:matchId" element={<MatchDetailView />} />
             </Routes>
           </motion.div>

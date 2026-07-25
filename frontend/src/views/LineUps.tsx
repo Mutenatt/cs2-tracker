@@ -4,7 +4,7 @@ import { SectionLabel } from "../components/SectionLabel";
 import { cardRise, staggerList } from "../components/motion/presets";
 
 type Side = "T" | "CT";
-type Category = "smoke" | "flash" | "molotov" | "boost";
+type Category = "smoke" | "flash" | "molotov" | "he";
 
 interface MapEntry {
   key: string;
@@ -16,8 +16,8 @@ interface LineupItem {
   title: string;
   side: Side;
   category: Category;
-  from: string;
   to: string;
+  from?: string;
   video: string;
   notes?: string;
 }
@@ -39,87 +39,235 @@ const CATEGORY_LABEL: Record<Category, string> = {
   smoke: "Humo",
   flash: "Flash",
   molotov: "Molotov",
-  boost: "Boost",
+  he: "Granada HE",
 };
 
 const CATEGORY_CLASS: Record<Category, string> = {
   smoke: "lineup-tag-smoke",
   flash: "lineup-tag-flash",
   molotov: "lineup-tag-molotov",
-  boost: "lineup-tag-boost",
+  he: "lineup-tag-he",
 };
 
-// Data de ejemplo -- cada video vive en frontend/public/lineups/{mapa}/.
-// Sumar un mapa nuevo es agregar la entrada acá + tirar el .mp4 en esa
-// carpeta; sin entradas, el mapa cae directo al estado vacío.
+// Cada video vive en frontend/public/lineups/{mapa}/{ct|t}/archivo.mp4 (ver
+// carpeta real en disco). Sumar un mapa nuevo es: 1) tirar los .mp4 en esa
+// ruta, 2) agregar acá una entrada por video. Sin entradas, el mapa cae
+// directo al estado vacío -- el "to" sale del nombre de archivo tal cual lo
+// grabó el usuario, revisar/ajustar el callout si no coincide.
 const LINEUPS: Record<string, LineupItem[]> = {
   de_mirage: [
+    // ---- CT ----
     {
-      id: "mirage-smoke-jungle-from-t",
-      title: "Humo Jungle desde T spawn",
-      side: "T",
-      category: "smoke",
-      from: "T spawn",
-      to: "Jungle / conector a mid",
-      video: "/lineups/de_mirage/smoke-jungle-tspawn.mp4",
-      notes: "Salto + tirar apenas cruza el arco. Tapa la rotación de mid a A.",
+      id: "mirage-ct-deto-caverna",
+      title: "Granada HE — Caverna",
+      side: "CT",
+      category: "he",
+      to: "Caverna",
+      video: "/lineups/de_mirage/ct/deto-ct-caverna.mp4",
     },
     {
-      id: "mirage-flash-window-mid",
-      title: "Flash ciega Window para cruzar mid",
-      side: "T",
-      category: "flash",
-      from: "Mid",
-      to: "Window (CT)",
-      video: "/lineups/de_mirage/flash-window-mid.mp4",
-    },
-    {
-      id: "mirage-molotov-default-a",
-      title: "Molotov default plant A",
+      id: "mirage-ct-moli-caverna",
+      title: "Molotov — Caverna",
       side: "CT",
       category: "molotov",
-      from: "A site",
-      to: "Default plant",
-      video: "/lineups/de_mirage/molotov-default-a.mp4",
-      notes: "Post-plant: obliga al retake a entrar por Ramp.",
+      to: "Caverna",
+      video: "/lineups/de_mirage/ct/moli-ct-caverna.mp4",
     },
-  ],
-  de_inferno: [
     {
-      id: "inferno-smoke-banana",
-      title: "Humo Banana desde CT spawn",
+      id: "mirage-ct-moli-tapete",
+      title: "Molotov — Tapete",
+      side: "CT",
+      category: "molotov",
+      to: "Tapete",
+      video: "/lineups/de_mirage/ct/moli-ct-tapete.mp4",
+    },
+    {
+      id: "mirage-ct-popflash-mid",
+      title: "Popflash — Mid",
+      side: "CT",
+      category: "flash",
+      to: "Mid",
+      video: "/lineups/de_mirage/ct/popflash-cd-mid.mp4",
+    },
+    {
+      id: "mirage-ct-popflash-medio",
+      title: "Popflash — Medio",
+      side: "CT",
+      category: "flash",
+      to: "Medio",
+      video: "/lineups/de_mirage/ct/popflash-ct-medio.mp4",
+    },
+    {
+      id: "mirage-ct-smoke-l",
+      title: "Humo — Zona L",
       side: "CT",
       category: "smoke",
-      from: "CT spawn",
-      to: "Banana",
-      video: "/lineups/de_inferno/smoke-banana-ct.mp4",
+      to: "Zona L",
+      video: "/lineups/de_mirage/ct/smoke-ct-L.mp4",
     },
     {
-      id: "inferno-boost-secondmid",
-      title: "Boost Second Mid para picoteo",
+      id: "mirage-ct-smoke-spawnpalace",
+      title: "Humo — Spawn Palace",
+      side: "CT",
+      category: "smoke",
+      to: "Spawn Palace",
+      video: "/lineups/de_mirage/ct/smoke-ct-spawnPalace.mp4",
+    },
+    {
+      id: "mirage-ct-smoke-tapete",
+      title: "Humo — Tapete",
+      side: "CT",
+      category: "smoke",
+      to: "Tapete",
+      video: "/lineups/de_mirage/ct/smoke-ct-tapete.mp4",
+    },
+    {
+      id: "mirage-ct-smoke-tapetespawn",
+      title: "Humo — Tapete / Spawn",
+      side: "CT",
+      category: "smoke",
+      to: "Tapete / Spawn",
+      video: "/lineups/de_mirage/ct/smoke-ct-tapetespawn.mp4",
+    },
+    // ---- T ----
+    {
+      id: "mirage-t-moli-arenaoscuro",
+      title: "Molotov — A / Arena oscura",
       side: "T",
-      category: "boost",
-      from: "Second mid",
-      to: "Banana / arch",
-      video: "/lineups/de_inferno/boost-secondmid.mp4",
+      category: "molotov",
+      to: "A - Arena oscura",
+      video: "/lineups/de_mirage/t/moli-A-arenaoscuro.mp4",
+    },
+    {
+      id: "mirage-t-moli-mid",
+      title: "Molotov — Mid",
+      side: "T",
+      category: "molotov",
+      to: "Mid",
+      video: "/lineups/de_mirage/t/moli-mid.mp4",
+    },
+    {
+      id: "mirage-t-moli-van",
+      title: "Molotov — Van",
+      side: "T",
+      category: "molotov",
+      to: "Van",
+      video: "/lineups/de_mirage/t/moli-van.mp4",
+    },
+    {
+      id: "mirage-t-popflash-a",
+      title: "Popflash — A",
+      side: "T",
+      category: "flash",
+      to: "A",
+      video: "/lineups/de_mirage/t/popflash-A.mp4",
+    },
+    {
+      id: "mirage-t-popflash-b",
+      title: "Popflash — B",
+      side: "T",
+      category: "flash",
+      to: "B",
+      video: "/lineups/de_mirage/t/popflash-b.mp4",
+    },
+    {
+      id: "mirage-t-popflash-mid",
+      title: "Popflash — Mid",
+      side: "T",
+      category: "flash",
+      to: "Mid",
+      video: "/lineups/de_mirage/t/popflash-mid.mp4",
+    },
+    {
+      id: "mirage-t-smoke-lwall",
+      title: "Humo — L Wall",
+      side: "T",
+      category: "smoke",
+      to: "L Wall",
+      video: "/lineups/de_mirage/t/smoke-Lwall.mp4",
+    },
+    {
+      id: "mirage-t-smoke-bwindow",
+      title: "Humo — B Window",
+      side: "T",
+      category: "smoke",
+      to: "B Window",
+      video: "/lineups/de_mirage/t/smoke-b-window.mp4",
+    },
+    {
+      id: "mirage-t-smoke-cabecinha",
+      title: "Humo — Cabecinha",
+      side: "T",
+      category: "smoke",
+      to: "Cabecinha",
+      video: "/lineups/de_mirage/t/smoke-cabecinha.mp4",
+    },
+    {
+      id: "mirage-t-smoke-forest",
+      title: "Humo — Forest",
+      side: "T",
+      category: "smoke",
+      to: "Forest",
+      video: "/lineups/de_mirage/t/smoke-forest.mp4",
+    },
+    {
+      id: "mirage-t-smoke-jungle",
+      title: "Humo — Jungle",
+      side: "T",
+      category: "smoke",
+      to: "Jungle",
+      video: "/lineups/de_mirage/t/smoke-jungle.mp4",
+    },
+    {
+      id: "mirage-t-smoke-liga",
+      title: "Humo — Liga",
+      side: "T",
+      category: "smoke",
+      to: "Liga",
+      video: "/lineups/de_mirage/t/smoke-liga.mp4",
+    },
+    {
+      id: "mirage-t-smoke-shortmid",
+      title: "Humo — Short / Mid",
+      side: "T",
+      category: "smoke",
+      to: "Short / Mid",
+      video: "/lineups/de_mirage/t/smoke-short-mid.mp4",
+    },
+    {
+      id: "mirage-t-smoke-ticketsct",
+      title: "Humo — Tickets CT",
+      side: "T",
+      category: "smoke",
+      to: "Tickets CT",
+      video: "/lineups/de_mirage/t/smoke-ticketsCT.mp4",
+    },
+    {
+      id: "mirage-t-smoke-ventana",
+      title: "Humo — Ventana",
+      side: "T",
+      category: "smoke",
+      to: "Ventana",
+      video: "/lineups/de_mirage/t/smoke-ventana.mp4",
     },
   ],
 };
 
-function itemsFor(mapKey: string, category: Category | "all"): LineupItem[] {
-  const all = LINEUPS[mapKey] ?? [];
-  if (category === "all") return all;
-  return all.filter((i) => i.category === category);
+function itemsFor(mapKey: string, category: Category | "all", side: Side): LineupItem[] {
+  return (LINEUPS[mapKey] ?? [])
+    .filter((i) => category === "all" || i.category === category)
+    .filter((i) => i.side === side);
 }
 
 export function LineUps() {
   const [activeMap, setActiveMap] = useState(
-    MAP_POOL.find((m) => m.key === "de_mirage")?.key ?? MAP_POOL[0].key,
+    MAP_POOL.find((m) => m.key === "de_mirage")?.key ?? MAP_POOL[0].key
   );
   const [activeCategory, setActiveCategory] = useState<Category | "all">("all");
+  const [activeSide, setActiveSide] = useState<Side>("T");
 
   const mapName = MAP_POOL.find((m) => m.key === activeMap)?.name ?? activeMap;
-  const items = itemsFor(activeMap, activeCategory);
+  const items = itemsFor(activeMap, activeCategory, activeSide);
   const total = (LINEUPS[activeMap] ?? []).length;
 
   return (
@@ -129,8 +277,8 @@ export function LineUps() {
         <span className="rule" />
       </div>
       <div className="section-note" style={{ marginTop: -4 }}>
-        Tu propio banco de humos, flashes y molotovs por mapa — grabalos en el juego y sumalos
-        acá para tenerlos a mano antes de cada partida.
+        Tu propio banco de humos, flashes y molotovs por mapa — grabalos en el juego y sumalos acá
+        para tenerlos a mano antes de cada partida.
       </div>
 
       <motion.div className="map-pool-grid" variants={staggerList} initial="hidden" animate="show">
@@ -163,6 +311,23 @@ export function LineUps() {
       <div className="lineup-filters">
         <button
           type="button"
+          className={`lineup-filter lineup-filter-side${activeSide === "T" ? " active-t" : ""}`}
+          onClick={() => setActiveSide("T")}
+        >
+          Granadas TT
+        </button>
+        <button
+          type="button"
+          className={`lineup-filter lineup-filter-side${activeSide === "CT" ? " active-ct" : ""}`}
+          onClick={() => setActiveSide("CT")}
+        >
+          Granadas CT
+        </button>
+      </div>
+
+      <div className="lineup-filters">
+        <button
+          type="button"
           className={`lineup-filter${activeCategory === "all" ? " active" : ""}`}
           onClick={() => setActiveCategory("all")}
         >
@@ -189,8 +354,8 @@ export function LineUps() {
             Todavía no hay line ups guardados para {mapName}.
           </span>
           <span className="lineup-empty-sub">
-            Sumá tus grabaciones en <code>frontend/public/lineups/{activeMap}/</code> y agregalas
-            a la lista de este mapa en <code>LineUps.tsx</code>.
+            Sumá tus grabaciones en <code>frontend/public/lineups/{activeMap}/</code> y agregalas a
+            la lista de este mapa en <code>LineUps.tsx</code>.
           </span>
         </div>
       ) : (
@@ -199,23 +364,30 @@ export function LineUps() {
           variants={staggerList}
           initial="hidden"
           animate="show"
-          key={`${activeMap}:${activeCategory}`}
+          key={`${activeMap}:${activeCategory}:${activeSide}`}
         >
           {items.map((item) => (
             <motion.div className="lineup-card" variants={cardRise} key={item.id}>
-              <video className="lineup-video" src={item.video} controls preload="metadata" />
+              <video
+                className="lineup-video"
+                src={item.video}
+                controls
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
+                preload="metadata"
+                onContextMenu={(e) => e.preventDefault()}
+              />
               <div className="lineup-card-body">
                 <div className="lineup-card-head">
-                  <span className={`side-tag ${item.side === "T" ? "t" : "ct"}`}>
-                    {item.side}
-                  </span>
+                  <span className={`side-tag ${item.side === "T" ? "t" : "ct"}`}>{item.side}</span>
                   <span className={`lineup-tag ${CATEGORY_CLASS[item.category]}`}>
                     {CATEGORY_LABEL[item.category]}
                   </span>
                 </div>
                 <div className="lineup-card-title">{item.title}</div>
                 <div className="lineup-card-route">
-                  {item.from} <span className="lineup-card-arrow">→</span> {item.to}
+                  {item.from && <>{item.from} </>}
+                  <span className="lineup-card-arrow">→</span> {item.to}
                 </div>
                 {item.notes && <div className="lineup-card-notes">{item.notes}</div>}
               </div>

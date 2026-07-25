@@ -1,6 +1,7 @@
 """Test de KAST: kill, assist, survive y trade."""
 
 from cs2tracker.domain import compute_kast, find_trade_kills, find_traded_deaths
+from cs2tracker.domain.kast import kast_rounds_for_player
 
 TEAMS = {"A": 2, "A2": 2, "B": 3, "B2": 3}
 
@@ -23,6 +24,20 @@ def test_kast_componentes():
     assert k["B"] == 50.0
     # B2: sobrevivio las 2 -> 100
     assert k["B2"] == 100.0
+
+
+def test_kast_rounds_for_player_coincide_con_compute_kast():
+    # Mismas rondas que test_kast_componentes: A cuenta las 2 rondas
+    # (kill+survive en la 0, tradeado en la 1); B solo la 1 (kill).
+    kills = [
+        {"round_num": 0, "tick": 100, "attacker": "A", "victim": "B", "assister": None},
+        {"round_num": 1, "tick": 200, "attacker": "B", "victim": "A", "assister": None},
+        {"round_num": 1, "tick": 260, "attacker": "A2", "victim": "B", "assister": None},
+    ]
+    assert kast_rounds_for_player(kills, TEAMS, "A") == {0, 1}
+    assert kast_rounds_for_player(kills, TEAMS, "B") == {1}
+    # B2 no aparece en ningún kill de ninguna ronda -> sobrevivió las 2.
+    assert kast_rounds_for_player(kills, TEAMS, "B2") == {0, 1}
 
 
 def test_trade_fuera_de_ventana():

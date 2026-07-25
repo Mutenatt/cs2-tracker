@@ -111,6 +111,7 @@ export function ProfileView() {
   if (!data) return <p className="muted">Cargando…</p>;
 
   const {
+    steamid: profileSteamid,
     lifetime,
     match_history,
     map_pool,
@@ -262,7 +263,7 @@ export function ProfileView() {
             </motion.div>
           )}
 
-          <TopWeaponsPanel weapons={top_weapons} />
+          <TopWeaponsPanel weapons={top_weapons} steamid={profileSteamid} />
 
           <TopMapsPanel mapPool={map_pool} />
 
