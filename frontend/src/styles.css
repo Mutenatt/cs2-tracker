@@ -31,12 +31,49 @@ body {
 }
 
 .wrap {
+  position: relative;
+  z-index: 0;
   max-width: 1080px;
   margin: 0 auto;
   padding: 28px 20px 60px;
 }
 
+.lineup-route-shell {
+  position: relative;
+  width: 100vw;
+  margin: 0 0 0 calc(50% - 50vw);
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--ink);
+  padding-top: 0;
+}
+
+.lineup-route-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: linear-gradient(120deg, rgba(6, 12, 20, 0.95) 0%, rgba(6, 12, 20, 0.75) 100%);
+  pointer-events: none;
+}
+
+.lineup-route-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lineup-route-shell .topbar,
+.lineup-route-shell .nav-tabs {
+  max-width: 1080px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
 .topbar {
+  position: relative;
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -56,7 +93,7 @@ body {
   margin-left: auto;
   font-size: 12px;
   color: var(--muted);
-  border: 1px solid var(--line);
+  border: 1px solid var(--signal);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -313,6 +350,14 @@ body {
     linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
   background-size: 42px 42px;
   background-attachment: fixed;
+}
+
+/* Capas de la app por encima de los fondos fijos inyectados por vistas.
+   Es especialmente necesario para los backgrounds animados de Steam: un
+   z-index negativo los deja detrás del canvas opaco del body. */
+#root {
+  position: relative;
+  z-index: 1;
 }
 html {
   scroll-behavior: smooth;
@@ -1943,6 +1988,8 @@ a.panel-cta:hover {
 }
 
 .nav-tabs {
+  position: relative;
+  z-index: 20;
   display: flex;
   gap: 4px;
   margin-bottom: 18px;
@@ -2414,6 +2461,46 @@ a.panel-cta:hover {
 }
 
 /* ---------- line ups ---------- */
+.lineup-page-shell {
+  position: relative;
+  isolation: isolate;
+  width: 100vw;
+  margin: 0 0 0 calc(50% - 50vw);
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--ink);
+  background-image: linear-gradient(120deg, rgba(6, 12, 20, 0.95) 0%, rgba(6, 12, 20, 0.75) 100%);
+}
+.lineup-page-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-color: var(--ink);
+  opacity: 1;
+  transition: opacity 320ms ease, filter 320ms ease;
+  will-change: opacity, filter;
+  filter: saturate(0.95) contrast(1.05);
+  pointer-events: none;
+}
+.lineup-page-backdrop-current {
+  z-index: 0;
+}
+.lineup-page-backdrop-next {
+  z-index: 0;
+}
+.lineup-page-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1080px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 0 20px 24px;
+}
+
 button.map-pool-card.lineup-map-card {
   cursor: pointer;
   font: inherit;
@@ -2421,11 +2508,14 @@ button.map-pool-card.lineup-map-card {
   width: 100%;
 }
 .lineup-map-card.active {
-  border-color: var(--recon);
-  background: color-mix(in srgb, var(--recon) 10%, var(--panel));
+  border-color: var(--map-accent, var(--recon));
+  background: color-mix(in srgb, var(--map-accent, var(--recon)) 10%, var(--panel));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--map-accent, var(--recon)) 45%, transparent),
+    0 0 26px -8px var(--map-accent, var(--recon));
 }
 .lineup-map-card.active .map-pool-name {
-  color: var(--recon);
+  color: var(--map-accent, var(--recon));
 }
 
 .lineup-filters {
@@ -2435,11 +2525,14 @@ button.map-pool-card.lineup-map-card {
   margin-bottom: 18px;
 }
 .lineup-filter {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   font-family: "IBM Plex Mono", monospace;
   font-size: 11.5px;
   letter-spacing: 0.03em;
   color: var(--text-dim);
-  background: var(--panel);
+  background: #05070a;
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 7px 14px;
@@ -2448,23 +2541,346 @@ button.map-pool-card.lineup-map-card {
     border-color 0.15s ease,
     color 0.15s ease;
 }
+.lineup-filter-label {
+  position: relative;
+  z-index: 2;
+}
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-label {
+  color: #fff8db;
+  text-shadow: 0 1px 2px #190b04, 0 0 5px rgba(42, 12, 2, 0.95);
+}
+.lineup-filter-effect {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+.lineup-filter-effect i {
+  position: absolute;
+  display: block;
+}
 .lineup-filter:hover {
-  border-color: var(--text-faint);
+  border-color: var(--signal);
 }
 .lineup-filter.active {
-  color: var(--ink);
-  background: var(--recon);
-  border-color: var(--recon);
+  color: var(--recon);
+  background: #05070a;
+  border-color: var(--signal);
+}
+.lineup-filter-animate-smoke {
+  animation: lineup-smoke-button 1.1s ease-out forwards !important;
+}
+.lineup-filter-animate-flash {
+  animation: lineup-flash-burst 1s ease forwards !important;
+}
+.lineup-filter-animate-molotov {
+  animation: lineup-molotov-button 1.65s ease-out forwards !important;
+}
+.lineup-filter-animate-he {
+  animation: lineup-he-shatter 820ms cubic-bezier(0.18, 0.84, 0.28, 1) forwards !important;
 }
 .lineup-filter-side.active-t {
-  color: var(--ink);
-  background: var(--signal);
+  color: var(--signal);
+  background: #05070a;
   border-color: var(--signal);
 }
 .lineup-filter-side.active-ct {
-  color: var(--ink);
-  background: var(--recon);
+  color: var(--recon);
+  background: #05070a;
   border-color: var(--recon);
+}
+
+/* El lado elegido también define el código de color de sus utilidades. */
+.lineup-side-t .lineup-filter:not(.lineup-filter-side) {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+.lineup-side-ct .lineup-filter:not(.lineup-filter-side) {
+  color: var(--recon);
+  border-color: var(--recon);
+}
+.lineup-side-ct .lineup-filter:not(.lineup-filter-side).active {
+  color: var(--recon);
+  border-color: var(--recon);
+}
+
+/* Los efectos viven dentro del botón: su overflow:hidden evita que humo,
+   fuego o esquirlas se dibujen sobre la página. */
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke,
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov,
+.lineup-filter-animate-he .lineup-filter-effect-he {
+  opacity: 1;
+}
+
+/* Humo y fuego siguen vivos mientras el filtro está seleccionado. Así no se
+   pierden por una animación de entrada demasiado rápida y siguen contenidos
+   por el overflow del botón. */
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke,
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov {
+  opacity: 1;
+}
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
+  animation: lineup-smoke-cloud 1.8s ease-in-out infinite !important;
+}
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i {
+  animation: lineup-flame 1.5s ease-in-out infinite !important;
+}
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(1) { left: 8%; }
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(2) { left: 25%; animation-delay: 180ms !important; }
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(3) { left: 44%; animation-delay: 70ms !important; }
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(4) { left: 62%; animation-delay: 260ms !important; }
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(5) { left: 78%; animation-delay: 120ms !important; }
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(1) { left: 7%; }
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(2) { left: 23%; height: 38px; animation-delay: 180ms !important; }
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(3) { left: 40%; height: 28px; animation-delay: 60ms !important; }
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(4) { left: 57%; height: 40px; animation-delay: 220ms !important; }
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(5) { left: 73%; height: 30px; animation-delay: 100ms !important; }
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(6) { left: 87%; height: 35px; animation-delay: 280ms !important; }
+
+/* Nube de humo: burbujas de distinta escala que se unen y se disipan. */
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i,
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
+  bottom: -16px;
+  width: 34px;
+  height: 27px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, rgba(230, 239, 242, 0.92), rgba(126, 145, 151, 0.74) 42%, rgba(55, 71, 79, 0.08) 72%);
+  filter: blur(2px);
+  transform: scale(0.25);
+}
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(1) { left: 8%; animation: lineup-smoke-cloud 950ms 40ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(2) { left: 25%; animation: lineup-smoke-cloud 1s 0ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(3) { left: 44%; animation: lineup-smoke-cloud 900ms 100ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(4) { left: 62%; animation: lineup-smoke-cloud 1.05s 50ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(5) { left: 78%; animation: lineup-smoke-cloud 920ms 130ms ease-out forwards; }
+
+/* Llamas superpuestas, ancladas al borde inferior del propio rectángulo. */
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::before,
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::after {
+  content: none;
+  position: absolute;
+  right: -8px;
+  bottom: -18px;
+  left: -8px;
+  height: 43px;
+  pointer-events: none;
+}
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::before {
+  bottom: -10px;
+  height: 51px;
+  background: radial-gradient(ellipse at 8% 88%, #ff5a16 0 16%, transparent 43%), radial-gradient(ellipse at 28% 86%, #ff8f16 0 24%, transparent 52%), radial-gradient(ellipse at 48% 92%, #e84012 0 25%, transparent 58%), radial-gradient(ellipse at 70% 85%, #ff9c1b 0 23%, transparent 53%), radial-gradient(ellipse at 92% 91%, #f04712 0 22%, transparent 54%), linear-gradient(0deg, #bd250b 0%, #f24c0f 38%, #ff971e 70%, rgba(255, 174, 37, 0) 100%);
+  border-radius: 48% 52% 16% 18% / 38% 40% 8% 10%;
+  clip-path: polygon(0 100%, 0 61%, 5% 49%, 11% 56%, 17% 43%, 22% 24%, 27% 43%, 32% 56%, 38% 43%, 43% 27%, 48% 8%, 53% 29%, 57% 52%, 63% 40%, 68% 24%, 73% 41%, 78% 57%, 84% 43%, 89% 23%, 94% 42%, 100% 57%, 100% 100%);
+  filter: blur(2.8px) saturate(1.42);
+  opacity: 0.95;
+  animation: lineup-fire-surface 1.15s ease-in-out infinite alternate;
+}
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::after {
+  bottom: -13px;
+  height: 31px;
+  background: radial-gradient(ellipse at 19% 95%, #fff0a0 0 9%, #ffd02e 23%, transparent 53%), radial-gradient(ellipse at 52% 97%, #fff7bc 0 10%, #ffcf28 27%, transparent 54%), radial-gradient(ellipse at 80% 93%, #fff0a0 0 9%, #ffd02e 24%, transparent 51%);
+  filter: blur(1.4px);
+  mix-blend-mode: screen;
+  animation: lineup-fire-core 780ms ease-in-out infinite alternate;
+}
+/* Las seis chispas previas se reemplazan por una única silueta de fuego. */
+.lineup-filter-utility-molotov .lineup-filter-effect-molotov i {
+  display: none;
+}
+.lineup-molotov-fire {
+  position: absolute;
+  right: -3px;
+  bottom: -14px;
+  left: -3px;
+  width: calc(100% + 6px);
+  height: 63px;
+  overflow: visible;
+  filter: saturate(1.25) drop-shadow(0 -1px 2px rgba(255, 107, 18, 0.75));
+  transform-origin: center bottom;
+}
+.lineup-molotov-outer {
+  fill: url(#molotov-outer);
+  animation: lineup-molotov-outer-flicker 1.05s ease-in-out infinite alternate;
+  transform-origin: center bottom;
+}
+.lineup-molotov-organic {
+  transform-origin: center bottom;
+  animation: lineup-molotov-rise 1.8s ease-in-out infinite alternate;
+}
+.lineup-molotov-inner {
+  fill: url(#molotov-core);
+  mix-blend-mode: screen;
+  transform-origin: center bottom;
+}
+.lineup-molotov-inner-a {
+  animation: lineup-molotov-inner-flicker 760ms ease-in-out infinite alternate;
+}
+.lineup-molotov-inner-b {
+  animation: lineup-molotov-inner-flicker 620ms 180ms ease-in-out infinite alternate-reverse;
+}
+.lineup-molotov-embers {
+  fill: #ff8a16;
+  opacity: 0.7;
+  animation: lineup-molotov-embers 900ms ease-in-out infinite alternate;
+}
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov i,
+.lineup-filter-utility-molotov .lineup-filter-effect-molotov i {
+  bottom: -11px;
+  width: 24px;
+  height: 42px;
+  border-radius: 52% 48% 48% 52% / 82% 80% 20% 18%;
+  background: radial-gradient(ellipse at 50% 78%, #fffbd0 0 7%, #ffe14a 14%, #ff991b 34%, #f04a10 57%, rgba(166, 27, 7, 0) 75%);
+  clip-path: polygon(50% 0, 64% 27%, 88% 47%, 76% 70%, 100% 100%, 0 100%, 20% 69%, 9% 47%, 35% 28%);
+  filter: blur(0.55px) saturate(1.4);
+  opacity: 0;
+  transform-origin: bottom center;
+}
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(1) { left: 7%; animation: lineup-flame 1.45s 40ms ease-in-out forwards; }
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(2) { left: 23%; height: 38px; animation: lineup-flame 1.35s 120ms ease-in-out forwards; }
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(3) { left: 40%; height: 28px; animation: lineup-flame 1.5s 0ms ease-in-out forwards; }
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(4) { left: 57%; height: 40px; animation: lineup-flame 1.38s 80ms ease-in-out forwards; }
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(5) { left: 73%; height: 30px; animation: lineup-flame 1.48s 160ms ease-in-out forwards; }
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(6) { left: 87%; height: 35px; animation: lineup-flame 1.3s 55ms ease-in-out forwards; }
+
+/* HE: destello central y esquirlas, contenidos en el botón. */
+.lineup-filter-animate-he .lineup-filter-effect-he::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff8bf;
+  box-shadow: 0 0 8px 4px #ffbe3d, 0 0 20px 10px rgba(237, 72, 21, 0.85);
+  transform: translate(-50%, -50%) scale(0);
+  animation: lineup-he-core 680ms ease-out forwards;
+}
+.lineup-filter-animate-he .lineup-filter-effect-he i {
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 4px;
+  background: linear-gradient(135deg, #ffe38a, #e44a20 68%, transparent 69%);
+  clip-path: polygon(0 50%, 100% 0, 72% 100%);
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(0);
+  animation: lineup-he-spark 650ms ease-out forwards;
+}
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(1) { --spark-angle: 0deg; }
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(2) { --spark-angle: 45deg; }
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(3) { --spark-angle: 90deg; }
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(4) { --spark-angle: 135deg; }
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(5) { --spark-angle: 180deg; }
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(6) { --spark-angle: 225deg; }
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(7) { --spark-angle: 270deg; }
+.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(8) { --spark-angle: 315deg; }
+
+@keyframes lineup-smoke-button {
+  0% {
+    border-color: var(--recon);
+  }
+  45% {
+    border-color: #d9e5e8;
+  }
+  100% {
+    border-color: var(--recon);
+  }
+}
+
+@keyframes lineup-smoke-cloud {
+  0% { opacity: 0; transform: translateY(9px) scale(0.2); }
+  35% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-20px) scale(2.2); }
+}
+
+@keyframes lineup-flash-burst {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15);
+    transform: scale(1);
+  }
+  20% {
+    box-shadow: 0 0 20px 8px rgba(255, 255, 255, 0.95);
+    transform: scale(1.04);
+  }
+  60% {
+    box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.7);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    transform: scale(1);
+  }
+}
+
+@keyframes lineup-molotov-button {
+  0% {
+    border-color: var(--recon);
+  }
+  35% {
+    border-color: #ff8b32;
+  }
+  100% {
+    border-color: var(--recon);
+  }
+}
+
+@keyframes lineup-flame {
+  0%, 100% { opacity: 0.46; transform: translateY(6px) scale(0.72, 0.72) rotate(-7deg); }
+  20% { opacity: 1; transform: translateY(-2px) scale(1.05, 1.12) rotate(5deg); }
+  52% { opacity: 0.86; transform: translateY(-9px) scale(1.18, 0.84) rotate(-4deg); }
+  78% { opacity: 0.7; transform: translateY(-15px) scale(0.82, 1.24) rotate(7deg); }
+}
+@keyframes lineup-fire-surface {
+  0% {
+    clip-path: polygon(0 100%, 0 61%, 5% 49%, 11% 56%, 17% 43%, 22% 24%, 27% 43%, 32% 56%, 38% 43%, 43% 27%, 48% 8%, 53% 29%, 57% 52%, 63% 40%, 68% 24%, 73% 41%, 78% 57%, 84% 43%, 89% 23%, 94% 42%, 100% 57%, 100% 100%);
+    transform: translateY(2px) scaleX(0.98) skewX(-1deg);
+  }
+  100% {
+    clip-path: polygon(0 100%, 0 55%, 6% 61%, 13% 45%, 18% 31%, 24% 50%, 30% 27%, 36% 17%, 41% 45%, 47% 58%, 53% 32%, 59% 20%, 64% 44%, 70% 55%, 77% 34%, 83% 18%, 89% 46%, 95% 57%, 100% 47%, 100% 100%);
+    transform: translateY(-2px) scaleX(1.02) skewX(1deg);
+  }
+}
+@keyframes lineup-fire-core {
+  0% { opacity: 0.65; transform: translateX(-3px) scaleY(0.8); }
+  100% { opacity: 1; transform: translateX(3px) scaleY(1.2); }
+}
+@keyframes lineup-molotov-outer-flicker {
+  0% { transform: scaleX(0.98) scaleY(0.92) skewX(-1.4deg); }
+  45% { transform: scaleX(1.025) scaleY(1.08) skewX(1deg); }
+  100% { transform: scaleX(1) scaleY(0.98) skewX(-0.5deg); }
+}
+@keyframes lineup-molotov-inner-flicker {
+  0% { opacity: 0.68; transform: translateX(-2px) scaleY(0.84); }
+  100% { opacity: 1; transform: translateX(2px) scaleY(1.13); }
+}
+@keyframes lineup-molotov-rise {
+  0% { transform: translateY(2px) scaleX(0.98) scaleY(0.94) skewX(-1.2deg); }
+  55% { transform: translateY(-2px) scaleX(1.025) scaleY(1.08) skewX(1deg); }
+  100% { transform: translateY(0) scaleX(1) scaleY(0.98) skewX(-0.4deg); }
+}
+@keyframes lineup-molotov-embers {
+  0% { opacity: 0.35; transform: translateX(-3px) scaleY(0.82); }
+  100% { opacity: 0.85; transform: translateX(3px) scaleY(1.12); }
+}
+
+@keyframes lineup-he-shatter {
+  0% { border-radius: 20px; transform: scale(1); }
+  18% { border-radius: 4px 17px 6px 15px; transform: scale(0.94) rotate(-1.5deg); }
+  42% { border-radius: 15px 3px 18px 4px; transform: scale(1.035) rotate(1deg); }
+  100% { border-radius: 20px; transform: scale(1); }
+}
+@keyframes lineup-he-core {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0); }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(1.9); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(4.8); }
+}
+@keyframes lineup-he-spark {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(0) scale(0.4); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(58px) scale(0.7); }
 }
 
 .lineup-grid {
@@ -3915,5 +4331,892 @@ button.map-pool-card.lineup-map-card {
   }
   .monthly-detail-cols {
     grid-template-columns: 1fr;
+  }
+}
+/* ============================================================
+   cStats — MAP CARD ATMOSPHERIC EFFECTS
+   ------------------------------------------------------------
+   NUEVO BLOQUE
+   No reemplaza ni modifica estilos existentes.
+   ============================================================ */
+
+
+/* ============================================================
+   SISTEMA BASE
+   ============================================================ */
+
+.lineup-map-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  --map-fx-opacity: 0.42;
+  --map-fx-hover-opacity: 0.62;
+  --map-accent: var(--recon);
+
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 200ms ease;
+}
+
+/* Color de acento propio de cada mapa: alimenta el glow de hover/selección. */
+.lineup-map-card.map-effect-de_ancient { --map-accent: #4fd9a3; }
+.lineup-map-card.map-effect-de_anubis  { --map-accent: #d9b876; }
+.lineup-map-card.map-effect-de_cache   { --map-accent: #5cc4ff; }
+.lineup-map-card.map-effect-de_dust2   { --map-accent: #e8a35a; }
+.lineup-map-card.map-effect-de_inferno { --map-accent: #ff7a3d; }
+.lineup-map-card.map-effect-de_mirage  { --map-accent: #f0cf8e; }
+.lineup-map-card.map-effect-de_nuke    { --map-accent: #4dff85; }
+
+.lineup-map-card:hover {
+  border-color: color-mix(in srgb, var(--map-accent) 60%, var(--line));
+  box-shadow:
+    0 14px 28px -14px rgba(0, 0, 0, 0.7),
+    0 0 22px -6px var(--map-accent);
+}
+
+
+/* Capa atmosférica */
+.lineup-map-card .map-card-fx {
+  position: absolute;
+  inset: 0;
+
+  z-index: 0;
+
+  display: block;
+
+  overflow: hidden;
+  pointer-events: none;
+
+  opacity: var(--map-fx-opacity);
+
+  border-radius: inherit;
+
+  transition:
+    opacity 250ms ease,
+    filter 250ms ease;
+}
+
+
+/* Contenido original */
+.lineup-map-card .map-card-content {
+  position: relative;
+  z-index: 5;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+}
+
+
+/*
+ * Icono y nombre siempre encima del efecto.
+ */
+.lineup-map-card .map-pool-icon,
+.lineup-map-card .map-pool-name {
+  position: relative;
+  z-index: 6;
+}
+
+
+/*
+ * Legibilidad del contenido.
+ */
+.lineup-map-card .map-pool-icon {
+  filter:
+    drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85));
+}
+
+.lineup-map-card .map-pool-name {
+  text-shadow:
+    0 2px 6px rgba(0, 0, 0, 1),
+    0 0 12px rgba(0, 0, 0, 0.9);
+}
+
+
+/* ============================================================
+   HOVER
+   ============================================================ */
+
+.lineup-map-card:hover .map-card-fx {
+  opacity: var(--map-fx-hover-opacity);
+}
+
+.lineup-map-card:hover .map-pool-icon {
+  filter:
+    drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 0 10px rgba(76, 205, 255, 0.2));
+}
+
+
+/* ============================================================
+   ANCIENT
+   Agua / humedad verdosa
+   ============================================================ */
+
+/* Capa 1: cuerpo de agua — el color de fondo respira muy lento, sin
+   escalar la capa entera (eso es lo que la hacía "vibrar"). */
+.map-effect-de_ancient .map-card-fx {
+  background:
+    radial-gradient(
+      ellipse at 15% 115%,
+      rgba(39, 145, 107, 0.5),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse at 85% 105%,
+      rgba(76, 167, 119, 0.32),
+      transparent 52%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(10, 46, 38, 0.12) 0%,
+      rgba(39, 120, 95, 0.26) 55%,
+      rgba(20, 70, 58, 0.38) 100%
+    );
+
+  background-size:
+    160% 160%,
+    150% 150%,
+    100% 100%;
+
+  animation: cstats-ancient-water 12s ease-in-out infinite;
+}
+
+/* Capa 2: ondulación — líneas de oleaje que se desplazan en diagonal,
+   lentas y de bajo contraste para no leerse como rayas. */
+.map-effect-de_ancient .map-card-fx::before {
+  content: "";
+
+  position: absolute;
+  inset: -20%;
+
+  background:
+    repeating-linear-gradient(
+      100deg,
+      transparent 0 26px,
+      rgba(150, 220, 190, 0.05) 30px,
+      transparent 40px
+    );
+
+  mix-blend-mode: screen;
+
+  animation: cstats-ancient-waves 9s ease-in-out infinite;
+}
+
+/* Capa 3: reflejo de luz — un brillo angosto que cruza el agua muy
+   lentamente y se atenúa en los extremos, como luz sobre la superficie. */
+.map-effect-de_ancient .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: -30%;
+
+  background:
+    linear-gradient(
+      100deg,
+      transparent 40%,
+      rgba(210, 245, 235, 0.14) 48%,
+      rgba(210, 245, 235, 0.05) 52%,
+      transparent 60%
+    );
+
+  mix-blend-mode: screen;
+  filter: blur(3px);
+
+  animation: cstats-ancient-reflection 13s ease-in-out infinite;
+}
+
+@keyframes cstats-ancient-water {
+  0%,
+  100% {
+    background-position:
+      0% 10%,
+      100% 90%,
+      0 0;
+  }
+
+  50% {
+    background-position:
+      14% 0%,
+      86% 100%,
+      0 -4%;
+  }
+}
+
+@keyframes cstats-ancient-waves {
+  0%,
+  100% {
+    transform: translate3d(-6%, 2%, 0);
+  }
+
+  50% {
+    transform: translate3d(6%, -3%, 0);
+  }
+}
+
+@keyframes cstats-ancient-reflection {
+  0% {
+    transform: translateX(-55%);
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateX(10%);
+    opacity: 0.9;
+  }
+
+  82% {
+    opacity: 0.25;
+  }
+
+  100% {
+    transform: translateX(55%);
+    opacity: 0;
+  }
+}
+
+
+/* ============================================================
+   ANUBIS
+   Tormenta de arena
+   ============================================================ */
+
+.map-effect-de_anubis .map-card-fx {
+  background:
+    radial-gradient(
+      circle at 20% 40%,
+      rgba(215, 171, 96, 0.35) 0 1px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      rgba(231, 194, 124, 0.3) 0 1px,
+      transparent 2px
+    ),
+    linear-gradient(
+      110deg,
+      transparent,
+      rgba(191, 153, 91, 0.15),
+      transparent
+    );
+
+  background-size:
+    30px 30px,
+    45px 45px,
+    180% 100%;
+
+  animation: cstats-anubis-sandstorm 2.8s linear infinite;
+}
+
+.map-effect-de_anubis .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: -20%;
+
+  background:
+    repeating-linear-gradient(
+      165deg,
+      transparent 0 12px,
+      rgba(219, 182, 111, 0.11) 13px,
+      transparent 17px
+    );
+
+  filter: blur(1.5px);
+
+  animation: cstats-anubis-sand-lines 2s linear infinite;
+}
+
+@keyframes cstats-anubis-sandstorm {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      -100% 0;
+  }
+
+  to {
+    background-position:
+      100px 45px,
+      -120px 80px,
+      100% 0;
+  }
+}
+
+@keyframes cstats-anubis-sand-lines {
+  from {
+    transform: translateX(-15%) translateY(5%);
+  }
+
+  to {
+    transform: translateX(15%) translateY(-5%);
+  }
+}
+
+
+/* ============================================================
+   CACHE
+   Interferencia / TV antigua
+   ============================================================ */
+
+.map-effect-de_cache .map-card-fx {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04) 0 1px,
+      transparent 1px 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(80, 190, 255, 0.025) 0 2px,
+      transparent 2px 4px
+    );
+
+  animation: cstats-cache-static 0.16s steps(2) infinite;
+}
+
+.map-effect-de_cache .map-card-fx::before {
+  content: "";
+
+  position: absolute;
+  inset: -30%;
+
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 5px,
+      rgba(255, 255, 255, 0.1) 6px,
+      transparent 7px 11px
+    );
+
+  animation: cstats-cache-scanline 1.2s linear infinite;
+
+  mix-blend-mode: screen;
+}
+
+.map-effect-de_cache .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.15) 0 1px,
+      transparent 1px
+    );
+
+  background-size: 5px 5px;
+
+  animation: cstats-cache-noise 0.12s steps(2) infinite;
+}
+
+@keyframes cstats-cache-static {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(-2%, 1%);
+  }
+
+  50% {
+    transform: translate(1%, -2%);
+  }
+
+  75% {
+    transform: translate(2%, 1%);
+  }
+
+  100% {
+    transform: translate(-1%, -1%);
+  }
+}
+
+@keyframes cstats-cache-scanline {
+  from {
+    transform: translateY(-25%);
+  }
+
+  to {
+    transform: translateY(25%);
+  }
+}
+
+@keyframes cstats-cache-noise {
+  0% {
+    opacity: 0.15;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+
+  100% {
+    opacity: 0.1;
+  }
+}
+
+
+/* ============================================================
+   DUST II
+   Heat haze / calor
+   ============================================================ */
+
+.map-effect-de_dust2 .map-card-fx {
+  background:
+    radial-gradient(
+      ellipse at 50% 100%,
+      rgba(244, 170, 82, 0.3),
+      transparent 65%
+    ),
+    linear-gradient(
+      to top,
+      rgba(221, 148, 64, 0.12),
+      transparent
+    );
+
+  filter: blur(0.5px);
+
+  animation: cstats-dust2-heat 3s ease-in-out infinite;
+}
+
+.map-effect-de_dust2 .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: -15%;
+
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 20px,
+      rgba(240, 178, 91, 0.05) 22px,
+      transparent 27px
+    );
+
+  filter: blur(3px);
+
+  animation: cstats-dust2-distortion 2.5s ease-in-out infinite;
+}
+
+@keyframes cstats-dust2-heat {
+  0%,
+  100% {
+    transform: scale(1.02) translateY(1%);
+  }
+
+  50% {
+    transform: scale(1.07) translateY(-2%);
+  }
+}
+
+@keyframes cstats-dust2-distortion {
+  0%,
+  100% {
+    transform: skewX(-1deg) translateX(-2%);
+  }
+
+  50% {
+    transform: skewX(1deg) translateX(2%);
+  }
+}
+
+
+/* ============================================================
+   INFERNO
+   Ascuas / fuego
+   ============================================================ */
+
+.map-effect-de_inferno .map-card-fx {
+  background:
+    radial-gradient(
+      circle at 20% 100%,
+      rgba(255, 86, 24, 0.55) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 70% 110%,
+      rgba(255, 172, 52, 0.65) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 50% 90%,
+      rgba(255, 71, 20, 0.3),
+      transparent 55%
+    );
+
+  background-size:
+    45px 45px,
+    65px 65px,
+    100% 100%;
+
+  animation: cstats-inferno-embers 3s linear infinite;
+}
+
+.map-effect-de_inferno .map-card-fx::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at 30% 80%,
+      rgba(255, 106, 25, 0.55) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 65% 65%,
+      rgba(255, 191, 75, 0.6) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 85% 90%,
+      rgba(255, 81, 20, 0.5) 0 2px,
+      transparent 3px
+    );
+
+  animation: cstats-inferno-particles 2.2s ease-in-out infinite;
+}
+
+.map-effect-de_inferno .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      ellipse at 50% 100%,
+      rgba(255, 74, 18, 0.32),
+      transparent 65%
+    );
+
+  animation: cstats-inferno-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes cstats-inferno-embers {
+  from {
+    background-position:
+      0 100%,
+      0 100%,
+      center;
+  }
+
+  to {
+    background-position:
+      20px 0,
+      -30px 0,
+      center;
+  }
+}
+
+@keyframes cstats-inferno-particles {
+  0% {
+    transform: translateY(10px);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: translateY(-8px);
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: translateY(-20px);
+    opacity: 0.15;
+  }
+}
+
+@keyframes cstats-inferno-glow {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 0.75;
+  }
+}
+
+
+/* ============================================================
+   MIRAGE
+   Polvo + destellos
+   ============================================================ */
+
+.map-effect-de_mirage .map-card-fx {
+  background:
+    radial-gradient(
+      circle at 20% 35%,
+      rgba(226, 191, 126, 0.25) 0 1px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 75% 65%,
+      rgba(239, 210, 153, 0.22) 0 1px,
+      transparent 2px
+    ),
+    linear-gradient(
+      120deg,
+      transparent 35%,
+      rgba(255, 220, 156, 0.13) 50%,
+      transparent 65%
+    );
+
+  background-size:
+    35px 35px,
+    55px 55px,
+    180% 100%;
+
+  animation: cstats-mirage-dust 6s linear infinite;
+}
+
+.map-effect-de_mirage .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: -50%;
+
+  background:
+    linear-gradient(
+      115deg,
+      transparent 42%,
+      rgba(255, 238, 190, 0.16) 49%,
+      transparent 56%
+    );
+
+  animation: cstats-mirage-flash 5s ease-in-out infinite;
+}
+
+@keyframes cstats-mirage-dust {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      -100% 0;
+  }
+
+  to {
+    background-position:
+      80px -30px,
+      -60px 50px,
+      100% 0;
+  }
+}
+
+@keyframes cstats-mirage-flash {
+  0%,
+  65%,
+  100% {
+    transform: translateX(-35%);
+    opacity: 0;
+  }
+
+  72% {
+    transform: translateX(5%);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translateX(35%);
+    opacity: 0;
+  }
+}
+
+
+/* ============================================================
+   NUKE
+   Radiación verde + partículas
+   ============================================================ */
+
+/* Capa 1: glow ambiental + rejilla industrial muy tenue, para que no
+   se lea como un simple overlay verde plano. */
+.map-effect-de_nuke .map-card-fx {
+  background:
+    radial-gradient(
+      ellipse at 50% 40%,
+      rgba(70, 255, 140, 0.24),
+      transparent 62%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(80, 255, 140, 0.045) 0 1px,
+      transparent 1px 6px
+    ),
+    radial-gradient(
+      circle at 22% 25%,
+      rgba(80, 255, 130, 0.4) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 78% 75%,
+      rgba(91, 255, 127, 0.4) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 58% 12%,
+      rgba(70, 255, 130, 0.3) 0 1px,
+      transparent 3px
+    );
+
+  background-size:
+    100% 100%,
+    100% 6px,
+    38px 38px,
+    52px 52px,
+    44px 44px;
+
+  animation: cstats-nuke-radiation-pulse 4.2s ease-in-out infinite;
+}
+
+/* Capa 2: partículas — recorrido en varios tramos (no un simple ida y
+   vuelta lineal) para que floten de forma más orgánica. */
+.map-effect-de_nuke .map-card-fx::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at 30% 80%,
+      rgba(93, 255, 128, 0.7) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 70% 20%,
+      rgba(94, 255, 133, 0.55) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 90% 60%,
+      rgba(94, 255, 133, 0.65) 0 1px,
+      transparent 3px
+    );
+
+  animation: cstats-nuke-particles 5.5s ease-in-out infinite;
+}
+
+/* Capa 3: dos anillos de radiación a distinta escala, para dar
+   profundidad al pulso en vez de un único halo. */
+.map-effect-de_nuke .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: -20%;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      transparent 30%,
+      rgba(59, 255, 104, 0.14) 50%,
+      transparent 66%
+    ),
+    radial-gradient(
+      circle,
+      transparent 55%,
+      rgba(90, 255, 140, 0.1) 68%,
+      transparent 80%
+    );
+
+  animation: cstats-nuke-radiation-wave 3.4s ease-in-out infinite;
+}
+
+@keyframes cstats-nuke-radiation-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.06);
+    filter: brightness(1.25);
+  }
+}
+
+@keyframes cstats-nuke-particles {
+  0%,
+  100% {
+    transform: translate(0, 6%) scale(1);
+    opacity: 0.45;
+  }
+
+  50% {
+    transform: translate(4%, -6%) scale(1.08);
+    opacity: 0.85;
+  }
+}
+
+@keyframes cstats-nuke-radiation-wave {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: scale(1.18);
+    opacity: 0.7;
+  }
+}
+
+
+/* ============================================================
+   EFECTOS ESPECÍFICOS AL HACER HOVER
+   ============================================================ */
+
+.lineup-map-card:hover .map-card-fx {
+  filter: saturate(1.12);
+}
+
+.lineup-map-card.map-effect-de_cache:hover .map-card-fx {
+  filter: contrast(1.25) saturate(1.15);
+}
+
+.lineup-map-card.map-effect-de_inferno:hover .map-card-fx {
+  filter: saturate(1.3);
+}
+
+.lineup-map-card.map-effect-de_nuke:hover .map-card-fx {
+  filter: saturate(1.45) brightness(1.1);
+}
+
+.lineup-map-card.map-effect-de_ancient:hover .map-card-fx {
+  filter: saturate(1.2);
+}
+
+
+/* ============================================================
+   ACCESIBILIDAD
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .lineup-map-card .map-card-fx,
+  .lineup-map-card .map-card-fx::before,
+  .lineup-map-card .map-card-fx::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .lineup-map-card,
+  .lineup-map-card:hover {
+    transform: none !important;
+    transition: border-color 150ms ease !important;
   }
 }

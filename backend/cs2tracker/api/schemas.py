@@ -11,6 +11,7 @@ class UserOut(BaseModel):
     steamid: str
     display_name: str | None
     avatar_url: str | None
+    steam_background_url: str | None = None
 
 
 class AutofetchLinkIn(BaseModel):

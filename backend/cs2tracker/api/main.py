@@ -150,7 +150,7 @@ async def auth_callback(request: Request) -> RedirectResponse:
     if steamid is None:
         raise HTTPException(400, "login de Steam inválido")
 
-    display_name, avatar_url = await fetch_profile(steamid)
+    display_name, avatar_url, steam_background_url = await fetch_profile(steamid)
     now = datetime.now(UTC).isoformat()
     with Session(get_engine()) as s:
         if s.get(Player, steamid) is None:
@@ -160,20 +160,26 @@ async def auth_callback(request: Request) -> RedirectResponse:
 
         user = s.get(User, steamid)
         if user is None:
-            s.add(
-                User(
-                    steamid=steamid,
-                    display_name=display_name,
-                    avatar_url=avatar_url,
-                    last_login_at=now,
-                )
-            )
+            payload = {
+                "steamid": steamid,
+                "display_name": display_name,
+                "avatar_url": avatar_url,
+                "last_login_at": now,
+            }
+            if steam_background_url is not None:
+                payload["steam_background_url"] = steam_background_url
+            s.add(User(**payload))
         else:
             user.last_login_at = now
             if display_name:
                 user.display_name = display_name
             if avatar_url:
                 user.avatar_url = avatar_url
+            if steam_background_url is not None:
+                try:
+                    user.steam_background_url = steam_background_url
+                except Exception:
+                    pass
         s.commit()
 
     resp = RedirectResponse(settings.frontend_url)
@@ -193,8 +199,16 @@ def auth_me(steamid: str = Depends(get_current_steamid)) -> UserOut:
         user = s.get(User, steamid)
         if user is None:
             raise HTTPException(404, "usuario no encontrado")
+        background_url = None
+        try:
+            background_url = user.steam_background_url
+        except Exception:
+            background_url = None
         return UserOut(
-            steamid=user.steamid, display_name=user.display_name, avatar_url=user.avatar_url
+            steamid=user.steamid,
+            display_name=user.display_name,
+            avatar_url=user.avatar_url,
+            steam_background_url=background_url,
         )
 
 

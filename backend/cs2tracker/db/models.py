@@ -54,6 +54,7 @@ class User(Base):
     steamid: Mapped[str] = mapped_column(ForeignKey("players.steamid"), primary_key=True)
     display_name: Mapped[str | None] = mapped_column(String)
     avatar_url: Mapped[str | None] = mapped_column(String)
+    steam_background_url: Mapped[str | None] = mapped_column(String)
     last_login_at: Mapped[str | None] = mapped_column(String)
 
     # Auto-fetch estilo Leetify. El auth code SOLO da acceso al historial de

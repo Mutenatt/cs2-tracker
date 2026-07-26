@@ -14,6 +14,7 @@ import { RankHistoryCard } from "../components/RankHistoryCard";
 import { TopMapsPanel } from "../components/TopMapsPanel";
 import { TopWeaponsPanel } from "../components/TopWeaponsPanel";
 import { useUser } from "../context/UserContext";
+import { useSteamBackground } from "../hooks/useSteamBackground";
 import { cardRise, staggerList } from "../components/motion/presets";
 import type { ProfileResponse } from "../types";
 
@@ -81,6 +82,7 @@ function MatchHistoryCard({ m }: { m: ProfileResponse["match_history"][number] }
 export function ProfileView() {
   const { steamid } = useParams<{ steamid: string }>();
   const user = useUser();
+  useSteamBackground(user.steam_background_url);
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);

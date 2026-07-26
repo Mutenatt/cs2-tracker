@@ -50,10 +50,12 @@ export function App() {
     setUser(null);
   };
 
+  const isLineupsRoute = location.pathname === "/lineups";
+
   return (
     <UserContext.Provider value={user}>
-      <div className="wrap">
-        <Topbar onLogout={handleLogout} />
+      <div className={isLineupsRoute ? "lineup-route-shell" : "wrap"}>
+        {!isLineupsRoute && <Topbar onLogout={handleLogout} />}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
@@ -64,7 +66,7 @@ export function App() {
           >
             <Routes location={location}>
               <Route path="/" element={<HomeView />} />
-              <Route path="/lineups" element={<LineUps />} />
+              <Route path="/lineups" element={<LineUps onLogout={handleLogout} />} />
               <Route path="/profile/:steamid" element={<ProfileView />} />
               <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
               <Route path="/match/:matchId" element={<MatchDetailView />} />

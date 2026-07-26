@@ -16,6 +16,7 @@ from cs2tracker.auth import (
     COOKIE_NAME,
     build_login_url,
     create_session_cookie,
+    parse_profile_background_url,
     read_session_cookie,
     verify_callback,
 )
@@ -73,6 +74,26 @@ def test_verify_callback_rechazado_por_steam(monkeypatch):
     )
     steamid = asyncio.run(verify_callback({"openid.claimed_id": VALID_CLAIMED_ID}))
     assert steamid is None
+
+
+def test_parse_profile_background_url_extrae_url_de_html():
+    html = (
+        '<html><head><script>g_rgProfileData={"steamid":"76561198000000000"}</script></head>'
+        '<body><div class="profile_background" style="background-image:url(https://steamcommunity-a.akamaihd.net/steamcommunity/public/images/profile_backgrounds/abc123.jpg)"></div></body></html>'
+    )
+    assert parse_profile_background_url(html) == (
+        "https://steamcommunity-a.akamaihd.net/steamcommunity/public/images/profile_backgrounds/abc123.jpg"
+    )
+
+
+def test_parse_profile_background_url_acepta_background_shorthand_y_url_relativa():
+    html = (
+        '<style>.profile_page_background { background: url(\'//steamcommunity-a.akamaihd.net/'
+        'steamcommunity/public/images/profile_backgrounds/abc123.jpg\') center / cover; }</style>'
+    )
+    assert parse_profile_background_url(html) == (
+        "https://steamcommunity-a.akamaihd.net/steamcommunity/public/images/profile_backgrounds/abc123.jpg"
+    )
 
 
 def test_session_cookie_roundtrip():
