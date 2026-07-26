@@ -22,7 +22,7 @@ interface LineupItem {
   notes?: string;
 }
 
-// Mismo pool de radares que ya viven en frontend/public/maps -- se reusan
+// Mismo pool de radares que ya viven en frontend/public/radar -- se reusan
 // los iconos locales (sin depender de un CDN externo, a diferencia del
 // mapIconUrl de HomeView).
 const MAP_POOL: MapEntry[] = [

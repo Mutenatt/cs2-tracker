@@ -769,11 +769,11 @@ def player_profile(
             dominant_role=roles_domain.dominant_role(**queries.role_inputs(s, steamid)),
         )
 
-        # AccuracyPanel: ventana de últimas 16 partidas (no lifetime, a
-        # diferencia de top_weapons), oldest-first para el sparkline.
-        hs_pct_series = [h["hs_pct"] for h in reversed(history[:16])]
+        # AccuracyPanel: head/body/legs % y el sparkline de hs_pct_series son
+        # sobre el total de partidas procesadas, oldest-first.
+        hs_pct_series = [h["hs_pct"] for h in reversed(history)]
         accuracy = profile_domain.accuracy_stats(
-            queries.recent_hitgroup_counts(s, steamid), hs_pct_series
+            queries.lifetime_hitgroup_counts(s, steamid), hs_pct_series
         )
         top_weapons_list = profile_domain.top_weapons(queries.lifetime_weapon_kills(s, steamid))
 

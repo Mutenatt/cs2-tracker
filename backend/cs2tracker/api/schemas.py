@@ -159,6 +159,7 @@ class MapPoolEntry(BaseModel):
     wins: int
     losses: int
     avg_kd: float | None
+    win_rate: float | None  # 0..100
     has_data: bool
 
 

@@ -95,6 +95,7 @@ export interface MapPoolEntry {
   wins: number;
   losses: number;
   avg_kd: number | null;
+  win_rate: number | null;
   has_data: boolean;
 }
 

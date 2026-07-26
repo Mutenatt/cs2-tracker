@@ -239,6 +239,7 @@ def map_pool(history: list[dict], known_maps: list[str]) -> list[dict]:
                     "wins": wins,
                     "losses": losses,
                     "avg_kd": round(avg_kd, 2),
+                    "win_rate": round(100.0 * wins / len(rows), 1),
                     "has_data": True,
                 }
             )
@@ -250,6 +251,7 @@ def map_pool(history: list[dict], known_maps: list[str]) -> list[dict]:
                     "wins": 0,
                     "losses": 0,
                     "avg_kd": None,
+                    "win_rate": None,
                     "has_data": False,
                 }
             )

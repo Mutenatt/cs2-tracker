@@ -60,7 +60,7 @@ export function Heatmap({ map, matchId }: { map: string | null; matchId: string 
       render();
     };
     img.onerror = () => setMsg(`Sin radar para ${map}`);
-    img.src = `/maps/${map}.png`;
+    img.src = `/radar/${map}_radar_psd.png`;
 
     getKills(matchId)
       .then((r) => {

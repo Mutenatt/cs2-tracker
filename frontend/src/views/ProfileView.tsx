@@ -6,11 +6,13 @@ import { AccuracyPanel } from "../components/AccuracyPanel";
 import { AutoFetchSettings } from "../components/AutoFetchSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
 import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
+import { MapWallpaperCarousel } from "../components/MapWallpaperCarousel";
 import { ProfileTagChips } from "../components/ProfileTagChips";
 import { SquadCard } from "../components/SquadCard";
 import { CoachCorner } from "../components/CoachCorner";
 import { tierClass } from "../components/RankBadge";
 import { RankHistoryCard } from "../components/RankHistoryCard";
+import { csgoRankFor, RankCrest } from "../lib/csgoRankEquivalent";
 import { TopMapsPanel } from "../components/TopMapsPanel";
 import { TopWeaponsPanel } from "../components/TopWeaponsPanel";
 import { useUser } from "../context/UserContext";
@@ -40,8 +42,8 @@ function MatchHistoryCard({ m }: { m: ProfileResponse["match_history"][number] }
           onError={(e) => {
             // Mapa sin emblema -> cae al radar; sin radar tampoco -> se oculta.
             const img = e.currentTarget as HTMLImageElement;
-            if (!img.src.endsWith(`/maps/${m.map}.png`)) {
-              img.src = `/maps/${m.map}.png`;
+            if (!img.src.endsWith(`/radar/${m.map}_radar_psd.png`)) {
+              img.src = `/radar/${m.map}_radar_psd.png`;
               img.className = "mh-thumb";
             } else {
               img.style.visibility = "hidden";
@@ -132,6 +134,7 @@ export function ProfileView() {
   // partida derivado del demo (Capa 1).
   const liveRating = data.current_premier_rating;
   const currentRank = liveRating ?? entryRank;
+  const equivRank = currentRank !== null ? csgoRankFor(currentRank) : null;
   // Delta a mostrar: con rating vivo cerramos el gap y mostramos el cambio de
   // la ÚLTIMA partida (vivo − entrada de esa partida). Sin vivo, lo más nuevo
   // que podemos afirmar es el delta de la penúltima (última resuelta).
@@ -147,6 +150,14 @@ export function ProfileView() {
     return m.rank_type === 11 ? typeFilter.premier : typeFilter.competitivo;
   });
 
+  // "Mejor mapa" ya viene resuelto por el backend (win rate + desempate por
+  // muestra, ver profile_domain.best_map) -- se busca la fila de map_pool
+  // que corresponde en vez de reordenar acá.
+  const topMap = tactical_snapshot.best_map
+    ? map_pool.find((m) => m.map === tactical_snapshot.best_map)
+    : undefined;
+  const topWeapon = top_weapons[0];
+
   return (
     <>
       <div className="profile-hero">
@@ -157,8 +168,8 @@ export function ProfileView() {
         )}
         <div>
           <div className="pname-row">
-            <span className="display pname">{data.display_name ?? steamid}</span>
-            <span className="prank">STEAMID {steamid}</span>
+            {data.display_name && <span className="display pname">{data.display_name}</span>}
+            {/*<span className="prank">STEAMID {steamid}</span>*/}
           </div>
           <div className="pmeta">
             <b>{lifetime.matches_played}</b> partidas jugadas ·{" "}
@@ -166,7 +177,6 @@ export function ProfileView() {
           </div>
           {currentRank !== null && (
             <div className="premier-hero">
-              <span className="ph-label">Premier Rating</span>
               <span className={`ph-num mono ${tierClass(currentRank)}`}>
                 {currentRank.toLocaleString("en-US")}
               </span>
@@ -184,8 +194,54 @@ export function ProfileView() {
               )}
             </div>
           )}
+          {equivRank && (
+            <div className="csgo-equiv-chip" title={`Equivalente CS:GO: ${equivRank.name}`}>
+              <RankCrest rank={equivRank} />
+              <span>{equivRank.name}</span>
+            </div>
+          )}
           {steamid && <ProfileTagChips steamid={steamid} />}
         </div>
+
+        {(topMap || topWeapon) && (
+          <div className="profile-hero-summary">
+            {topMap && (
+              <div className="phs-bg">
+                <MapWallpaperCarousel map={topMap.map} />
+              </div>
+            )}
+            <div className="phs-grid">
+              <div className="phs-stat">
+                <span className="label">ADR</span>
+                <b>{lifetime.avg_adr.toFixed(1)}</b>
+              </div>
+              <div className="phs-stat">
+                <span className="label">HS%</span>
+                <b>{accuracy.head_pct.toFixed(0)}%</b>
+              </div>
+              {topWeapon && (
+                <div className="phs-stat phs-stat-wide">
+                  <span className="label">Mejor arma</span>
+                  <span>
+                    <b>{topWeapon.name}</b>
+                    <span className="phs-sub"> · {topWeapon.kills} kills</span>
+                  </span>
+                </div>
+              )}
+              {topMap && (
+                <div className="phs-stat phs-stat-wide">
+                  <span className="label">Mejor mapa</span>
+                  <span>
+                    <b>{topMap.map}</b>
+                    {topMap.win_rate !== null && (
+                      <span className="phs-sub"> · {topMap.win_rate.toFixed(0)}% WR</span>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="section-note" style={{ marginTop: -8 }}>

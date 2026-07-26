@@ -55,10 +55,12 @@ def test_map_pool_marca_mapas_sin_datos():
     assert by_map["de_mirage"]["matches_played"] == 2
     assert by_map["de_mirage"]["wins"] == 1
     assert by_map["de_mirage"]["has_data"] is True
+    assert by_map["de_mirage"]["win_rate"] == 50.0
 
     assert by_map["de_inferno"]["has_data"] is False
     assert by_map["de_inferno"]["matches_played"] == 0
     assert by_map["de_inferno"]["avg_kd"] is None
+    assert by_map["de_inferno"]["win_rate"] is None
 
 
 def test_map_pool_ordena_con_datos_primero():
