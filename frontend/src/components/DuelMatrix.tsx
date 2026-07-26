@@ -73,7 +73,7 @@ function DuelRadar({
     img.onerror = () => {
       if (!cancelled) setMsg(`Sin radar para ${map}`);
     };
-    img.src = `/maps/${map}.png`;
+    img.src = `/radar/${map}_radar_psd.png`;
 
     return () => {
       cancelled = true;

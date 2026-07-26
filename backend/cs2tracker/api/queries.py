@@ -331,20 +331,12 @@ def loadout_breakdown_inputs(s: Session, steamid: str) -> list[dict]:
     return rows
 
 
-def recent_hitgroup_counts(s: Session, steamid: str, n_matches: int = 16) -> dict[str, int]:
-    """Cantidad de impactos por hitgroup crudo en las últimas `n_matches`
-    partidas del jugador, para AccuracyPanel (no lifetime completo: el panel
-    pide una ventana reciente, a diferencia de TopWeaponsPanel)."""
-    recent_match_ids = (
-        select(MatchPlayer.match_id)
-        .join(Match, Match.match_id == MatchPlayer.match_id)
-        .where(MatchPlayer.steamid == steamid)
-        .order_by(Match.match_id.desc())
-        .limit(n_matches)
-    )
+def lifetime_hitgroup_counts(s: Session, steamid: str) -> dict[str, int]:
+    """Cantidad de impactos por hitgroup crudo en todas las partidas del
+    jugador, para AccuracyPanel."""
     rows = s.execute(
         select(Damage.hitgroup, func.count())
-        .where(Damage.attacker == steamid, Damage.match_id.in_(recent_match_ids))
+        .where(Damage.attacker == steamid)
         .group_by(Damage.hitgroup)
     ).all()
     return {hitgroup: count for hitgroup, count in rows if hitgroup}

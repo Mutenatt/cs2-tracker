@@ -51,13 +51,7 @@ function Sparkline({ series }: { series: number[] }) {
   );
 }
 
-export function AccuracyPanel({
-  data,
-  windowSize = 16,
-}: {
-  data: AccuracyStats;
-  windowSize?: number;
-}) {
+export function AccuracyPanel({ data }: { data: AccuracyStats }) {
   const zones: Zone[] = [
     { key: "head", label: "Cabeza", pct: data.head_pct, hits: data.head_hits },
     { key: "body", label: "Torso", pct: data.body_pct, hits: data.body_hits },
@@ -69,7 +63,7 @@ export function AccuracyPanel({
   return (
     <div className="panel-card">
       <div className="panel-title">Precisión</div>
-      <div className="panel-subtitle">Últimas {windowSize} partidas</div>
+      <div className="panel-subtitle">Total de partidas procesadas</div>
       {totalHits === 0 ? (
         <p className="muted">Todavía no hay impactos registrados en este período.</p>
       ) : (
