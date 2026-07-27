@@ -1240,6 +1240,14 @@ footer {
 .profile-hero > *:not(.profile-hero-summary) {
   align-self: center;
 }
+/* Excepción: la columna de nombre/rating necesita estirarse a toda la
+   altura de la tarjeta para poder anclar .premier-hero-row cerca del
+   fondo (ver abajo) -- si quedara centrada como el resto, no habría
+   "espacio de sobra" hacia abajo para empujarlo. */
+.profile-hero > .profile-hero-info {
+  align-self: stretch;
+  position: relative;
+}
 /* Contorno degradado que sigue el mismo difuminado que el fondo interior
    (::before): fuerte del lado del tier a la izquierda, se apaga hacia el
    carrusel. Técnica del "anillo" con mask (content-box vs box completo)
@@ -1395,6 +1403,27 @@ footer {
   }
 }
 
+/* Columna que reemplaza al avatar suelto: nombre apilado arriba de la
+   foto de perfil de Steam, en vez de al lado (ver profile-hero-info, que
+   ahora solo tiene el badge de rango equivalente en su pname-row). */
+.profile-hero-avatar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  /* Sube la columna (antes centrada por .profile-hero > *:not(...)
+     { align-self: center }) un poco más arriba dentro de la fila. */
+  align-self: flex-start;
+  margin-top: -8px;
+}
+.profile-hero-avatar-col .pname-above-avatar {
+  font-size: 13px;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: -6px;
+}
 .profile-hero .pav {
   position: relative;
   width: 72px;
@@ -1452,22 +1481,26 @@ footer {
   padding: 2px 7px;
   letter-spacing: 0.05em;
 }
-.profile-hero .pmeta {
-  margin-top: 6px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-.profile-hero .pmeta b {
-  color: var(--text);
-}
-/* Fila que agrupa el rectángulo del rating con su label "CS RATING",
-   que ahora queda afuera de la caja. */
+/* Fila que agrupa el rectángulo del rating con su label "CS RATING", que
+   ahora queda afuera de la caja. Position:absolute (no en flujo normal) --
+   así se puede mover sin arrastrar a ProfileTagChips/.phs-inline hacia
+   abajo, que es lo que pasaba cuando esto era margin-top en flujo. Ancla:
+   .profile-hero-info (position:relative). */
 .premier-hero-row {
+  position: absolute;
+  top: 26px;
+  left: 14px;
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin-top: 10px;
+}
+/* Badge de rango equivalente: clavado casi al fondo de la tarjeta, mismo
+   spot que antes ocupaba .premier-hero-row -- ver .profile-hero-info
+   (position:relative, contenedor). */
+.equiv-chip-bottom {
+  position: absolute;
+  left: 0;
+  bottom: -10px;
 }
 /* Premier Rating vigente en el header, encapsulado como el badge de
    "Rank Premier" (.rank-badge): rectángulo con fondo/borde teñidos del
@@ -1477,15 +1510,15 @@ footer {
   isolation: isolate;
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   width: fit-content;
-  padding: 8px 16px;
+  padding: 6px 13px;
   background: color-mix(in srgb, var(--tier-accent, transparent) 16%, var(--panel));
   border: 1px solid transparent;
   border-radius: 6px;
   box-shadow:
-    0 0 10px 2px color-mix(in srgb, var(--tier-accent, transparent) 55%, transparent),
-    0 0 20px 5px color-mix(in srgb, var(--tier-accent, transparent) 30%, transparent);
+    0 0 4px 0px color-mix(in srgb, var(--tier-accent, transparent) 55%, transparent),
+    0 0 8px 1px color-mix(in srgb, var(--tier-accent, transparent) 30%, transparent);
 }
 /* Mismo anillo degradado + glow que .pav y .profile-hero::after, para que
    el encapsulado del CS Rating quede consistente con el resto de la
@@ -1513,12 +1546,12 @@ footer {
   mask-composite: exclude;
 }
 .premier-hero .ph-num {
-  font-size: 33px;
+  font-size: 26px;
   font-weight: 900;
   line-height: 1;
 }
 .premier-hero .ph-delta {
-  font-size: 14.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -1532,7 +1565,7 @@ footer {
   font-size: 10.5px;
   letter-spacing: 0.08em;
   color: var(--text-faint);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .premier-hero .ph-num.t1 {
   color: #b0c3d9;
@@ -1554,6 +1587,66 @@ footer {
 }
 .premier-hero .ph-num.t7 {
   color: #e4ae39;
+}
+
+/* El número y el delta van por encima de la capa de "+" (ver más abajo):
+   son estáticos (z-index:auto) y sin esto la capa absolute los taparía. */
+.premier-hero .ph-num,
+.premier-hero .ph-delta {
+  position: relative;
+  z-index: 1;
+}
+/* Efecto "lluvia de +" de la pantalla de Rank Up / Premier de CS2: signos
+   "+" ascendentes con velocidad/tamaño/desfase aleatorios (ver
+   PremierRankUpEffect.tsx), detrás del número pero delante del fondo. */
+.premier-hero .rankup-plus-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.premier-hero .rankup-plus {
+  position: absolute;
+  bottom: -10%;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  opacity: 0;
+  color: var(--tier-accent, var(--line));
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tier-accent, transparent) 80%, transparent));
+  /* transform + opacity únicamente: animación en el compositor (GPU), sin
+     layout/paint por frame -- sostiene 60fps con varios "+" simultáneos. */
+  animation: premier-plus-rise var(--duration) linear var(--delay) infinite;
+  will-change: transform, opacity;
+}
+.premier-hero .rankup-plus svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+@keyframes premier-plus-rise {
+  0% {
+    transform: translateY(0) scale(var(--scale-start));
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--peak-opacity);
+  }
+  75% {
+    opacity: var(--peak-opacity);
+  }
+  100% {
+    transform: translateY(-260%) scale(var(--scale-end));
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .premier-hero .rankup-plus {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* Es un <button>: se resetea todo lo que el navegador le agrega por
@@ -1625,21 +1718,40 @@ footer {
   overflow: hidden;
   border-radius: 0 9px 9px 0;
 }
+/* Fade con paradas intermedias (no solo 2 puntos): un gradiente lineal de
+   transparent a black en solo 2 stops se ve "plano y después de golpe"
+   -- el ojo no percibe la opacidad de forma lineal. Forzar un 50% de
+   opacidad a la mitad del recorrido corrige esa sensación de salto. */
 .profile-hero-summary .phs-bg {
   position: absolute;
   inset: 0;
   z-index: -1;
-  -webkit-mask-image: linear-gradient(100deg, transparent 0%, transparent 8%, black 38%);
-  mask-image: linear-gradient(100deg, transparent 0%, transparent 8%, black 38%);
+  -webkit-mask-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 12%,
+    rgba(0, 0, 0, 0.5) 46%,
+    black 80%
+  );
+  mask-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 12%,
+    rgba(0, 0, 0, 0.5) 46%,
+    black 80%
+  );
 }
+/* El overlay oscuro toma un poco del --tier-accent en su primer tramo (en
+   vez de un navy plano) para continuar el mismo tono del degradé de la
+   tarjeta en vez de cortar seco al color neutro. */
 .profile-hero-summary .phs-bg::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     100deg,
-    rgba(14, 20, 32, 0.55) 0%,
-    rgba(14, 20, 32, 0.5) 35%,
+    color-mix(in srgb, var(--tier-accent, transparent) 22%, rgba(14, 20, 32, 0.55)) 0%,
+    color-mix(in srgb, var(--tier-accent, transparent) 10%, rgba(14, 20, 32, 0.5)) 35%,
     rgba(14, 20, 32, 0.42) 100%
   );
 }
@@ -1647,7 +1759,7 @@ footer {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(2px) saturate(1.1) brightness(0.85);
+  filter: saturate(1.1) brightness(0.85);
   transform: scale(1.15);
 }
 .profile-hero-summary .phs-bg .wallpaper-frame {
@@ -1659,32 +1771,162 @@ footer {
 .profile-hero-summary .phs-bg .wallpaper-frame.active {
   opacity: 1;
 }
-.phs-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px 20px;
+/* ADR/HS%/Mejor arma viven en la columna del nombre (cerca del chip de
+   rango equivalente), no en el panel del carrusel -- ver .phs-inline más
+   abajo. Acá solo queda Mejor mapa, clavada a la esquina inferior derecha
+   del panel (.profile-hero-summary es su position:relative). */
+.phs-grid-single {
+  position: absolute;
+  right: 16px;
+  bottom: 0;
+  display: flex;
 }
+/* Sin el recuadro/glow -- va directo sobre el wallpaper, en fila
+   horizontal (label "Mejor mapa" a la izquierda del nombre del mapa, no
+   apilados como el resto de .phs-stat). Color por tier (heredado de
+   .phs-stat .label/b/.phs-sub), sin contorno. */
+.phs-grid-single .phs-stat {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+/* Contorno negro fino (0.6px en las 4 direcciones) para que se lea
+   encima del wallpaper sin verse grueso. */
+.phs-grid-single .phs-stat,
+.phs-grid-single .phs-stat * {
+  text-shadow:
+    -0.6px -0.6px 0 #000,
+    0.6px -0.6px 0 #000,
+    -0.6px 0.6px 0 #000,
+    0.6px 0.6px 0 #000;
+}
+/* Mejor mapa/anubis/WR, todo al tamaño chico del label "ADR" (10.5px) --
+   antes quedaban grandes (18px, igualados al nombre del mapa). */
+.phs-grid-single .phs-stat .label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.phs-grid-single .phs-stat b {
+  font-size: 10.5px;
+}
+.phs-grid-single .phs-stat .phs-sub {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+/* En vez del color fijo por tier (--tier-accent) que usa el resto de
+   .phs-stat, acá el texto toma el tono de lo que haya debajo en el
+   carrusel (mix-blend-mode) -- así no resalta como un color ajeno pegado
+   encima de la foto, sino que se integra con cada imagen que va pasando. */
+.phs-grid-single .phs-stat .label,
+.phs-grid-single .phs-stat b,
+.phs-grid-single .phs-stat .phs-sub {
+  color: #fff;
+  mix-blend-mode: overlay;
+}
+/* "CS RATING": centrado arriba de "HS%" (segundo item de .phs-inline),
+   con el color del tier igual que el resto de los labels teñidos. */
+/* Position:absolute (no en flujo normal) -- así queda a la altura del chip
+   "Legendary Eagle" (misma fila que .pname-row) sin arrastrar/empujar
+   .phs-inline hacia abajo, que es lo que pasaba cuando era un bloque más
+   en el flujo. Ancla: .profile-hero-info (position:relative). */
+.cs-rating-label {
+  position: absolute;
+  top: 34px;
+  left: 426px;
+  width: max-content;
+  white-space: nowrap;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--tier-accent, transparent) 45%, var(--line));
+  color: color-mix(in srgb, var(--tier-accent, var(--text-faint)) 65%, var(--text-faint));
+  /* Glow de neón en las letras (mismo criterio que el box-shadow de .pav /
+     .premier-hero, pero como text-shadow -- sin caja, solo el texto). */
+  text-shadow:
+    0 0 4px color-mix(in srgb, var(--tier-accent, transparent) 80%, transparent),
+    0 0 8px color-mix(in srgb, var(--tier-accent, transparent) 50%, transparent);
+}
+/* Position:absolute (no en flujo normal) -- para que mover esta fila no
+   estire .profile-hero-info y, con eso, arrastre el alto de
+   .profile-hero-summary (align-items:stretch en el grid de .profile-hero
+   iguala el alto de todos los items de la fila al más alto). Ancla:
+   .profile-hero-info (position:relative). */
+.phs-inline {
+  position: absolute;
+  top: 65px;
+  left: 380px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 26px;
+}
+/* Label y valor centrados entre sí (no el bloque contra la fila -- cada
+   stat centra su propio contenido, así "Mejor arma" alinea igual que
+   ADR/HS% aunque el nombre del arma sea más largo que el label). */
+.phs-inline .phs-stat {
+  align-items: center;
+  text-align: center;
+}
+/* Chip con "luz de neón" teñida del tier (--tier-accent, seteado en
+   .profile-hero.t1..t7 y heredado hasta acá): mismo degradé 100deg que
+   .profile-hero::before (el fondo del rectángulo principal de la tarjeta),
+   más el borde + box-shadow de dos capas que ya usan .pav / .premier-hero.
+   Mejor mapa (dentro de .profile-hero-summary, sobre el wallpaper) SÍ
+   necesita este recuadro para tener contraste -- ver override sin caja
+   para .phs-inline .phs-stat más abajo. */
 .phs-stat {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, transparent) 32%, var(--panel)) 0%,
+    color-mix(in srgb, var(--tier-accent, transparent) 14%, var(--panel)) 55%,
+    var(--panel) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--tier-accent, transparent) 38%, var(--line));
+  box-shadow:
+    0 0 8px 1px color-mix(in srgb, var(--tier-accent, transparent) 45%, transparent),
+    0 0 16px 4px color-mix(in srgb, var(--tier-accent, transparent) 20%, transparent);
+}
+/* ADR/HS%/Mejor arma: sin el recuadro (van sobre el fondo teñido del
+   propio .profile-hero, no lo necesitan) pero conservan el color de texto
+   por tier de .phs-stat. */
+.phs-inline .phs-stat {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+/* "Mejor arma" se cortaba en dos líneas ("Mejor"/"arma") por falta de
+   ancho -- el label va en una sola línea, el nombre del arma sigue abajo. */
+.phs-inline .phs-stat .label {
+  white-space: nowrap;
+}
+.phs-stat .label {
+  color: color-mix(in srgb, var(--tier-accent, var(--text-faint)) 65%, var(--text-faint));
 }
 .phs-stat b {
   font-family: "IBM Plex Mono", monospace;
   font-size: 18px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--tier-accent, var(--text));
 }
 .phs-stat .phs-sub {
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;
   font-weight: 400;
-  color: var(--text-dim);
+  color: color-mix(in srgb, var(--tier-accent, var(--text-dim)) 55%, var(--text-dim));
 }
-.phs-stat-wide {
-  grid-column: 1 / -1;
-}
-
 .profile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
