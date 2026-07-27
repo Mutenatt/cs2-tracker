@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { CenoteWaterBackground } from "../components/CenoteWaterBackground";
 import { DesertDuneBackground } from "../components/DesertDuneBackground";
@@ -48,7 +48,7 @@ const CATEGORY_LABEL: Record<Category, string> = {
 const UTILITY_EFFECT_DURATION: Record<Category, number> = {
   smoke: 1100,
   flash: 1000,
-  molotov: 1650,
+  molotov: 1400,
   he: 820,
 };
 
@@ -279,12 +279,86 @@ function itemsFor(mapKey: string, category: Category | "all", side: Side): Lineu
     .filter((i) => i.side === side);
 }
 
+// fuego-molotov-loop.mp4 (2.375s) es la meseta "zoomeada" recortada del
+// video original. El <video loop> nativo evita el tranco de reiniciar a
+// mano con currentTime, pero el corte en sí (donde el fuego cambia de
+// forma de golpe) sigue siendo visible una vez por vuelta. Para tapar
+// ESE corte usamos DOS copias del mismo clip desfasadas medio período:
+// mientras una pasa por su propio corte (currentTime ~0 o ~fin), la
+// otra está a mitad de camino, lejos del suyo, así que un crossfade por
+// distancia-al-corte (calculado por rAF sobre el currentTime real de
+// cada video, no en tiempo de reloj/CSS) siempre deja una copia
+// totalmente opaca tapando el salto de la otra.
+const MOLOTOV_LOOP_DURATION = 2.375;
+const MOLOTOV_CROSSFADE_WINDOW = 0.18;
+
+function MolotovFireVideo() {
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const videoA = videoARef.current;
+    const videoB = videoBRef.current;
+    if (!videoA || !videoB) return;
+
+    const offsetB = () => {
+      videoB.currentTime = MOLOTOV_LOOP_DURATION / 2;
+    };
+    if (videoB.readyState >= 1) {
+      offsetB();
+    } else {
+      videoB.addEventListener("loadedmetadata", offsetB, { once: true });
+    }
+
+    const opacityFor = (currentTime: number) => {
+      const distanceToSeam = Math.min(currentTime, MOLOTOV_LOOP_DURATION - currentTime);
+      return Math.min(1, distanceToSeam / MOLOTOV_CROSSFADE_WINDOW);
+    };
+
+    let frame: number;
+    const tick = () => {
+      videoA.style.opacity = String(opacityFor(videoA.currentTime));
+      videoB.style.opacity = String(opacityFor(videoB.currentTime));
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      videoB.removeEventListener("loadedmetadata", offsetB);
+    };
+  }, []);
+
+  return (
+    <span className="lineup-molotov-fire-stack">
+      <video
+        ref={videoARef}
+        className="lineup-molotov-fire"
+        src="/media/fuego-molotov-loop.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+      <video
+        ref={videoBRef}
+        className="lineup-molotov-fire"
+        src="/media/fuego-molotov-loop.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+    </span>
+  );
+}
+
 function UtilityButtonEffect({ category }: { category: Category }) {
-  const particles = category === "smoke" ? 5 : category === "molotov" ? 6 : 8;
+  const particles = category === "smoke" ? 5 : 8;
   return (
     <span className={`lineup-filter-effect lineup-filter-effect-${category}`} aria-hidden="true">
       {category === "molotov" ? (
-        <img className="lineup-molotov-fire" src="/effects/molotov-fire.svg" alt="" />
+        <MolotovFireVideo />
       ) : (
         Array.from({ length: particles }, (_, index) => <i key={index} />)
       )}

@@ -2966,9 +2966,6 @@ button.map-pool-card.lineup-map-card {
 .lineup-filter-animate-flash {
   animation: lineup-flash-burst 1s ease forwards !important;
 }
-.lineup-filter-animate-molotov {
-  animation: lineup-molotov-button 1.65s ease-out forwards !important;
-}
 .lineup-filter-animate-he {
   animation: lineup-he-shatter 820ms cubic-bezier(0.18, 0.84, 0.28, 1) forwards !important;
 }
@@ -3001,13 +2998,8 @@ button.map-pool-card.lineup-map-card {
    fuego o esquirlas se dibujen sobre la página. */
 .lineup-filter-animate-smoke .lineup-filter-effect-smoke,
 .lineup-filter-animate-molotov .lineup-filter-effect-molotov,
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov,
 .lineup-filter-animate-he .lineup-filter-effect-he {
-  opacity: 1;
-}
-
-/* Fuego (molotov) sigue vivo mientras está seleccionado -- ver su propio
-   bloque de estados más abajo para el resto. */
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov {
   opacity: 1;
 }
 
@@ -3125,117 +3117,50 @@ button.map-pool-card.lineup-map-card {
     0 0 20px -8px rgba(170, 180, 190, 0.25);
 }
 
-/* ---- Molotov: fuego con estados idle / hover / active ----
-   La llama (SVG) vive siempre montada -- lo que cambia entre estados es
-   su escala/opacidad, no su presencia. Así nunca "aparece de la nada". */
-.lineup-filter-utility-molotov .lineup-filter-effect-molotov {
-  opacity: 0.5;
-}
-.lineup-filter-utility-molotov:hover .lineup-filter-effect-molotov {
-  opacity: 0.8;
-}
-
-/* Capa 1 -- fuego exterior: glow ancho y difuso, rojo/naranja oscuro,
-   deriva lenta. Es el plano más lejano, siempre presente de fondo. */
-.lineup-filter-utility-molotov .lineup-filter-effect-molotov::before {
-  content: "";
+/* ---- Molotov: video real de fuego (public/media/fuego-molotov-loop.mp4) ----
+   El wrapper (.lineup-molotov-fire-stack) es el que se ve de forma
+   constante mientras el filtro está seleccionado (.active), y el click
+   agrega un pulso más intenso encima (.lineup-filter-animate-molotov)
+   que decae de vuelta al brillo "seleccionado" en vez de a cero. Adentro
+   viven DOS <video> del mismo clip desfasados medio loop (ver
+   MolotovFireVideo en LineUps.tsx): sus opacidades individuales las pisa
+   JS cuadro a cuadro (crossfade por distancia al corte del loop), así
+   que acá NO se les toca opacity/transition -- solo position/tamaño. Al
+   ser footage sobre fondo negro, mix-blend-mode:screen hace que el negro
+   desaparezca y las llamas se integren directo con el fondo oscuro del
+   botón, sin caja ni recorte visible. */
+.lineup-molotov-fire-stack {
   position: absolute;
-  right: -10px;
-  bottom: -20px;
-  left: -10px;
-  height: 46px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse at 18% 92%, rgba(196, 46, 12, 0.55), transparent 60%),
-    radial-gradient(ellipse at 55% 96%, rgba(224, 74, 18, 0.5), transparent 62%),
-    radial-gradient(ellipse at 86% 90%, rgba(196, 46, 12, 0.5), transparent 58%);
-  filter: blur(6px);
-  opacity: 0.35;
-  animation: lineup-molotov-exterior 4.4s ease-in-out infinite;
+  opacity: 0;
+  transform: scale(1.05);
+  transform-origin: center bottom;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out;
 }
-.lineup-filter-utility-molotov:hover .lineup-filter-effect-molotov::before {
-  opacity: 0.55;
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-molotov-fire-stack {
+  opacity: 1;
+  transform: scale(1.1);
 }
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::before {
-  opacity: 0.78;
-}
-
-/* Capa "heat haze" -- un velo cálido muy sutil justo sobre la llama,
-   en vez de una distorsión real (CSS no la da sin afectar el texto). */
-.lineup-filter-utility-molotov .lineup-filter-effect-molotov::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  bottom: 0;
-  left: -6px;
-  height: 30px;
-  pointer-events: none;
-  background: linear-gradient(0deg, rgba(255, 176, 92, 0.24), transparent 78%);
-  filter: blur(3.5px);
-  mix-blend-mode: screen;
-  opacity: 0.22;
-  animation: lineup-molotov-haze 2.6s ease-in-out infinite;
-}
-.lineup-filter-utility-molotov:hover .lineup-filter-effect-molotov::after {
-  opacity: 0.4;
-}
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::after {
-  opacity: 0.58;
-}
-
-/* La llama (SVG animado por sprite/frames, ver public/effects/molotov-fire.svg)
-   es una animación de fuego que CRECE frame a frame -- en reposo se ve chica
-   y contenida en el botón; al pasar el mouse/activarse, el botón la deja
-   escapar de su propio recorte y crece de verdad (width/height), no solo
-   escala, para que se note el crecimiento real del fuego. */
-.lineup-filter-utility-molotov,
-.lineup-filter-utility-molotov .lineup-filter-effect-molotov {
-  overflow: visible;
-}
-.lineup-filter-utility-molotov:hover,
-.lineup-filter.active.lineup-filter-utility-molotov {
-  z-index: 5;
+.lineup-filter-animate-molotov .lineup-molotov-fire-stack {
+  opacity: 1;
+  transform: scale(1.18);
 }
 .lineup-molotov-fire {
   position: absolute;
-  left: 50%;
-  bottom: -6px;
-  width: 46px;
-  height: 46px;
-  object-fit: contain;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   object-position: center bottom;
   pointer-events: none;
-  filter: saturate(1.1) drop-shadow(0 -1px 2px rgba(255, 107, 18, 0.5));
-  transform-origin: center bottom;
-  transform: translateX(-50%) scale(0.8);
-  opacity: 0.55;
-  transition:
-    width 320ms ease,
-    height 320ms ease,
-    bottom 320ms ease,
-    transform 320ms ease,
-    opacity 320ms ease,
-    filter 320ms ease;
-}
-.lineup-filter-utility-molotov:hover .lineup-molotov-fire {
-  width: 130px;
-  height: 130px;
-  bottom: -10px;
-  transform: translateX(-50%) scale(0.93);
-  opacity: 0.85;
-  filter: saturate(1.2) drop-shadow(0 -1px 3px rgba(255, 107, 18, 0.7));
-}
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-molotov-fire {
-  width: 220px;
-  height: 220px;
-  bottom: -14px;
-  transform: translateX(-50%) scale(1);
-  opacity: 1;
-  filter: saturate(1.3) drop-shadow(0 -2px 4px rgba(255, 107, 18, 0.85));
+  mix-blend-mode: screen;
 }
 
-/* Glow del botón: varias capas de box-shadow, más marcado cerca del
-   fuego, que se disipa hacia el borde -- no un único blur plano. */
 .lineup-filter-utility-molotov {
   transition:
     border-color 0.15s ease,
@@ -3248,7 +3173,31 @@ button.map-pool-card.lineup-map-card {
     0 0 22px -6px rgba(255, 90, 20, 0.3);
 }
 .lineup-filter.active.lineup-filter-utility-molotov {
-  animation: lineup-molotov-glow-pulse 2.8s ease-in-out infinite;
+  box-shadow:
+    0 0 8px -2px rgba(255, 150, 70, 0.3),
+    0 0 18px -6px rgba(255, 90, 20, 0.2);
+}
+.lineup-filter-animate-molotov {
+  animation: lineup-molotov-glow-pulse 1.4s ease-out forwards;
+}
+
+@keyframes lineup-molotov-glow-pulse {
+  0% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 150, 70, 0.3),
+      0 0 18px -6px rgba(255, 90, 20, 0.2);
+  }
+  30% {
+    box-shadow:
+      0 0 16px -2px rgba(255, 170, 90, 0.7),
+      0 0 34px -6px rgba(255, 110, 30, 0.5),
+      0 0 55px -10px rgba(255, 70, 15, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 150, 70, 0.3),
+      0 0 18px -6px rgba(255, 90, 20, 0.2);
+  }
 }
 
 /* HE: destello central y esquirlas, contenidos en el botón. */
@@ -3377,41 +3326,6 @@ button.map-pool-card.lineup-map-card {
   100% {
     box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
     transform: scale(1);
-  }
-}
-
-@keyframes lineup-molotov-button {
-  0% {
-    border-color: var(--recon);
-  }
-  35% {
-    border-color: #ff8b32;
-  }
-  100% {
-    border-color: var(--recon);
-  }
-}
-
-@keyframes lineup-molotov-exterior {
-  0%, 100% { transform: translateX(-3%) scale(1); opacity: 0.85; }
-  50% { transform: translateX(3%) scale(1.06); opacity: 1; }
-}
-@keyframes lineup-molotov-haze {
-  0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.8; }
-  50% { transform: translateY(-2px) scaleY(1.08); opacity: 1; }
-}
-@keyframes lineup-molotov-glow-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 10px -2px rgba(255, 150, 70, 0.5),
-      0 0 24px -6px rgba(255, 90, 20, 0.35),
-      0 0 42px -10px rgba(255, 60, 10, 0.2);
-  }
-  50% {
-    box-shadow:
-      0 0 14px -2px rgba(255, 170, 90, 0.65),
-      0 0 30px -6px rgba(255, 110, 30, 0.45),
-      0 0 50px -10px rgba(255, 70, 15, 0.28);
   }
 }
 
