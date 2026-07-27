@@ -12,6 +12,11 @@ class UserOut(BaseModel):
     display_name: str | None
     avatar_url: str | None
     steam_background_url: str | None = None
+    custom_background_url: str | None = None
+
+
+class CustomBackgroundIn(BaseModel):
+    url: str
 
 
 class AutofetchLinkIn(BaseModel):

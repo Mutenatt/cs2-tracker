@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -30,6 +31,7 @@ from cs2tracker.api.schemas import (
     CoachInsight,
     CompareResponse,
     ComparisonMetric,
+    CustomBackgroundIn,
     DuelCell,
     DuelEvent,
     DuelRosterPlayer,
@@ -209,6 +211,52 @@ def auth_me(steamid: str = Depends(get_current_steamid)) -> UserOut:
             display_name=user.display_name,
             avatar_url=user.avatar_url,
             steam_background_url=background_url,
+            custom_background_url=user.custom_background_url,
+        )
+
+
+# Solo http(s): es lo único que un <img>/CSS background-image necesita, y
+# descarta esquemas raros (javascript:, data: gigante, etc.) sin tener que
+# validar la imagen en sí.
+_BACKGROUND_URL_RE_MAIN = re.compile(r"^https?://", re.IGNORECASE)
+
+
+@app.patch("/auth/me/background", response_model=UserOut)
+def set_custom_background(
+    body: CustomBackgroundIn, steamid: str = Depends(get_current_steamid)
+) -> UserOut:
+    url = body.url.strip()
+    if not _BACKGROUND_URL_RE_MAIN.match(url):
+        raise HTTPException(400, "la URL debe empezar con http:// o https://")
+    with Session(get_engine()) as s:
+        user = s.get(User, steamid)
+        if user is None:
+            raise HTTPException(401, "no autenticado")
+        user.custom_background_url = url
+        s.commit()
+        return UserOut(
+            steamid=user.steamid,
+            display_name=user.display_name,
+            avatar_url=user.avatar_url,
+            steam_background_url=user.steam_background_url,
+            custom_background_url=user.custom_background_url,
+        )
+
+
+@app.delete("/auth/me/background", response_model=UserOut)
+def clear_custom_background(steamid: str = Depends(get_current_steamid)) -> UserOut:
+    with Session(get_engine()) as s:
+        user = s.get(User, steamid)
+        if user is None:
+            raise HTTPException(401, "no autenticado")
+        user.custom_background_url = None
+        s.commit()
+        return UserOut(
+            steamid=user.steamid,
+            display_name=user.display_name,
+            avatar_url=user.avatar_url,
+            steam_background_url=user.steam_background_url,
+            custom_background_url=user.custom_background_url,
         )
 
 

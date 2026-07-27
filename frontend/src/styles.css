@@ -1225,12 +1225,14 @@ footer {
 }
 
 .profile-hero {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: auto 1fr minmax(320px, 42%);
   gap: 22px;
   align-items: stretch;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: 10px;
   padding: 22px 26px;
   margin-bottom: 20px;
@@ -1238,7 +1240,163 @@ footer {
 .profile-hero > *:not(.profile-hero-summary) {
   align-self: center;
 }
+/* Contorno degradado que sigue el mismo difuminado que el fondo interior
+   (::before): fuerte del lado del tier a la izquierda, se apaga hacia el
+   carrusel. Técnica del "anillo" con mask (content-box vs box completo)
+   en vez de border-image, que no respeta border-radius. */
+.profile-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 70%, var(--line)) 0%,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 30%, var(--line)) 30%,
+    var(--line) 65%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Fondo dinámico por tier Premier (mismos t1-t7 y hex que .rank-badge /
+   .csgo-equiv-chip) -- solo pinta detrás del avatar/nombre/rating
+   (columnas 1-2 del grid). El carrusel de la derecha (.profile-hero-summary)
+   es opaco y cubre su propia columna por completo: no se toca su CSS, su
+   z-index ni la lógica de MapWallpaperCarousel. Sin tier (calibrando /
+   sin partidas) el fondo sigue siendo el panel plano de siempre. */
+.profile-hero.t1 { --tier-accent: #b0c3d9; }
+.profile-hero.t2 { --tier-accent: #5e98d9; }
+.profile-hero.t3 { --tier-accent: #6a8bff; }
+.profile-hero.t4 { --tier-accent: #a86aff; }
+.profile-hero.t5 { --tier-accent: #d32ce6; }
+.profile-hero.t6 { --tier-accent: #eb4b4b; }
+.profile-hero.t7 { --tier-accent: #e4ae39; }
+
+.profile-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, transparent) 22%, var(--panel)) 0%,
+    color-mix(in srgb, var(--tier-accent, transparent) 9%, var(--panel)) 45%,
+    color-mix(in srgb, var(--tier-accent, transparent) 3%, var(--panel)) 75%,
+    transparent 100%
+  );
+}
+/* Watermark de fondo del profile-hero: clip "Flying Crow" (ver
+   FlyingCrowWatermark.tsx) cruzando de izquierda a derecha, de perfil.
+   Ocupa TODO el ancho de la tarjeta (no se confina a una franja): al estar
+   en z-index:-1 pasa por detrás de absolutamente todo (texto, chip de
+   rango, y el carrusel de la derecha, que además pinta encima con
+   z-index:1) -- así puede recorrer toda la tarjeta sin tapar nunca nada. */
+.profile-hero .profile-hero-eagle {
+  /* .profile-hero > *:not(.profile-hero-summary) pone align-self:center,
+     que ignora nuestro top/bottom:0 y centra la caja por su propio alto
+     intrínseco (0, porque el contenido interno es absolute) -- de ahí
+     que necesite alta especificidad para pisarlo. */
+  align-self: stretch;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.28;
+  /* El clip trae fondo blanco sólido (no tiene canal alfa) -- "multiply"
+     es lo que realmente lo hace desaparecer contra el degradado morado
+     (multiplicar por blanco no cambia nada, así que el blanco del video
+     se vuelve invisible y solo queda la silueta oscura del cuervo).
+     screen/overlay harían lo contrario: esos sirven para ocultar NEGRO,
+     no blanco. Va acá (en el contenedor) y no en el <video>: el propio
+     position:absolute + z-index del contenedor ya crea su stacking
+     context, así que un blend-mode puesto en el <video> hijo quedaría
+     aislado contra un fondo transparente en vez de ver el degradado
+     morado real -- por eso terminaba pintando un rectángulo blanco lavado
+     en vez de desaparecer. */
+  mix-blend-mode: multiply;
+}
+/* eagle-frame: la caja que efectivamente se mueve (left + fade, ver
+   eagle-flight) y la que lleva el vignette. El mp4 tiene fondo blanco que
+   "multiply" (en .profile-hero-eagle) vuelve invisible, pero la compresión
+   del clip deja un resto de recuadro cerca del borde que sin difuminar se
+   nota como un "cuadrado" cruzando la tarjeta -- el mask-image radial lo
+   apaga a transparente bastante antes del borde real, así nunca hay un
+   canto recto visible. */
+.eagle-frame {
+  position: absolute;
+  left: -25%;
+  top: 22%;
+  width: 220px;
+  height: 165px;
+  animation: eagle-flight 30s linear infinite;
+  -webkit-mask-image: radial-gradient(ellipse 60% 58% at 50% 50%, #000 45%, transparent 88%);
+  mask-image: radial-gradient(ellipse 60% 58% at 50% 50%, #000 45%, transparent 88%);
+}
+.eagle-icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: blur(0.4px);
+}
+/* Capa de tiño: mismo tamaño que el video, pintada encima con
+   mix-blend-mode: color -- toma el matiz de --tier-accent y conserva la
+   luminosidad del video de abajo (duotono), así el cuervo cambia de tono
+   según el tier igual que el fondo del hero. Ninguno de los dos tiene
+   z-index propio, así que ambos quedan en el mismo grupo de blending
+   dentro de .profile-hero-eagle y el "color" blend ve al video como
+   backdrop real (no queda aislado contra transparente). */
+.eagle-tint {
+  position: absolute;
+  inset: 0;
+  background: var(--tier-accent, transparent);
+  mix-blend-mode: color;
+}
+
+/* Recorrido: entra por la izquierda fuera de la tarjeta, cruza y sale por
+   la derecha, y vuelve a arrancar -- bucle infinito, velocidad constante
+   (el "left" es siempre -25% + 1.5*p, interpolación lineal exacta en
+   todos los stops de abajo, así la velocidad de desplazamiento no cambia).
+   El aleteo en sí ya viene grabado en el clip.
+
+   La opacidad se anima en el mismo keyframe: aparece de a poco al entrar,
+   y se apaga por completo ANTES de llegar a la columna del carrusel
+   (arranca ~58% del ancho de la tarjeta) para que nunca se le note
+   cruzando por detrás de las estadísticas -- desaparece con transición,
+   no de golpe. */
+@keyframes eagle-flight {
+  0% { left: -25%; opacity: 0; }
+  12% { left: -7%; opacity: 1; }
+  48% { left: 47%; opacity: 1; }
+  60% { left: 65%; opacity: 0; }
+  100% { left: 125%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eagle-frame {
+    animation: none;
+    left: 38%;
+  }
+  .profile-hero .profile-hero-eagle {
+    opacity: 0.22;
+  }
+}
+
 .profile-hero .pav {
+  position: relative;
   width: 72px;
   height: 72px;
   border-radius: 10px;
@@ -1248,10 +1406,37 @@ footer {
   align-items: center;
   justify-content: center;
   font-size: 26px;
+  box-shadow:
+    0 0 10px 2px color-mix(in srgb, var(--tier-accent, transparent) 65%, transparent),
+    0 0 20px 5px color-mix(in srgb, var(--tier-accent, transparent) 35%, transparent);
+}
+/* Mismo anillo degradado que .profile-hero::after, pero más grueso y con
+   glow -- efecto "luz de neón" teñida del color del tier. */
+.profile-hero .pav::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 4px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 70%, var(--line)) 0%,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 30%, var(--line)) 30%,
+    var(--line) 65%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 .profile-hero .pname-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -1276,21 +1461,61 @@ footer {
 .profile-hero .pmeta b {
   color: var(--text);
 }
-/* Premier Rating vigente en el header (paleta de tiers oficial de CS2,
-   misma que .rank-badge; texto en degradado hacia un tono más claro). */
+/* Fila que agrupa el rectángulo del rating con su label "CS RATING",
+   que ahora queda afuera de la caja. */
+.premier-hero-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+/* Premier Rating vigente en el header, encapsulado como el badge de
+   "Rank Premier" (.rank-badge): rectángulo con fondo/borde teñidos del
+   color del tier -- sin las barras verticales de acento. */
 .premier-hero {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-top: 10px;
+  width: fit-content;
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--tier-accent, transparent) 16%, var(--panel));
+  border: 1px solid transparent;
+  border-radius: 6px;
+  box-shadow:
+    0 0 10px 2px color-mix(in srgb, var(--tier-accent, transparent) 55%, transparent),
+    0 0 20px 5px color-mix(in srgb, var(--tier-accent, transparent) 30%, transparent);
+}
+/* Mismo anillo degradado + glow que .pav y .profile-hero::after, para que
+   el encapsulado del CS Rating quede consistente con el resto de la
+   tarjeta (avatar y contorno general). */
+.premier-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 80%, var(--line)) 0%,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 40%, var(--line)) 60%,
+    var(--line) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 .premier-hero .ph-num {
   font-size: 33px;
   font-weight: 900;
   line-height: 1;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
 }
 .premier-hero .ph-delta {
   font-size: 14.5px;
@@ -1303,42 +1528,84 @@ footer {
 .premier-hero .ph-delta.down {
   color: var(--alert);
 }
+.ph-unit {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+}
 .premier-hero .ph-num.t1 {
-  background-image: linear-gradient(90deg, #b0c3d9, color-mix(in srgb, #b0c3d9 55%, white));
+  color: #b0c3d9;
 }
 .premier-hero .ph-num.t2 {
-  background-image: linear-gradient(90deg, #5e98d9, color-mix(in srgb, #5e98d9 55%, white));
+  color: #5e98d9;
 }
 .premier-hero .ph-num.t3 {
-  background-image: linear-gradient(90deg, #6a8bff, color-mix(in srgb, #6a8bff 55%, white));
+  color: #6a8bff;
 }
 .premier-hero .ph-num.t4 {
-  background-image: linear-gradient(90deg, #a86aff, color-mix(in srgb, #a86aff 55%, white));
+  color: #a86aff;
 }
 .premier-hero .ph-num.t5 {
-  background-image: linear-gradient(90deg, #d32ce6, color-mix(in srgb, #d32ce6 55%, white));
+  color: #d32ce6;
 }
 .premier-hero .ph-num.t6 {
-  background-image: linear-gradient(90deg, #eb4b4b, color-mix(in srgb, #eb4b4b 55%, white));
+  color: #eb4b4b;
 }
 .premier-hero .ph-num.t7 {
-  background-image: linear-gradient(90deg, #e4ae39, color-mix(in srgb, #e4ae39 55%, white));
+  color: #e4ae39;
 }
 
+/* Es un <button>: se resetea todo lo que el navegador le agrega por
+   default (fuente, cursor, línea de foco propia) para que se vea igual
+   que el chip de siempre. */
 .csgo-equiv-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 9px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 12px 3px 4px;
+  border-radius: 6px;
+  padding: 4px 12px 4px 6px;
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--panel-accent);
+}
+.csgo-equiv-chip .equiv-name {
+  white-space: nowrap;
+}
+/* Fondo teñido según el mismo tier de color que el resto de la UI
+   (rank-badge / premier-hero) -- antes era gris fijo sin relación con
+   el rango. */
+.csgo-equiv-chip.t1 {
+  background: linear-gradient(90deg, color-mix(in srgb, #b0c3d9 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #b0c3d9 45%, var(--line));
+}
+.csgo-equiv-chip.t2 {
+  background: linear-gradient(90deg, color-mix(in srgb, #5e98d9 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #5e98d9 45%, var(--line));
+}
+.csgo-equiv-chip.t3 {
+  background: linear-gradient(90deg, color-mix(in srgb, #6a8bff 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #6a8bff 45%, var(--line));
+}
+.csgo-equiv-chip.t4 {
+  background: linear-gradient(90deg, color-mix(in srgb, #a86aff 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #a86aff 45%, var(--line));
+}
+.csgo-equiv-chip.t5 {
+  background: linear-gradient(90deg, color-mix(in srgb, #d32ce6 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #d32ce6 45%, var(--line));
+}
+.csgo-equiv-chip.t6 {
+  background: linear-gradient(90deg, color-mix(in srgb, #eb4b4b 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #eb4b4b 45%, var(--line));
+}
+.csgo-equiv-chip.t7 {
+  background: linear-gradient(90deg, color-mix(in srgb, #e4ae39 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #e4ae39 45%, var(--line));
 }
 .rank-crest {
   height: 29px;
@@ -2361,6 +2628,36 @@ a.panel-cta:hover {
 .rank-badge.t7 .rb-inner {
   color: #e4ae39;
 }
+/* El paralelogramo en sí era gris fijo (rgba(10,14,21,.72)) sin relación
+   con el rango -- ahora el fondo también se tiñe según el tier. */
+.rank-badge.t1 {
+  background: linear-gradient(90deg, color-mix(in srgb, #b0c3d9 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #b0c3d9 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t2 {
+  background: linear-gradient(90deg, color-mix(in srgb, #5e98d9 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #5e98d9 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t3 {
+  background: linear-gradient(90deg, color-mix(in srgb, #6a8bff 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #6a8bff 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t4 {
+  background: linear-gradient(90deg, color-mix(in srgb, #a86aff 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #a86aff 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t5 {
+  background: linear-gradient(90deg, color-mix(in srgb, #d32ce6 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #d32ce6 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t6 {
+  background: linear-gradient(90deg, color-mix(in srgb, #eb4b4b 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #eb4b4b 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t7 {
+  background: linear-gradient(90deg, color-mix(in srgb, #e4ae39 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #e4ae39 45%, rgba(255, 255, 255, 0.09));
+}
 
 /* Rank Premier: tarjeta con sparkline */
 .rh-card {
@@ -2708,135 +3005,251 @@ button.map-pool-card.lineup-map-card {
   opacity: 1;
 }
 
-/* Humo y fuego siguen vivos mientras el filtro está seleccionado. Así no se
-   pierden por una animación de entrada demasiado rápida y siguen contenidos
-   por el overflow del botón. */
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke,
+/* Fuego (molotov) sigue vivo mientras está seleccionado -- ver su propio
+   bloque de estados más abajo para el resto. */
 .lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov {
   opacity: 1;
 }
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
-  animation: lineup-smoke-cloud 1.8s ease-in-out infinite !important;
-}
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i {
-  animation: lineup-flame 1.5s ease-in-out infinite !important;
-}
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(1) { left: 8%; }
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(2) { left: 25%; animation-delay: 180ms !important; }
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(3) { left: 44%; animation-delay: 70ms !important; }
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(4) { left: 62%; animation-delay: 260ms !important; }
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(5) { left: 78%; animation-delay: 120ms !important; }
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(1) { left: 7%; }
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(2) { left: 23%; height: 38px; animation-delay: 180ms !important; }
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(3) { left: 40%; height: 28px; animation-delay: 60ms !important; }
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(4) { left: 57%; height: 40px; animation-delay: 220ms !important; }
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(5) { left: 73%; height: 30px; animation-delay: 100ms !important; }
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov i:nth-child(6) { left: 87%; height: 35px; animation-delay: 280ms !important; }
 
-/* Nube de humo: burbujas de distinta escala que se unen y se disipan. */
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i,
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
-  bottom: -16px;
-  width: 34px;
-  height: 27px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 38% 34%, rgba(230, 239, 242, 0.92), rgba(126, 145, 151, 0.74) 42%, rgba(55, 71, 79, 0.08) 72%);
-  filter: blur(2px);
-  transform: scale(0.25);
+/* ---- Humo: nube con estados idle / hover / active ----
+   Reutiliza los mismos 5 <i> de siempre, pero como manchas orgánicas
+   (border-radius asimétrico, nunca un círculo) en vez de burbujas
+   perfectas. La nube nunca está en 0: solo cambia cuánto se nota. */
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke {
+  opacity: 0.4;
 }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(1) { left: 8%; animation: lineup-smoke-cloud 950ms 40ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(2) { left: 25%; animation: lineup-smoke-cloud 1s 0ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(3) { left: 44%; animation: lineup-smoke-cloud 900ms 100ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(4) { left: 62%; animation: lineup-smoke-cloud 1.05s 50ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(5) { left: 78%; animation: lineup-smoke-cloud 920ms 130ms ease-out forwards; }
+.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke {
+  opacity: 0.65;
+}
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke {
+  opacity: 0.88;
+}
 
-/* Llamas superpuestas, ancladas al borde inferior del propio rectángulo. */
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::before,
-.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::after {
-  content: none;
+/* Capa principal: base difusa y constante detrás de las manchas,
+   morfando de forma orgánica -- nunca un scale(1)->scale(2). */
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke::before {
+  content: "";
   position: absolute;
-  right: -8px;
-  bottom: -18px;
-  left: -8px;
-  height: 43px;
+  right: -6px;
+  bottom: -16px;
+  left: -6px;
+  height: 40px;
   pointer-events: none;
+  background: radial-gradient(ellipse at 38% 72%, rgba(198, 206, 214, 0.34), rgba(140, 150, 160, 0.16) 55%, transparent 78%);
+  filter: blur(5px);
+  border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
+  opacity: 0.55;
+  animation: lineup-smoke-body 15s ease-in-out infinite;
+}
+.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke::before {
+  opacity: 0.75;
+}
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke::before {
+  opacity: 0.92;
+}
+
+/* Turbulencia: dos manchas de luz/sombra derivando en direcciones
+   distintas, para que la textura se sienta mezclándose consigo misma. */
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke::after {
+  content: "";
+  position: absolute;
+  right: -10px;
+  bottom: -18px;
+  left: -10px;
+  height: 42px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 60%, rgba(212, 218, 224, 0.24), transparent 55%),
+    radial-gradient(circle at 68% 45%, rgba(168, 176, 186, 0.22), transparent 58%);
+  background-size: 140% 140%, 130% 130%;
+  mix-blend-mode: soft-light;
+  filter: blur(2.5px);
+  opacity: 0.5;
+  animation: lineup-smoke-turbulence 8s ease-in-out infinite;
+}
+.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke::after {
+  opacity: 0.68;
+}
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke::after {
+  opacity: 0.82;
+}
+
+/* Capa secundaria: 5 manchas orgánicas (nunca círculos) que aparecen,
+   se deforman, derivan y pierden densidad cada una a su propio ritmo.
+   El tamaño distinto de cada una es lo que da la sensación de
+   profundidad (más grande/definida = más cerca). */
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
+  bottom: -14px;
+  width: 30px;
+  height: 24px;
+  border-radius: 46% 54% 61% 39% / 52% 44% 56% 48%;
+  background: radial-gradient(ellipse at 40% 32%, rgba(214, 222, 228, 0.55), rgba(150, 160, 170, 0.32) 46%, rgba(90, 98, 108, 0.05) 74%);
+  filter: blur(3px);
+  opacity: 0;
+  transform-origin: bottom center;
+  animation: lineup-smoke-puff 11s ease-in-out infinite;
+}
+.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke i {
+  filter: blur(2.6px) brightness(1.08);
+}
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
+  filter: blur(2.2px) brightness(1.15);
+}
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(1) { left: 10%; animation-duration: 12.5s; animation-delay: 0s; }
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(2) { left: 28%; width: 26px; height: 20px; animation-duration: 9.5s; animation-delay: -3.1s; }
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(3) { left: 46%; width: 34px; height: 27px; animation-duration: 15s; animation-delay: -6.4s; }
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(4) { left: 63%; width: 24px; height: 19px; animation-duration: 10.8s; animation-delay: -1.8s; }
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(5) { left: 80%; animation-duration: 13.6s; animation-delay: -8.2s; }
+
+/* El click sigue disparando la ráfaga de siempre (lineup-smoke-cloud,
+   sin tocar) por encima de la animación idle. */
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(1) { animation: lineup-smoke-cloud 950ms 40ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(2) { animation: lineup-smoke-cloud 1s 0ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(3) { animation: lineup-smoke-cloud 900ms 100ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(4) { animation: lineup-smoke-cloud 1.05s 50ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(5) { animation: lineup-smoke-cloud 920ms 130ms ease-out forwards; }
+
+/* Glow apenas perceptible -- mucho más discreto que el del molotov. */
+.lineup-filter-utility-smoke {
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 280ms ease;
+}
+.lineup-filter-utility-smoke:hover {
+  box-shadow: 0 0 8px -3px rgba(200, 210, 218, 0.35);
+}
+.lineup-filter.active.lineup-filter-utility-smoke {
+  box-shadow:
+    0 0 10px -3px rgba(210, 218, 226, 0.4),
+    0 0 20px -8px rgba(170, 180, 190, 0.25);
+}
+
+/* ---- Molotov: fuego con estados idle / hover / active ----
+   La llama (SVG) vive siempre montada -- lo que cambia entre estados es
+   su escala/opacidad, no su presencia. Así nunca "aparece de la nada". */
+.lineup-filter-utility-molotov .lineup-filter-effect-molotov {
+  opacity: 0.5;
+}
+.lineup-filter-utility-molotov:hover .lineup-filter-effect-molotov {
+  opacity: 0.8;
+}
+
+/* Capa 1 -- fuego exterior: glow ancho y difuso, rojo/naranja oscuro,
+   deriva lenta. Es el plano más lejano, siempre presente de fondo. */
+.lineup-filter-utility-molotov .lineup-filter-effect-molotov::before {
+  content: "";
+  position: absolute;
+  right: -10px;
+  bottom: -20px;
+  left: -10px;
+  height: 46px;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 18% 92%, rgba(196, 46, 12, 0.55), transparent 60%),
+    radial-gradient(ellipse at 55% 96%, rgba(224, 74, 18, 0.5), transparent 62%),
+    radial-gradient(ellipse at 86% 90%, rgba(196, 46, 12, 0.5), transparent 58%);
+  filter: blur(6px);
+  opacity: 0.35;
+  animation: lineup-molotov-exterior 4.4s ease-in-out infinite;
+}
+.lineup-filter-utility-molotov:hover .lineup-filter-effect-molotov::before {
+  opacity: 0.55;
 }
 .lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::before {
-  bottom: -10px;
-  height: 51px;
-  background: radial-gradient(ellipse at 8% 88%, #ff5a16 0 16%, transparent 43%), radial-gradient(ellipse at 28% 86%, #ff8f16 0 24%, transparent 52%), radial-gradient(ellipse at 48% 92%, #e84012 0 25%, transparent 58%), radial-gradient(ellipse at 70% 85%, #ff9c1b 0 23%, transparent 53%), radial-gradient(ellipse at 92% 91%, #f04712 0 22%, transparent 54%), linear-gradient(0deg, #bd250b 0%, #f24c0f 38%, #ff971e 70%, rgba(255, 174, 37, 0) 100%);
-  border-radius: 48% 52% 16% 18% / 38% 40% 8% 10%;
-  clip-path: polygon(0 100%, 0 61%, 5% 49%, 11% 56%, 17% 43%, 22% 24%, 27% 43%, 32% 56%, 38% 43%, 43% 27%, 48% 8%, 53% 29%, 57% 52%, 63% 40%, 68% 24%, 73% 41%, 78% 57%, 84% 43%, 89% 23%, 94% 42%, 100% 57%, 100% 100%);
-  filter: blur(2.8px) saturate(1.42);
-  opacity: 0.95;
-  animation: lineup-fire-surface 1.15s ease-in-out infinite alternate;
+  opacity: 0.78;
+}
+
+/* Capa "heat haze" -- un velo cálido muy sutil justo sobre la llama,
+   en vez de una distorsión real (CSS no la da sin afectar el texto). */
+.lineup-filter-utility-molotov .lineup-filter-effect-molotov::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  left: -6px;
+  height: 30px;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(255, 176, 92, 0.24), transparent 78%);
+  filter: blur(3.5px);
+  mix-blend-mode: screen;
+  opacity: 0.22;
+  animation: lineup-molotov-haze 2.6s ease-in-out infinite;
+}
+.lineup-filter-utility-molotov:hover .lineup-filter-effect-molotov::after {
+  opacity: 0.4;
 }
 .lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov::after {
-  bottom: -13px;
-  height: 31px;
-  background: radial-gradient(ellipse at 19% 95%, #fff0a0 0 9%, #ffd02e 23%, transparent 53%), radial-gradient(ellipse at 52% 97%, #fff7bc 0 10%, #ffcf28 27%, transparent 54%), radial-gradient(ellipse at 80% 93%, #fff0a0 0 9%, #ffd02e 24%, transparent 51%);
-  filter: blur(1.4px);
-  mix-blend-mode: screen;
-  animation: lineup-fire-core 780ms ease-in-out infinite alternate;
+  opacity: 0.58;
 }
-/* Las seis chispas previas se reemplazan por una única silueta de fuego. */
-.lineup-filter-utility-molotov .lineup-filter-effect-molotov i {
-  display: none;
+
+/* La llama (SVG animado por sprite/frames, ver public/effects/molotov-fire.svg)
+   es una animación de fuego que CRECE frame a frame -- en reposo se ve chica
+   y contenida en el botón; al pasar el mouse/activarse, el botón la deja
+   escapar de su propio recorte y crece de verdad (width/height), no solo
+   escala, para que se note el crecimiento real del fuego. */
+.lineup-filter-utility-molotov,
+.lineup-filter-utility-molotov .lineup-filter-effect-molotov {
+  overflow: visible;
+}
+.lineup-filter-utility-molotov:hover,
+.lineup-filter.active.lineup-filter-utility-molotov {
+  z-index: 5;
 }
 .lineup-molotov-fire {
   position: absolute;
-  right: -3px;
+  left: 50%;
+  bottom: -6px;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  filter: saturate(1.1) drop-shadow(0 -1px 2px rgba(255, 107, 18, 0.5));
+  transform-origin: center bottom;
+  transform: translateX(-50%) scale(0.8);
+  opacity: 0.55;
+  transition:
+    width 320ms ease,
+    height 320ms ease,
+    bottom 320ms ease,
+    transform 320ms ease,
+    opacity 320ms ease,
+    filter 320ms ease;
+}
+.lineup-filter-utility-molotov:hover .lineup-molotov-fire {
+  width: 130px;
+  height: 130px;
+  bottom: -10px;
+  transform: translateX(-50%) scale(0.93);
+  opacity: 0.85;
+  filter: saturate(1.2) drop-shadow(0 -1px 3px rgba(255, 107, 18, 0.7));
+}
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-molotov-fire {
+  width: 220px;
+  height: 220px;
   bottom: -14px;
-  left: -3px;
-  width: calc(100% + 6px);
-  height: 63px;
-  overflow: visible;
-  filter: saturate(1.25) drop-shadow(0 -1px 2px rgba(255, 107, 18, 0.75));
-  transform-origin: center bottom;
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+  filter: saturate(1.3) drop-shadow(0 -2px 4px rgba(255, 107, 18, 0.85));
 }
-.lineup-molotov-outer {
-  fill: url(#molotov-outer);
-  animation: lineup-molotov-outer-flicker 1.05s ease-in-out infinite alternate;
-  transform-origin: center bottom;
+
+/* Glow del botón: varias capas de box-shadow, más marcado cerca del
+   fuego, que se disipa hacia el borde -- no un único blur plano. */
+.lineup-filter-utility-molotov {
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 280ms ease;
 }
-.lineup-molotov-organic {
-  transform-origin: center bottom;
-  animation: lineup-molotov-rise 1.8s ease-in-out infinite alternate;
+.lineup-filter-utility-molotov:hover {
+  box-shadow:
+    0 0 10px -3px rgba(255, 140, 60, 0.45),
+    0 0 22px -6px rgba(255, 90, 20, 0.3);
 }
-.lineup-molotov-inner {
-  fill: url(#molotov-core);
-  mix-blend-mode: screen;
-  transform-origin: center bottom;
+.lineup-filter.active.lineup-filter-utility-molotov {
+  animation: lineup-molotov-glow-pulse 2.8s ease-in-out infinite;
 }
-.lineup-molotov-inner-a {
-  animation: lineup-molotov-inner-flicker 760ms ease-in-out infinite alternate;
-}
-.lineup-molotov-inner-b {
-  animation: lineup-molotov-inner-flicker 620ms 180ms ease-in-out infinite alternate-reverse;
-}
-.lineup-molotov-embers {
-  fill: #ff8a16;
-  opacity: 0.7;
-  animation: lineup-molotov-embers 900ms ease-in-out infinite alternate;
-}
-.lineup-filter-animate-molotov .lineup-filter-effect-molotov i,
-.lineup-filter-utility-molotov .lineup-filter-effect-molotov i {
-  bottom: -11px;
-  width: 24px;
-  height: 42px;
-  border-radius: 52% 48% 48% 52% / 82% 80% 20% 18%;
-  background: radial-gradient(ellipse at 50% 78%, #fffbd0 0 7%, #ffe14a 14%, #ff991b 34%, #f04a10 57%, rgba(166, 27, 7, 0) 75%);
-  clip-path: polygon(50% 0, 64% 27%, 88% 47%, 76% 70%, 100% 100%, 0 100%, 20% 69%, 9% 47%, 35% 28%);
-  filter: blur(0.55px) saturate(1.4);
-  opacity: 0;
-  transform-origin: bottom center;
-}
-.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(1) { left: 7%; animation: lineup-flame 1.45s 40ms ease-in-out forwards; }
-.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(2) { left: 23%; height: 38px; animation: lineup-flame 1.35s 120ms ease-in-out forwards; }
-.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(3) { left: 40%; height: 28px; animation: lineup-flame 1.5s 0ms ease-in-out forwards; }
-.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(4) { left: 57%; height: 40px; animation: lineup-flame 1.38s 80ms ease-in-out forwards; }
-.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(5) { left: 73%; height: 30px; animation: lineup-flame 1.48s 160ms ease-in-out forwards; }
-.lineup-filter-animate-molotov .lineup-filter-effect-molotov i:nth-child(6) { left: 87%; height: 35px; animation: lineup-flame 1.3s 55ms ease-in-out forwards; }
 
 /* HE: destello central y esquirlas, contenidos en el botón. */
 .lineup-filter-animate-he .lineup-filter-effect-he::before {
@@ -2890,6 +3303,64 @@ button.map-pool-card.lineup-map-card {
   100% { opacity: 0; transform: translateY(-20px) scale(2.2); }
 }
 
+@keyframes lineup-smoke-body {
+  0% {
+    transform: translate(-2%, 1%) scale(0.97, 1);
+    border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
+  }
+  50% {
+    transform: translate(2%, -3%) scale(1.04, 0.96);
+    border-radius: 46% 54% 58% 42% / 44% 60% 40% 56%;
+  }
+  100% {
+    transform: translate(-2%, 1%) scale(0.97, 1);
+    border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
+  }
+}
+
+@keyframes lineup-smoke-turbulence {
+  0%, 100% {
+    background-position: 10% 20%, 90% 70%;
+    opacity: 0.4;
+  }
+  50% {
+    background-position: 32% 48%, 64% 38%;
+    opacity: 0.6;
+  }
+}
+
+/* Cada mancha aparece, se deforma en varios pasos (no un simple ida y
+   vuelta), deriva de forma leve e irregular y pierde densidad de a
+   poco -- nunca queda en 0 opacidad para siempre, ni desaparece de
+   golpe. */
+@keyframes lineup-smoke-puff {
+  0% {
+    opacity: 0;
+    transform: translate(-2%, 6px) scale(0.62, 0.58) rotate(-4deg);
+    border-radius: 46% 54% 61% 39% / 52% 44% 56% 48%;
+  }
+  22% {
+    opacity: 0.85;
+    transform: translate(1%, -1px) scale(0.9, 0.86) rotate(2deg);
+    border-radius: 58% 42% 39% 61% / 44% 58% 42% 56%;
+  }
+  48% {
+    opacity: 0.6;
+    transform: translate(-3%, -9px) scale(1.05, 0.94) rotate(-3deg);
+    border-radius: 41% 59% 55% 45% / 60% 38% 62% 40%;
+  }
+  74% {
+    opacity: 0.32;
+    transform: translate(4%, -17px) scale(0.97, 1.12) rotate(4deg);
+    border-radius: 53% 47% 44% 56% / 39% 61% 44% 56%;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(2%, -25px) scale(0.8, 1.2) rotate(-2deg);
+    border-radius: 46% 54% 61% 39% / 52% 44% 56% 48%;
+  }
+}
+
 @keyframes lineup-flash-burst {
   0% {
     box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15);
@@ -2921,43 +3392,27 @@ button.map-pool-card.lineup-map-card {
   }
 }
 
-@keyframes lineup-flame {
-  0%, 100% { opacity: 0.46; transform: translateY(6px) scale(0.72, 0.72) rotate(-7deg); }
-  20% { opacity: 1; transform: translateY(-2px) scale(1.05, 1.12) rotate(5deg); }
-  52% { opacity: 0.86; transform: translateY(-9px) scale(1.18, 0.84) rotate(-4deg); }
-  78% { opacity: 0.7; transform: translateY(-15px) scale(0.82, 1.24) rotate(7deg); }
+@keyframes lineup-molotov-exterior {
+  0%, 100% { transform: translateX(-3%) scale(1); opacity: 0.85; }
+  50% { transform: translateX(3%) scale(1.06); opacity: 1; }
 }
-@keyframes lineup-fire-surface {
-  0% {
-    clip-path: polygon(0 100%, 0 61%, 5% 49%, 11% 56%, 17% 43%, 22% 24%, 27% 43%, 32% 56%, 38% 43%, 43% 27%, 48% 8%, 53% 29%, 57% 52%, 63% 40%, 68% 24%, 73% 41%, 78% 57%, 84% 43%, 89% 23%, 94% 42%, 100% 57%, 100% 100%);
-    transform: translateY(2px) scaleX(0.98) skewX(-1deg);
+@keyframes lineup-molotov-haze {
+  0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.8; }
+  50% { transform: translateY(-2px) scaleY(1.08); opacity: 1; }
+}
+@keyframes lineup-molotov-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 10px -2px rgba(255, 150, 70, 0.5),
+      0 0 24px -6px rgba(255, 90, 20, 0.35),
+      0 0 42px -10px rgba(255, 60, 10, 0.2);
   }
-  100% {
-    clip-path: polygon(0 100%, 0 55%, 6% 61%, 13% 45%, 18% 31%, 24% 50%, 30% 27%, 36% 17%, 41% 45%, 47% 58%, 53% 32%, 59% 20%, 64% 44%, 70% 55%, 77% 34%, 83% 18%, 89% 46%, 95% 57%, 100% 47%, 100% 100%);
-    transform: translateY(-2px) scaleX(1.02) skewX(1deg);
+  50% {
+    box-shadow:
+      0 0 14px -2px rgba(255, 170, 90, 0.65),
+      0 0 30px -6px rgba(255, 110, 30, 0.45),
+      0 0 50px -10px rgba(255, 70, 15, 0.28);
   }
-}
-@keyframes lineup-fire-core {
-  0% { opacity: 0.65; transform: translateX(-3px) scaleY(0.8); }
-  100% { opacity: 1; transform: translateX(3px) scaleY(1.2); }
-}
-@keyframes lineup-molotov-outer-flicker {
-  0% { transform: scaleX(0.98) scaleY(0.92) skewX(-1.4deg); }
-  45% { transform: scaleX(1.025) scaleY(1.08) skewX(1deg); }
-  100% { transform: scaleX(1) scaleY(0.98) skewX(-0.5deg); }
-}
-@keyframes lineup-molotov-inner-flicker {
-  0% { opacity: 0.68; transform: translateX(-2px) scaleY(0.84); }
-  100% { opacity: 1; transform: translateX(2px) scaleY(1.13); }
-}
-@keyframes lineup-molotov-rise {
-  0% { transform: translateY(2px) scaleX(0.98) scaleY(0.94) skewX(-1.2deg); }
-  55% { transform: translateY(-2px) scaleX(1.025) scaleY(1.08) skewX(1deg); }
-  100% { transform: translateY(0) scaleX(1) scaleY(0.98) skewX(-0.4deg); }
-}
-@keyframes lineup-molotov-embers {
-  0% { opacity: 0.35; transform: translateX(-3px) scaleY(0.82); }
-  100% { opacity: 0.85; transform: translateX(3px) scaleY(1.12); }
 }
 
 @keyframes lineup-he-shatter {
@@ -4550,212 +5005,21 @@ button.map-pool-card.lineup-map-card {
 
 /* ============================================================
    ANCIENT
-   Agua / humedad verdosa
+   El fondo ya no es CSS: es un shader WebGL real (ver
+   src/components/CenoteWaterBackground.tsx), montado en el lugar del
+   <span class="map-card-fx"> solo para esta card. El elemento sigue
+   siendo `.map-card-fx` (mismo position/inset/opacity/hover que el
+   resto de los mapas), así que no hace falta CSS aparte acá.
    ============================================================ */
-
-/* Capa 1: cuerpo de agua — el color de fondo respira muy lento, sin
-   escalar la capa entera (eso es lo que la hacía "vibrar"). */
-.map-effect-de_ancient .map-card-fx {
-  background:
-    radial-gradient(
-      ellipse at 15% 115%,
-      rgba(39, 145, 107, 0.5),
-      transparent 58%
-    ),
-    radial-gradient(
-      ellipse at 85% 105%,
-      rgba(76, 167, 119, 0.32),
-      transparent 52%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(10, 46, 38, 0.12) 0%,
-      rgba(39, 120, 95, 0.26) 55%,
-      rgba(20, 70, 58, 0.38) 100%
-    );
-
-  background-size:
-    160% 160%,
-    150% 150%,
-    100% 100%;
-
-  animation: cstats-ancient-water 12s ease-in-out infinite;
-}
-
-/* Capa 2: ondulación — líneas de oleaje que se desplazan en diagonal,
-   lentas y de bajo contraste para no leerse como rayas. */
-.map-effect-de_ancient .map-card-fx::before {
-  content: "";
-
-  position: absolute;
-  inset: -20%;
-
-  background:
-    repeating-linear-gradient(
-      100deg,
-      transparent 0 26px,
-      rgba(150, 220, 190, 0.05) 30px,
-      transparent 40px
-    );
-
-  mix-blend-mode: screen;
-
-  animation: cstats-ancient-waves 9s ease-in-out infinite;
-}
-
-/* Capa 3: reflejo de luz — un brillo angosto que cruza el agua muy
-   lentamente y se atenúa en los extremos, como luz sobre la superficie. */
-.map-effect-de_ancient .map-card-fx::after {
-  content: "";
-
-  position: absolute;
-  inset: -30%;
-
-  background:
-    linear-gradient(
-      100deg,
-      transparent 40%,
-      rgba(210, 245, 235, 0.14) 48%,
-      rgba(210, 245, 235, 0.05) 52%,
-      transparent 60%
-    );
-
-  mix-blend-mode: screen;
-  filter: blur(3px);
-
-  animation: cstats-ancient-reflection 13s ease-in-out infinite;
-}
-
-@keyframes cstats-ancient-water {
-  0%,
-  100% {
-    background-position:
-      0% 10%,
-      100% 90%,
-      0 0;
-  }
-
-  50% {
-    background-position:
-      14% 0%,
-      86% 100%,
-      0 -4%;
-  }
-}
-
-@keyframes cstats-ancient-waves {
-  0%,
-  100% {
-    transform: translate3d(-6%, 2%, 0);
-  }
-
-  50% {
-    transform: translate3d(6%, -3%, 0);
-  }
-}
-
-@keyframes cstats-ancient-reflection {
-  0% {
-    transform: translateX(-55%);
-    opacity: 0;
-  }
-
-  18% {
-    opacity: 0.8;
-  }
-
-  50% {
-    transform: translateX(10%);
-    opacity: 0.9;
-  }
-
-  82% {
-    opacity: 0.25;
-  }
-
-  100% {
-    transform: translateX(55%);
-    opacity: 0;
-  }
-}
 
 
 /* ============================================================
    ANUBIS
-   Tormenta de arena
+   El fondo ya no es CSS: es una escena Canvas2D real (ver
+   src/components/DesertDuneBackground.tsx), montada en el lugar del
+   <span class="map-card-fx"> solo para esta card -- mismo criterio que
+   Ancient (src/components/CenoteWaterBackground.tsx).
    ============================================================ */
-
-.map-effect-de_anubis .map-card-fx {
-  background:
-    radial-gradient(
-      circle at 20% 40%,
-      rgba(215, 171, 96, 0.35) 0 1px,
-      transparent 2px
-    ),
-    radial-gradient(
-      circle at 70% 70%,
-      rgba(231, 194, 124, 0.3) 0 1px,
-      transparent 2px
-    ),
-    linear-gradient(
-      110deg,
-      transparent,
-      rgba(191, 153, 91, 0.15),
-      transparent
-    );
-
-  background-size:
-    30px 30px,
-    45px 45px,
-    180% 100%;
-
-  animation: cstats-anubis-sandstorm 2.8s linear infinite;
-}
-
-.map-effect-de_anubis .map-card-fx::after {
-  content: "";
-
-  position: absolute;
-  inset: -20%;
-
-  background:
-    repeating-linear-gradient(
-      165deg,
-      transparent 0 12px,
-      rgba(219, 182, 111, 0.11) 13px,
-      transparent 17px
-    );
-
-  filter: blur(1.5px);
-
-  animation: cstats-anubis-sand-lines 2s linear infinite;
-}
-
-@keyframes cstats-anubis-sandstorm {
-  from {
-    background-position:
-      0 0,
-      0 0,
-      -100% 0;
-  }
-
-  to {
-    background-position:
-      100px 45px,
-      -120px 80px,
-      100% 0;
-  }
-}
-
-@keyframes cstats-anubis-sand-lines {
-  from {
-    transform: translateX(-15%) translateY(5%);
-  }
-
-  to {
-    transform: translateX(15%) translateY(-5%);
-  }
-}
 
 
 /* ============================================================
@@ -5293,7 +5557,7 @@ button.map-pool-card.lineup-map-card {
 }
 
 .lineup-map-card.map-effect-de_ancient:hover .map-card-fx {
-  filter: saturate(1.2);
+  filter: saturate(1.25) brightness(1.08);
 }
 
 

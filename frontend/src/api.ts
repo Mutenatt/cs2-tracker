@@ -202,3 +202,22 @@ export async function unlinkAutofetch(): Promise<AutofetchStatus> {
   if (!r.ok) throw new Error(`DELETE autofetch link -> ${r.status}`);
   return r.json();
 }
+
+export async function setCustomBackground(url: string): Promise<User> {
+  const r = await fetch(`${BASE}/auth/me/background`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `PATCH me/background -> ${r.status}`);
+  }
+  return r.json();
+}
+
+export async function clearCustomBackground(): Promise<User> {
+  const r = await fetch(`${BASE}/auth/me/background`, { method: "DELETE" });
+  if (!r.ok) throw new Error(`DELETE me/background -> ${r.status}`);
+  return r.json();
+}

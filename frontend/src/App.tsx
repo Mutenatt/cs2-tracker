@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { getMe, logout } from "./api";
 import { Topbar } from "./components/Topbar";
 import { ROUTE_FADE } from "./components/motion/presets";
-import { UserContext } from "./context/UserContext";
+import { UserContext, UserUpdateContext } from "./context/UserContext";
 import { HomeView } from "./views/HomeView";
 import { LandingView } from "./views/LandingView";
 import { LineUps } from "./views/LineUps";
@@ -54,26 +54,28 @@ export function App() {
 
   return (
     <UserContext.Provider value={user}>
-      <div className={isLineupsRoute ? "lineup-route-shell" : "wrap"}>
-        {!isLineupsRoute && <Topbar onLogout={handleLogout} />}
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: ROUTE_FADE, ease: "linear" }}
-          >
-            <Routes location={location}>
-              <Route path="/" element={<HomeView />} />
-              <Route path="/lineups" element={<LineUps onLogout={handleLogout} />} />
-              <Route path="/profile/:steamid" element={<ProfileView />} />
-              <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
-              <Route path="/match/:matchId" element={<MatchDetailView />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      <UserUpdateContext.Provider value={setUser}>
+        <div className={isLineupsRoute ? "lineup-route-shell" : "wrap"}>
+          {!isLineupsRoute && <Topbar onLogout={handleLogout} />}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: ROUTE_FADE, ease: "linear" }}
+            >
+              <Routes location={location}>
+                <Route path="/" element={<HomeView />} />
+                <Route path="/lineups" element={<LineUps onLogout={handleLogout} />} />
+                <Route path="/profile/:steamid" element={<ProfileView />} />
+                <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
+                <Route path="/match/:matchId" element={<MatchDetailView />} />
+              </Routes>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </UserUpdateContext.Provider>
     </UserContext.Provider>
   );
 }

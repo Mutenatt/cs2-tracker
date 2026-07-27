@@ -33,11 +33,17 @@ SESSION_MAX_AGE = 30 * 24 * 3600  # 30 días
 # Algunos CDNs sirven contenido reducido a clientes sin User-Agent de
 # navegador; sin esto, GetPlayerSummaries igual funciona (es la Web API
 # oficial) pero el scraping del perfil público puede devolver menos markup.
+# El resto de los headers imita un navegador real -- steamcommunity.com
+# devuelve 429 más seguido a requests que solo traen un User-Agent (sin
+# Accept/Accept-Language), aunque el rate-limit de fondo sigue siendo de
+# Steam y no algo que se pueda evitar del todo.
 _BROWSER_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    )
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
 }
 
 # Fallback: URL directa a un .webm/.mp4 de un CDN de Steam en cualquier parte

@@ -4,7 +4,9 @@ import { motion } from "motion/react";
 import { getProfile } from "../api";
 import { AccuracyPanel } from "../components/AccuracyPanel";
 import { AutoFetchSettings } from "../components/AutoFetchSettings";
+import { BackgroundSettings } from "../components/BackgroundSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
+import { FlyingCrowWatermark } from "../components/FlyingCrowWatermark";
 import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
 import { MapWallpaperCarousel } from "../components/MapWallpaperCarousel";
 import { ProfileTagChips } from "../components/ProfileTagChips";
@@ -84,7 +86,7 @@ function MatchHistoryCard({ m }: { m: ProfileResponse["match_history"][number] }
 export function ProfileView() {
   const { steamid } = useParams<{ steamid: string }>();
   const user = useUser();
-  useSteamBackground(user.steam_background_url);
+  useSteamBackground(user.custom_background_url ?? user.steam_background_url);
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
@@ -92,7 +94,6 @@ export function ProfileView() {
     premier: true,
     competitivo: true,
   });
-
   useEffect(() => {
     setVisibleCount(10);
   }, [typeFilter]);
@@ -162,7 +163,8 @@ export function ProfileView() {
 
   return (
     <>
-      <div className="profile-hero">
+      <div className={`profile-hero ${currentRank !== null ? tierClass(currentRank) : ""}`}>
+        {equivRank?.name === "Legendary Eagle" && <FlyingCrowWatermark />}
         {data.avatar_url ? (
           <img className="pav" src={data.avatar_url} alt="" style={{ objectFit: "cover" }} />
         ) : (
@@ -171,6 +173,15 @@ export function ProfileView() {
         <div>
           <div className="pname-row">
             {data.display_name && <span className="display pname">{data.display_name}</span>}
+            {equivRank && currentRank !== null && (
+              <span
+                className={`csgo-equiv-chip expanded ${tierClass(currentRank)}`}
+                title={`Equivalente CS:GO: ${equivRank.name}`}
+              >
+                <RankCrest rank={equivRank} />
+                <span className="equiv-name">{equivRank.name}</span>
+              </span>
+            )}
             {/*<span className="prank">STEAMID {steamid}</span>*/}
           </div>
           <div className="pmeta">
@@ -178,28 +189,25 @@ export function ProfileView() {
             <b>{lifetime.win_rate.toFixed(0)}%</b> win rate
           </div>
           {currentRank !== null && (
-            <div className="premier-hero">
-              <span className={`ph-num mono ${tierClass(currentRank)}`}>
-                {currentRank.toLocaleString("en-US")}
-              </span>
-              {heroDelta !== null && heroDelta !== 0 && (
-                <span
-                  className={`ph-delta mono ${heroDelta > 0 ? "up" : "down"}`}
-                  title={
-                    liveRating !== null
-                      ? "Cambio en tu última partida (rating vivo del Game Coordinator)"
-                      : "Cambio en tu última partida con resultado ya calculado"
-                  }
-                >
-                  {heroDelta > 0 ? "▲" : "▼"} {Math.abs(heroDelta).toLocaleString("en-US")}
+            <div className="premier-hero-row">
+              <div className="premier-hero">
+                <span className={`ph-num mono ${tierClass(currentRank)}`}>
+                  {currentRank.toLocaleString("en-US")}
                 </span>
-              )}
-            </div>
-          )}
-          {equivRank && (
-            <div className="csgo-equiv-chip" title={`Equivalente CS:GO: ${equivRank.name}`}>
-              <RankCrest rank={equivRank} />
-              <span>{equivRank.name}</span>
+                {heroDelta !== null && heroDelta !== 0 && (
+                  <span
+                    className={`ph-delta mono ${heroDelta > 0 ? "up" : "down"}`}
+                    title={
+                      liveRating !== null
+                        ? "Cambio en tu última partida (rating vivo del Game Coordinator)"
+                        : "Cambio en tu última partida con resultado ya calculado"
+                    }
+                  >
+                    {heroDelta > 0 ? "▲" : "▼"} {Math.abs(heroDelta).toLocaleString("en-US")}
+                  </span>
+                )}
+              </div>
+              <span className="ph-unit mono">CS RATING</span>
             </div>
           )}
           {steamid && <ProfileTagChips steamid={steamid} />}
@@ -328,6 +336,7 @@ export function ProfileView() {
           {user.steamid === steamid && steamid && <ClipsPanel steamid={steamid} />}
 
           {user.steamid === steamid && <AutoFetchSettings />}
+          {user.steamid === steamid && <BackgroundSettings />}
         </div>
       </div>
     </>
