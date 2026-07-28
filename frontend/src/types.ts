@@ -4,6 +4,8 @@ export interface User {
   steamid: string;
   display_name: string | null;
   avatar_url: string | null;
+  steam_background_url: string | null;
+  custom_background_url: string | null;
   email: string | null;
   email_verified_at: string | null;
   onboarding_completed_at: string | null;
@@ -16,6 +18,8 @@ export interface MeOut {
   steamid: string | null;
   display_name: string | null;
   avatar_url: string | null;
+  steam_background_url: string | null;
+  custom_background_url: string | null;
   email: string | null;
   email_verified_at: string | null;
   onboarding_completed_at: string | null;

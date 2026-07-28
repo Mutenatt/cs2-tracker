@@ -32,9 +32,15 @@ class MeOut(BaseModel):
     steamid: str | None
     display_name: str | None
     avatar_url: str | None
+    steam_background_url: str | None = None
+    custom_background_url: str | None = None
     email: str | None
     email_verified_at: str | None
     onboarding_completed_at: str | None
+
+
+class CustomBackgroundIn(BaseModel):
+    url: str
 
 
 class AutofetchLinkIn(BaseModel):

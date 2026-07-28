@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { getMe, logout } from "./api";
 import { Topbar } from "./components/Topbar";
 import { ROUTE_FADE } from "./components/motion/presets";
-import { UserContext } from "./context/UserContext";
+import { UserContext, UserUpdateContext } from "./context/UserContext";
 import { EmailVerificationPendingView } from "./views/EmailVerificationPendingView";
 import { ForgotPasswordView } from "./views/ForgotPasswordView";
 import { HomeView } from "./views/HomeView";
@@ -89,9 +89,17 @@ export function App() {
     steamid: me.steamid as string,
     display_name: me.display_name,
     avatar_url: me.avatar_url,
+    steam_background_url: me.steam_background_url,
+    custom_background_url: me.custom_background_url,
     email: me.email,
     email_verified_at: me.email_verified_at,
     onboarding_completed_at: me.onboarding_completed_at,
+  };
+
+  // BackgroundSettings recibe el MeOut actualizado del PATCH/DELETE de
+  // fondo -- se pisa acá en vez de re-pegarle a /auth/me.
+  const updateUser = (updated: User) => {
+    setMe((prev) => (prev ? { ...prev, ...updated } : prev));
   };
 
   if (user.onboarding_completed_at === null) {
@@ -102,29 +110,33 @@ export function App() {
     );
   }
 
+  const isLineupsRoute = location.pathname === "/lineups";
+
   return (
     <UserContext.Provider value={user}>
-      <div className="wrap">
-        <Topbar onLogout={handleLogout} />
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: ROUTE_FADE, ease: "linear" }}
-          >
-            <Routes location={location}>
-              <Route path="/" element={<HomeView />} />
-              <Route path="/lineups" element={<LineUps />} />
-              <Route path="/profile/:steamid" element={<ProfileView />} />
-              <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
-              <Route path="/match/:matchId" element={<MatchDetailView />} />
-              <Route path="/settings" element={<SettingsView />} />
-            </Routes>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      <UserUpdateContext.Provider value={updateUser}>
+        <div className={isLineupsRoute ? "lineup-route-shell" : "wrap"}>
+          {!isLineupsRoute && <Topbar onLogout={handleLogout} />}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: ROUTE_FADE, ease: "linear" }}
+            >
+              <Routes location={location}>
+                <Route path="/" element={<HomeView />} />
+                <Route path="/lineups" element={<LineUps onLogout={handleLogout} />} />
+                <Route path="/profile/:steamid" element={<ProfileView />} />
+                <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
+                <Route path="/match/:matchId" element={<MatchDetailView />} />
+                <Route path="/settings" element={<SettingsView />} />
+              </Routes>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </UserUpdateContext.Provider>
     </UserContext.Provider>
   );
 }

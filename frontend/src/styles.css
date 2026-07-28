@@ -31,38 +31,53 @@ body {
 }
 
 .wrap {
+  position: relative;
+  z-index: 0;
   max-width: 1080px;
   margin: 0 auto;
   padding: 28px 20px 60px;
 }
 
+.lineup-route-shell {
+  position: relative;
+  width: 100vw;
+  margin: 0 0 0 calc(50% - 50vw);
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--ink);
+  padding-top: 0;
+}
+
+.lineup-route-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: linear-gradient(120deg, rgba(6, 12, 20, 0.95) 0%, rgba(6, 12, 20, 0.75) 100%);
+  pointer-events: none;
+}
+
+.lineup-route-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lineup-route-shell .topbar,
+.lineup-route-shell .nav-tabs {
+  max-width: 1080px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
 .topbar {
+  position: relative;
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 22px;
-}
-
-.logo {
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  font-size: 20px;
-}
-.logo span {
-  color: var(--accent);
-}
-
-.src {
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--muted);
-  border: 1px solid var(--line);
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-.src.live {
-  color: var(--good);
-  border-color: #2c5;
 }
 
 .card {
@@ -73,12 +88,6 @@ body {
   margin-bottom: 20px;
 }
 
-.hdr {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
-}
 .map {
   font-size: 26px;
   font-weight: 800;
@@ -120,68 +129,6 @@ h3 {
   font-weight: 700;
 }
 
-/* --- Scoreboard legado: queda por si algo lo reusa, Scoreboard.tsx ya no lo usa --- */
-table.sb {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  table-layout: fixed;
-}
-table.sb col.c-rank {
-  width: 34px;
-}
-table.sb col.c-name {
-  width: auto;
-}
-table.sb col.c-num {
-  width: 62px;
-}
-table.sb col.c-dmg {
-  width: 78px;
-}
-
-table.sb th,
-table.sb td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #20232c;
-}
-table.sb thead th {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--line);
-}
-table.sb .num {
-  text-align: right;
-}
-table.sb .txt {
-  text-align: left;
-}
-table.sb .pname {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-table.sb tbody tr:hover {
-  background: var(--panel2);
-}
-table.sb tr.top .pname {
-  color: var(--accent);
-}
-.rank {
-  color: var(--muted);
-}
-.kd-good {
-  color: var(--good);
-  font-weight: 700;
-}
-.kd-bad {
-  color: var(--bad);
-  font-weight: 700;
-}
 .dim {
   color: var(--muted);
 }
@@ -314,6 +261,14 @@ body {
   background-size: 42px 42px;
   background-attachment: fixed;
 }
+
+/* Capas de la app por encima de los fondos fijos inyectados por vistas.
+   Es especialmente necesario para los backgrounds animados de Steam: un
+   z-index negativo los deja detrás del canvas opaco del body. */
+#root {
+  position: relative;
+  z-index: 1;
+}
 html {
   scroll-behavior: smooth;
 }
@@ -360,27 +315,6 @@ html {
   border-bottom: 1px solid var(--line);
   margin-bottom: 26px;
 }
-.wordmark {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.wordmark .display {
-  font-size: 20px;
-  color: var(--text);
-}
-.wordmark .display span {
-  color: var(--signal);
-}
-.wordmark .tag {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  color: var(--text-faint);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 2px 6px;
-  letter-spacing: 0.08em;
-}
 .live {
   margin-left: auto;
   display: flex;
@@ -405,26 +339,25 @@ html {
 }
 .user-chip-trigger {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px 5px 6px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
   cursor: pointer;
+  line-height: 0;
+  transition: box-shadow 0.15s ease;
+}
+.user-chip-trigger:hover {
+  box-shadow: 0 0 0 2px var(--recon);
+  border-radius: 50%;
 }
 .user-chip .av {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--signal), var(--recon));
   flex: none;
   object-fit: cover;
-}
-.user-chip .name {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12.5px;
-  font-weight: 700;
 }
 .user-chip-menu {
   position: absolute;
@@ -439,6 +372,12 @@ html {
   border: 1px solid var(--line);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+}
+.user-chip-menu .name {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 10px;
 }
 .user-chip-menu-item {
   display: block;
@@ -456,6 +395,10 @@ html {
 .user-chip-menu-item:hover {
   background: var(--panel-2);
   color: var(--signal);
+}
+.user-chip-menu-item.danger:hover {
+  background: var(--panel-2);
+  color: var(--alert);
 }
 
 /* ---------- match context card (sidebar del match detail split) ---------- */
@@ -823,53 +766,6 @@ html {
   text-align: right;
 }
 
-/* ---------- performance / heatmap ---------- */
-.modes {
-  display: flex;
-  gap: 6px;
-  margin: 4px 2px 14px;
-  flex-wrap: wrap;
-}
-.mode-btn {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 8px 14px;
-  border-radius: 5px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--text-dim);
-  cursor: pointer;
-}
-.mode-btn.active {
-  color: var(--ink);
-  background: var(--signal);
-  border-color: var(--signal);
-  font-weight: 700;
-}
-@media (prefers-color-scheme: dark) {
-  .mode-btn.active {
-    color: #150c04;
-  }
-}
-:root[data-theme="dark"] .mode-btn.active {
-  color: #150c04;
-}
-
-.map-layout {
-  display: grid;
-  grid-template-columns: 1fr 240px;
-  gap: 14px;
-  align-items: start;
-}
-.map-panel {
-  position: relative;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 34px 14px 14px 34px;
-}
 .map-frame {
   position: relative;
   width: 100%;
@@ -894,195 +790,11 @@ html {
   width: 100%;
   height: 100%;
 }
-.grid-ticks {
-  position: absolute;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  color: var(--text-faint);
-  letter-spacing: 0.04em;
-}
-.grid-ticks.top {
-  top: 12px;
-  left: 34px;
-  right: 14px;
-  display: flex;
-  justify-content: space-between;
-}
-.grid-ticks.left {
-  top: 34px;
-  left: 10px;
-  bottom: 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.sparse-note {
-  position: absolute;
-  left: 34px;
-  right: 14px;
-  bottom: 14px;
-  padding: 8px 12px;
-  background: color-mix(in srgb, var(--ink) 60%, transparent);
-  backdrop-filter: blur(2px);
-  border: 1px dashed var(--line);
-  border-radius: 6px;
-  font-size: 11px;
-  color: var(--text-dim);
-  z-index: 5;
-}
-.sparse-note b {
-  color: var(--text);
-}
-.callout {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
-  letter-spacing: 0.05em;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  background: color-mix(in srgb, var(--ink) 45%, transparent);
-  padding: 1px 5px;
-  border-radius: 3px;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* ---------- toolbar: filtros ---------- */
-.util-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-}
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.toolbar-group .label {
-  white-space: nowrap;
-}
-.side-toggle {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  overflow: hidden;
-}
-.side-toggle button {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 5px 12px;
-  border: none;
-  background: var(--panel-2);
-  color: var(--text-dim);
-  cursor: pointer;
-}
-.side-toggle button.on.t {
-  background: var(--signal);
-  color: #150c04;
-}
-.side-toggle button.on.ct {
-  background: var(--recon);
-  color: #051820;
-}
-.range-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.range-control input[type="range"] {
-  accent-color: var(--signal);
-  width: 110px;
-}
-.range-control .rv {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  color: var(--text-dim);
-  width: 64px;
-}
-
-.side-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.ff-card,
-.metrics-card,
 .legend-card {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
-}
-.ff-card .label {
-  margin-bottom: 8px;
-}
-.ff-num {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 26px;
-  font-weight: 700;
-}
-.ff-num small {
-  font-size: 13px;
-  color: var(--text-dim);
-  font-weight: 400;
-}
-.ff-bar {
-  height: 5px;
-  border-radius: 3px;
-  background: var(--line);
-  margin-top: 10px;
-  overflow: hidden;
-}
-.ff-bar i {
-  display: block;
-  height: 100%;
-  background: var(--alert);
-}
-.ff-note {
-  margin-top: 9px;
-  font-size: 11.5px;
-  color: var(--text-dim);
-  line-height: 1.45;
-}
-
-.metrics-card .m-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 10px;
-}
-.metrics-card .m-row:first-of-type {
-  margin-top: 0;
-}
-.metrics-card .m-row .k {
-  font-size: 11.5px;
-  color: var(--text-dim);
-}
-.metrics-card .m-row .v {
-  font-family: "IBM Plex Mono", monospace;
-  font-weight: 700;
-  font-size: 13px;
-}
-.eff-bar {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--line);
-  margin-top: 6px;
-  overflow: hidden;
-}
-.eff-bar i {
-  display: block;
-  height: 100%;
-  background: var(--go);
 }
 
 .legend-card .label {
@@ -1167,9 +879,6 @@ footer {
   .match-split-side {
     position: static;
   }
-  .map-layout {
-    grid-template-columns: 1fr;
-  }
   .profile-grid {
     grid-template-columns: 1fr;
   }
@@ -1202,12 +911,14 @@ footer {
 }
 
 .profile-hero {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: auto 1fr minmax(320px, 42%);
   gap: 22px;
   align-items: stretch;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: 10px;
   padding: 22px 26px;
   margin-bottom: 20px;
@@ -1215,7 +926,93 @@ footer {
 .profile-hero > *:not(.profile-hero-summary) {
   align-self: center;
 }
+/* Excepción: la columna de nombre/rating necesita estirarse a toda la
+   altura de la tarjeta para poder anclar .premier-hero-row cerca del
+   fondo (ver abajo) -- si quedara centrada como el resto, no habría
+   "espacio de sobra" hacia abajo para empujarlo. */
+.profile-hero > .profile-hero-info {
+  align-self: stretch;
+  position: relative;
+}
+/* Contorno degradado que sigue el mismo difuminado que el fondo interior
+   (::before): fuerte del lado del tier a la izquierda, se apaga hacia el
+   carrusel. Técnica del "anillo" con mask (content-box vs box completo)
+   en vez de border-image, que no respeta border-radius. */
+.profile-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 70%, var(--line)) 0%,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 30%, var(--line)) 30%,
+    var(--line) 65%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Fondo dinámico por tier Premier (mismos t1-t7 y hex que .rank-badge /
+   .csgo-equiv-chip) -- solo pinta detrás del avatar/nombre/rating
+   (columnas 1-2 del grid). El carrusel de la derecha (.profile-hero-summary)
+   es opaco y cubre su propia columna por completo: no se toca su CSS, su
+   z-index ni la lógica de MapWallpaperCarousel. Sin tier (calibrando /
+   sin partidas) el fondo sigue siendo el panel plano de siempre. */
+.profile-hero.t1 { --tier-accent: #b0c3d9; }
+.profile-hero.t2 { --tier-accent: #5e98d9; }
+.profile-hero.t3 { --tier-accent: #6a8bff; }
+.profile-hero.t4 { --tier-accent: #a86aff; }
+.profile-hero.t5 { --tier-accent: #d32ce6; }
+.profile-hero.t6 { --tier-accent: #eb4b4b; }
+.profile-hero.t7 { --tier-accent: #e4ae39; }
+
+.profile-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, transparent) 22%, var(--panel)) 0%,
+    color-mix(in srgb, var(--tier-accent, transparent) 9%, var(--panel)) 45%,
+    color-mix(in srgb, var(--tier-accent, transparent) 3%, var(--panel)) 75%,
+    transparent 100%
+  );
+}
+/* Columna que reemplaza al avatar suelto: nombre apilado arriba de la
+   foto de perfil de Steam, en vez de al lado (ver profile-hero-info, que
+   ahora solo tiene el badge de rango equivalente en su pname-row). */
+.profile-hero-avatar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  /* Sube la columna (antes centrada por .profile-hero > *:not(...)
+     { align-self: center }) un poco más arriba dentro de la fila. */
+  align-self: flex-start;
+  margin-top: -8px;
+}
+.profile-hero-avatar-col .pname-above-avatar {
+  font-size: 13px;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: -6px;
+}
 .profile-hero .pav {
+  position: relative;
   width: 72px;
   height: 72px;
   border-radius: 10px;
@@ -1225,10 +1022,37 @@ footer {
   align-items: center;
   justify-content: center;
   font-size: 26px;
+  box-shadow:
+    0 0 10px 2px color-mix(in srgb, var(--tier-accent, transparent) 65%, transparent),
+    0 0 20px 5px color-mix(in srgb, var(--tier-accent, transparent) 35%, transparent);
+}
+/* Mismo anillo degradado que .profile-hero::after, pero más grueso y con
+   glow -- efecto "luz de neón" teñida del color del tier. */
+.profile-hero .pav::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 4px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 70%, var(--line)) 0%,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 30%, var(--line)) 30%,
+    var(--line) 65%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 .profile-hero .pname-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -1244,33 +1068,85 @@ footer {
   padding: 2px 7px;
   letter-spacing: 0.05em;
 }
-.profile-hero .pmeta {
-  margin-top: 6px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-.profile-hero .pmeta b {
-  color: var(--text);
-}
-/* Premier Rating vigente en el header (paleta de tiers oficial de CS2,
-   misma que .rank-badge; texto en degradado hacia un tono más claro). */
-.premier-hero {
+/* Fila que agrupa el rectángulo del rating con su label "CS RATING", que
+   ahora queda afuera de la caja. Position:absolute (no en flujo normal) --
+   así se puede mover sin arrastrar a ProfileTagChips/.phs-inline hacia
+   abajo, que es lo que pasaba cuando esto era margin-top en flujo. Ancla:
+   .profile-hero-info (position:relative). */
+/* Chip equivalente CS:GO queda apilado debajo del chip Premier, mismo
+   ancla (.profile-hero-info, position:relative) -- antes colgaba abajo
+   con position:absolute propio (.equiv-chip-bottom, eliminada),
+   desalineado del chip Premier. align-items:stretch + width:fit-content
+   hace que ambos chips midan lo mismo (el ancho del más ancho de los
+   dos, sin hardcodear un valor fijo que no sirva para nombres de rango
+   más largos como "Distinguished Master Guardian"). Subido y con menos
+   gap entre chips para que el bloque completo (Premier + equivalente)
+   quede centrado contra .phs-inline (ADR/HS%/Mejor arma) en vez de
+   sobresalir por debajo de esa fila. */
+.premier-hero-row {
+  position: absolute;
+  top: 14px;
+  left: 14px;
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-top: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  width: fit-content;
+  gap: 6px;
+}
+/* Premier Rating vigente en el header, encapsulado como el badge de
+   "Rank Premier" (.rank-badge): rectángulo con fondo/borde teñidos del
+   color del tier -- sin las barras verticales de acento. Mismo
+   height/padding que .csgo-equiv-chip para que ambos chips queden del
+   mismo tamaño exacto. */
+.premier-hero {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  background: color-mix(in srgb, var(--tier-accent, transparent) 16%, var(--panel));
+  border: 1px solid transparent;
+  border-radius: 6px;
+  box-shadow:
+    0 0 4px 0px color-mix(in srgb, var(--tier-accent, transparent) 55%, transparent),
+    0 0 8px 1px color-mix(in srgb, var(--tier-accent, transparent) 30%, transparent);
+}
+/* Mismo anillo degradado + glow que .pav y .profile-hero::after, para que
+   el encapsulado del CS Rating quede consistente con el resto de la
+   tarjeta (avatar y contorno general). */
+.premier-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 80%, var(--line)) 0%,
+    color-mix(in srgb, var(--tier-accent, var(--line)) 40%, var(--line)) 60%,
+    var(--line) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 .premier-hero .ph-num {
-  font-size: 33px;
+  font-size: 19px;
   font-weight: 900;
   line-height: 1;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
 }
 .premier-hero .ph-delta {
-  font-size: 14.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -1280,45 +1156,150 @@ footer {
 .premier-hero .ph-delta.down {
   color: var(--alert);
 }
+.ph-unit {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-bottom: 3px;
+}
 .premier-hero .ph-num.t1 {
-  background-image: linear-gradient(90deg, #b0c3d9, color-mix(in srgb, #b0c3d9 55%, white));
+  color: #b0c3d9;
 }
 .premier-hero .ph-num.t2 {
-  background-image: linear-gradient(90deg, #5e98d9, color-mix(in srgb, #5e98d9 55%, white));
+  color: #5e98d9;
 }
 .premier-hero .ph-num.t3 {
-  background-image: linear-gradient(90deg, #6a8bff, color-mix(in srgb, #6a8bff 55%, white));
+  color: #6a8bff;
 }
 .premier-hero .ph-num.t4 {
-  background-image: linear-gradient(90deg, #a86aff, color-mix(in srgb, #a86aff 55%, white));
+  color: #a86aff;
 }
 .premier-hero .ph-num.t5 {
-  background-image: linear-gradient(90deg, #d32ce6, color-mix(in srgb, #d32ce6 55%, white));
+  color: #d32ce6;
 }
 .premier-hero .ph-num.t6 {
-  background-image: linear-gradient(90deg, #eb4b4b, color-mix(in srgb, #eb4b4b 55%, white));
+  color: #eb4b4b;
 }
 .premier-hero .ph-num.t7 {
-  background-image: linear-gradient(90deg, #e4ae39, color-mix(in srgb, #e4ae39 55%, white));
+  color: #e4ae39;
 }
 
+/* El número y el delta van por encima de la capa de "+" (ver más abajo):
+   son estáticos (z-index:auto) y sin esto la capa absolute los taparía. */
+.premier-hero .ph-num,
+.premier-hero .ph-delta {
+  position: relative;
+  z-index: 1;
+}
+/* Efecto "lluvia de +" de la pantalla de Rank Up / Premier de CS2: signos
+   "+" ascendentes con velocidad/tamaño/desfase aleatorios (ver
+   PremierRankUpEffect.tsx), detrás del número pero delante del fondo. */
+.premier-hero .rankup-plus-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.premier-hero .rankup-plus {
+  position: absolute;
+  bottom: -10%;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  opacity: 0;
+  color: var(--tier-accent, var(--line));
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tier-accent, transparent) 80%, transparent));
+  /* transform + opacity únicamente: animación en el compositor (GPU), sin
+     layout/paint por frame -- sostiene 60fps con varios "+" simultáneos. */
+  animation: premier-plus-rise var(--duration) linear var(--delay) infinite;
+  will-change: transform, opacity;
+}
+.premier-hero .rankup-plus svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+@keyframes premier-plus-rise {
+  0% {
+    transform: translateY(0) scale(var(--scale-start));
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--peak-opacity);
+  }
+  75% {
+    opacity: var(--peak-opacity);
+  }
+  100% {
+    transform: translateY(-260%) scale(var(--scale-end));
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .premier-hero .rankup-plus {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Es un <button>: se resetea todo lo que el navegador le agrega por
+   default (fuente, cursor, línea de foco propia) para que se vea igual
+   que el chip de siempre. */
 .csgo-equiv-chip {
-  display: inline-flex;
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  margin-top: 9px;
+  height: 34px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 12px 3px 4px;
+  border-radius: 6px;
+  padding: 0 14px;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--panel-accent);
 }
+.csgo-equiv-chip .equiv-name {
+  white-space: nowrap;
+}
+/* Fondo teñido según el mismo tier de color que el resto de la UI
+   (rank-badge / premier-hero) -- antes era gris fijo sin relación con
+   el rango. */
+.csgo-equiv-chip.t1 {
+  background: linear-gradient(90deg, color-mix(in srgb, #b0c3d9 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #b0c3d9 45%, var(--line));
+}
+.csgo-equiv-chip.t2 {
+  background: linear-gradient(90deg, color-mix(in srgb, #5e98d9 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #5e98d9 45%, var(--line));
+}
+.csgo-equiv-chip.t3 {
+  background: linear-gradient(90deg, color-mix(in srgb, #6a8bff 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #6a8bff 45%, var(--line));
+}
+.csgo-equiv-chip.t4 {
+  background: linear-gradient(90deg, color-mix(in srgb, #a86aff 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #a86aff 45%, var(--line));
+}
+.csgo-equiv-chip.t5 {
+  background: linear-gradient(90deg, color-mix(in srgb, #d32ce6 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #d32ce6 45%, var(--line));
+}
+.csgo-equiv-chip.t6 {
+  background: linear-gradient(90deg, color-mix(in srgb, #eb4b4b 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #eb4b4b 45%, var(--line));
+}
+.csgo-equiv-chip.t7 {
+  background: linear-gradient(90deg, color-mix(in srgb, #e4ae39 32%, var(--panel)), var(--panel));
+  border-color: color-mix(in srgb, #e4ae39 45%, var(--line));
+}
 .rank-crest {
-  height: 29px;
+  height: 22px;
   width: auto;
   flex: none;
 }
@@ -1335,21 +1316,40 @@ footer {
   overflow: hidden;
   border-radius: 0 9px 9px 0;
 }
+/* Fade con paradas intermedias (no solo 2 puntos): un gradiente lineal de
+   transparent a black en solo 2 stops se ve "plano y después de golpe"
+   -- el ojo no percibe la opacidad de forma lineal. Forzar un 50% de
+   opacidad a la mitad del recorrido corrige esa sensación de salto. */
 .profile-hero-summary .phs-bg {
   position: absolute;
   inset: 0;
   z-index: -1;
-  -webkit-mask-image: linear-gradient(100deg, transparent 0%, transparent 8%, black 38%);
-  mask-image: linear-gradient(100deg, transparent 0%, transparent 8%, black 38%);
+  -webkit-mask-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 12%,
+    rgba(0, 0, 0, 0.5) 46%,
+    black 80%
+  );
+  mask-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 12%,
+    rgba(0, 0, 0, 0.5) 46%,
+    black 80%
+  );
 }
+/* El overlay oscuro toma un poco del --tier-accent en su primer tramo (en
+   vez de un navy plano) para continuar el mismo tono del degradé de la
+   tarjeta en vez de cortar seco al color neutro. */
 .profile-hero-summary .phs-bg::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     100deg,
-    rgba(14, 20, 32, 0.55) 0%,
-    rgba(14, 20, 32, 0.5) 35%,
+    color-mix(in srgb, var(--tier-accent, transparent) 22%, rgba(14, 20, 32, 0.55)) 0%,
+    color-mix(in srgb, var(--tier-accent, transparent) 10%, rgba(14, 20, 32, 0.5)) 35%,
     rgba(14, 20, 32, 0.42) 100%
   );
 }
@@ -1357,7 +1357,7 @@ footer {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(2px) saturate(1.1) brightness(0.85);
+  filter: saturate(1.1) brightness(0.85);
   transform: scale(1.15);
 }
 .profile-hero-summary .phs-bg .wallpaper-frame {
@@ -1369,32 +1369,155 @@ footer {
 .profile-hero-summary .phs-bg .wallpaper-frame.active {
   opacity: 1;
 }
-.phs-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px 20px;
+/* Reemplaza el texto estático "Mejor mapa · Anubis · XX% WR" que vivía acá
+   (ver .phs-grid-single, ya eliminado): un ícono clavado en la misma
+   esquina inferior derecha del panel, que revela la info en una burbuja
+   al hover/focus en vez de mostrarla siempre. */
+.map-stats-popover {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  z-index: 2;
+  display: inline-flex;
+  cursor: help;
 }
+.map-stats-popover-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  opacity: 0.6;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.map-stats-popover:hover .map-stats-popover-icon,
+.map-stats-popover:focus-visible .map-stats-popover-icon {
+  opacity: 1;
+  transform: scale(1.08);
+}
+.map-stats-popover-bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  max-width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none;
+}
+.map-stats-popover-bubble b {
+  color: var(--text);
+}
+.map-stats-popover:hover .map-stats-popover-bubble,
+.map-stats-popover:focus-visible .map-stats-popover-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Bloque CS RATING + ADR/HS%/Mejor arma como una sola unidad, centrada
+   verticalmente contra el alto completo de la tarjeta (.profile-hero-info
+   es align-self:stretch, así que top:50%+translateY(-50%) centra contra
+   el rectángulo entero del hero, no contra un contenido interno). Antes
+   cada pieza tenía su propio top fijo (34px / 65px) sin relación con el
+   alto real de la tarjeta, dejando un hueco vacío arriba. */
+.cs-rating-block {
+  position: absolute;
+  top: 50%;
+  left: 380px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* "CS RATING": centrado arriba de "HS%" (segundo item de .phs-inline),
+   con el color del tier igual que el resto de los labels teñidos. El
+   offset horizontal (antes left:426 vs. left:380 de .phs-inline, 46px de
+   diferencia) ahora es un margin-left dentro del flujo del bloque. */
+.cs-rating-label {
+  width: max-content;
+  margin-left: 46px;
+  white-space: nowrap;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--tier-accent, transparent) 45%, var(--line));
+  color: color-mix(in srgb, var(--tier-accent, var(--text-faint)) 65%, var(--text-faint));
+  /* Glow de neón en las letras (mismo criterio que el box-shadow de .pav /
+     .premier-hero, pero como text-shadow -- sin caja, solo el texto). */
+  text-shadow:
+    0 0 4px color-mix(in srgb, var(--tier-accent, transparent) 80%, transparent),
+    0 0 8px color-mix(in srgb, var(--tier-accent, transparent) 50%, transparent);
+}
+.phs-inline {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 26px;
+}
+/* Label y valor centrados entre sí (no el bloque contra la fila -- cada
+   stat centra su propio contenido, así "Mejor arma" alinea igual que
+   ADR/HS% aunque el nombre del arma sea más largo que el label). */
+.phs-inline .phs-stat {
+  align-items: center;
+  text-align: center;
+}
+/* Chip con "luz de neón" teñida del tier (--tier-accent, seteado en
+   .profile-hero.t1..t7 y heredado hasta acá): mismo degradé 100deg que
+   .profile-hero::before (el fondo del rectángulo principal de la tarjeta),
+   más el borde + box-shadow de dos capas que ya usan .pav / .premier-hero.
+   Mejor mapa (dentro de .profile-hero-summary, sobre el wallpaper) SÍ
+   necesita este recuadro para tener contraste -- ver override sin caja
+   para .phs-inline .phs-stat más abajo. */
 .phs-stat {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tier-accent, transparent) 32%, var(--panel)) 0%,
+    color-mix(in srgb, var(--tier-accent, transparent) 14%, var(--panel)) 55%,
+    var(--panel) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--tier-accent, transparent) 38%, var(--line));
+  box-shadow:
+    0 0 8px 1px color-mix(in srgb, var(--tier-accent, transparent) 45%, transparent),
+    0 0 16px 4px color-mix(in srgb, var(--tier-accent, transparent) 20%, transparent);
+}
+/* ADR/HS%/Mejor arma: sin el recuadro (van sobre el fondo teñido del
+   propio .profile-hero, no lo necesitan) pero conservan el color de texto
+   por tier de .phs-stat. */
+.phs-inline .phs-stat {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+/* "Mejor arma" se cortaba en dos líneas ("Mejor"/"arma") por falta de
+   ancho -- el label va en una sola línea, el nombre del arma sigue abajo. */
+.phs-inline .phs-stat .label {
+  white-space: nowrap;
+}
+.phs-stat .label {
+  color: color-mix(in srgb, var(--tier-accent, var(--text-faint)) 65%, var(--text-faint));
 }
 .phs-stat b {
   font-family: "IBM Plex Mono", monospace;
   font-size: 18px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--tier-accent, var(--text));
 }
-.phs-stat .phs-sub {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--text-dim);
-}
-.phs-stat-wide {
-  grid-column: 1 / -1;
-}
-
 .profile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -1422,18 +1545,6 @@ footer {
   font-size: 24px;
   font-weight: 700;
 }
-.lt-card .trend {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  margin-left: 8px;
-}
-.lt-card .trend.up {
-  color: var(--go);
-}
-.lt-card .trend.down {
-  color: var(--alert);
-}
-
 .mh-list {
   display: flex;
   flex-direction: column;
@@ -2059,6 +2170,8 @@ a.panel-cta:hover {
 }
 
 .nav-tabs {
+  position: relative;
+  z-index: 20;
   display: flex;
   gap: 4px;
   margin-bottom: 18px;
@@ -2336,6 +2449,36 @@ a.panel-cta:hover {
 .rank-badge.t7 .rb-inner {
   color: #e4ae39;
 }
+/* El paralelogramo en sí era gris fijo (rgba(10,14,21,.72)) sin relación
+   con el rango -- ahora el fondo también se tiñe según el tier. */
+.rank-badge.t1 {
+  background: linear-gradient(90deg, color-mix(in srgb, #b0c3d9 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #b0c3d9 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t2 {
+  background: linear-gradient(90deg, color-mix(in srgb, #5e98d9 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #5e98d9 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t3 {
+  background: linear-gradient(90deg, color-mix(in srgb, #6a8bff 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #6a8bff 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t4 {
+  background: linear-gradient(90deg, color-mix(in srgb, #a86aff 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #a86aff 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t5 {
+  background: linear-gradient(90deg, color-mix(in srgb, #d32ce6 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #d32ce6 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t6 {
+  background: linear-gradient(90deg, color-mix(in srgb, #eb4b4b 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #eb4b4b 45%, rgba(255, 255, 255, 0.09));
+}
+.rank-badge.t7 {
+  background: linear-gradient(90deg, color-mix(in srgb, #e4ae39 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  border-color: color-mix(in srgb, #e4ae39 45%, rgba(255, 255, 255, 0.09));
+}
 
 /* Rank Premier: tarjeta con sparkline */
 .rh-card {
@@ -2419,81 +2562,6 @@ a.panel-cta:hover {
   color: var(--text);
 }
 
-/* ---------- home: hero banner ---------- */
-.home-hero {
-  position: relative;
-  width: 100%;
-  height: clamp(180px, 24vw, 260px);
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 24px;
-  background-color: var(--panel);
-  background-size: cover;
-  background-position: center;
-  border: 1px solid var(--line);
-}
-.home-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(8, 10, 15, 0.95) 0%,
-    rgba(8, 10, 15, 0.75) 45%,
-    rgba(8, 10, 15, 0.1) 100%
-  );
-}
-.home-hero-content {
-  position: relative;
-  z-index: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 32px;
-  max-width: 520px;
-}
-.home-hero-title {
-  font-size: 34px;
-  color: #fff;
-  letter-spacing: 0.02em;
-}
-.home-hero-title span {
-  color: var(--signal);
-}
-.home-hero-sub {
-  margin: 0;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
-}
-.home-hero-sub b {
-  color: #fff;
-}
-.home-hero-date {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--signal);
-}
-.home-hero-cta {
-  align-self: flex-start;
-  margin-top: 4px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--signal);
-  border-radius: 20px;
-  padding: 8px 18px;
-  text-decoration: none;
-}
-.home-hero-cta:hover {
-  filter: brightness(1.08);
-}
-
 /* ---------- home: mapas activos ---------- */
 .map-pool-grid {
   display: grid;
@@ -2530,18 +2598,73 @@ a.panel-cta:hover {
 }
 
 /* ---------- line ups ---------- */
+.lineup-page-shell {
+  position: relative;
+  isolation: isolate;
+  width: 100vw;
+  margin: 0 0 0 calc(50% - 50vw);
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--ink);
+  background-image: linear-gradient(120deg, rgba(6, 12, 20, 0.95) 0%, rgba(6, 12, 20, 0.75) 100%);
+}
+.lineup-page-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-color: var(--ink);
+  opacity: 1;
+  transition: opacity 320ms ease, filter 320ms ease;
+  will-change: opacity, filter;
+  filter: saturate(0.95) contrast(1.05);
+  pointer-events: none;
+}
+.lineup-page-backdrop-current {
+  z-index: 0;
+}
+.lineup-page-backdrop-next {
+  z-index: 0;
+}
+.lineup-page-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1080px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 0 20px 24px;
+}
+
+.lineup-page-content .map-pool-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+}
 button.map-pool-card.lineup-map-card {
   cursor: pointer;
   font: inherit;
   color: inherit;
   width: 100%;
+  padding: 20px 14px;
+}
+.lineup-map-card .map-pool-icon {
+  width: 72px;
+  height: 72px;
+}
+.lineup-map-card .map-pool-name {
+  font-size: 14px;
 }
 .lineup-map-card.active {
-  border-color: var(--recon);
-  background: color-mix(in srgb, var(--recon) 10%, var(--panel));
+  border-color: var(--map-accent, var(--recon));
+  background: color-mix(in srgb, var(--map-accent, var(--recon)) 10%, var(--panel));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--map-accent, var(--recon)) 45%, transparent),
+    0 0 26px -8px var(--map-accent, var(--recon));
 }
 .lineup-map-card.active .map-pool-name {
-  color: var(--recon);
+  color: var(--map-accent, var(--recon));
 }
 
 .lineup-filters {
@@ -2551,11 +2674,14 @@ button.map-pool-card.lineup-map-card {
   margin-bottom: 18px;
 }
 .lineup-filter {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   font-family: "IBM Plex Mono", monospace;
   font-size: 11.5px;
   letter-spacing: 0.03em;
   color: var(--text-dim);
-  background: var(--panel);
+  background: #05070a;
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 7px 14px;
@@ -2564,23 +2690,405 @@ button.map-pool-card.lineup-map-card {
     border-color 0.15s ease,
     color 0.15s ease;
 }
+.lineup-filter-label {
+  position: relative;
+  z-index: 2;
+}
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-label {
+  color: #fff8db;
+  text-shadow: 0 1px 2px #190b04, 0 0 5px rgba(42, 12, 2, 0.95);
+}
+.lineup-filter-effect {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+.lineup-filter-effect i {
+  position: absolute;
+  display: block;
+}
 .lineup-filter:hover {
-  border-color: var(--text-faint);
-}
-.lineup-filter.active {
-  color: var(--ink);
-  background: var(--recon);
-  border-color: var(--recon);
-}
-.lineup-filter-side.active-t {
-  color: var(--ink);
-  background: var(--signal);
   border-color: var(--signal);
 }
-.lineup-filter-side.active-ct {
-  color: var(--ink);
-  background: var(--recon);
+.lineup-filter.active {
+  color: var(--recon);
+  background: #05070a;
+  border-color: var(--signal);
+}
+.lineup-filter-animate-smoke {
+  animation: lineup-smoke-button 1.1s ease-out forwards !important;
+}
+.lineup-filter-animate-flash {
+  animation: lineup-flash-burst 1s ease forwards !important;
+}
+.lineup-filter-animate-he {
+  animation: lineup-he-glow-pulse 820ms ease-out forwards !important;
+}
+.lineup-side-toggle-wrap {
+  position: relative;
+  isolation: isolate;
+}
+.lineup-side-toggle {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+/* Al elegir bando, el arma asociada (C4 en TT, kit de desarme en CT)
+   entra deslizándose desde su costado y queda flotando detrás de los
+   botones -- ver AnimatePresence en LineUps.tsx. Los slots fijan la
+   posición (izquierda/derecha del toggle) sin usar transform, porque
+   framer-motion escribe su propio transform inline en el <img> para
+   animar x/rotate y pisaría cualquier transform puesto por CSS. */
+.lineup-side-slide-slot {
+  position: absolute;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  margin-top: -27px;
+  z-index: 0;
+  pointer-events: none;
+}
+.lineup-side-slide-slot-t {
+  left: calc(50% - 178px);
+  width: 78px;
+  height: 78px;
+  margin-top: -39px;
+}
+.lineup-side-slide-slot-ct {
+  left: calc(50% + 110px);
+}
+.lineup-side-slide-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.6));
+}
+/* Contornos neón calcados a la silueta del PNG (drop-shadow sigue el
+   canal alpha), a tono con el glow de cada botón de bando activo. */
+.lineup-side-slide-img-t {
+  filter:
+    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 1px var(--signal))
+    drop-shadow(0 0 3px var(--signal));
+}
+.lineup-side-slide-img-ct {
+  filter:
+    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 1px var(--recon))
+    drop-shadow(0 0 3px var(--recon));
+}
+.lineup-side-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  padding: 4px;
+  background: #05070a;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lineup-side-btn:hover {
+  border-color: var(--signal);
+}
+.lineup-side-btn-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.lineup-side-btn.active-t {
+  border-color: var(--signal);
+  box-shadow: 0 0 12px 1px rgba(255, 138, 61, 0.55);
+}
+.lineup-side-btn.active-ct {
   border-color: var(--recon);
+  box-shadow: 0 0 12px 1px rgba(63, 214, 255, 0.55);
+}
+
+.lineup-filters-category {
+  justify-content: center;
+}
+
+/* El lado elegido también define el código de color de sus utilidades. */
+.lineup-side-t .lineup-filter {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+.lineup-side-ct .lineup-filter {
+  color: var(--recon);
+  border-color: var(--recon);
+}
+.lineup-side-ct .lineup-filter.active {
+  color: var(--recon);
+  border-color: var(--recon);
+}
+
+/* Los efectos viven dentro del botón: su overflow:hidden evita que humo,
+   fuego o el gif de la HE se dibujen sobre la página. */
+.lineup-filter-animate-molotov .lineup-filter-effect-molotov,
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov,
+.lineup-filter-utility-he .lineup-filter-effect-he,
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke {
+  opacity: 1;
+}
+
+/* ---- Humo: video real de explosión (public/media/explosion-humo.mp4) ----
+   Mismo patrón que el molotov: el <video> vive en loop de fondo todo el
+   tiempo y es el wrapper (.lineup-smoke-video-stack) el que sube de
+   opacity/scale en hover / active / click. */
+.lineup-smoke-video-stack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.05);
+  transform-origin: center bottom;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out;
+}
+.lineup-filter-utility-smoke:hover .lineup-smoke-video-stack {
+  opacity: 0.55;
+}
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-smoke-video-stack {
+  opacity: 0.85;
+  transform: scale(1.1);
+}
+.lineup-filter-animate-smoke .lineup-smoke-video-stack {
+  opacity: 1;
+  transform: scale(1.18);
+}
+.lineup-smoke-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* Glow apenas perceptible -- mucho más discreto que el del molotov. */
+.lineup-filter-utility-smoke {
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 280ms ease;
+}
+.lineup-filter-utility-smoke:hover {
+  box-shadow: 0 0 8px -3px rgba(200, 210, 218, 0.35);
+}
+.lineup-filter.active.lineup-filter-utility-smoke {
+  box-shadow:
+    0 0 10px -3px rgba(210, 218, 226, 0.4),
+    0 0 20px -8px rgba(170, 180, 190, 0.25);
+}
+
+/* ---- Molotov: video real de fuego (public/media/fuego-molotov-loop.mp4) ----
+   El wrapper (.lineup-molotov-fire-stack) es el que se ve de forma
+   constante mientras el filtro está seleccionado (.active), y el click
+   agrega un pulso más intenso encima (.lineup-filter-animate-molotov)
+   que decae de vuelta al brillo "seleccionado" en vez de a cero. Adentro
+   viven DOS <video> del mismo clip desfasados medio loop (ver
+   MolotovFireVideo en LineUps.tsx): sus opacidades individuales las pisa
+   JS cuadro a cuadro (crossfade por distancia al corte del loop), así
+   que acá NO se les toca opacity/transition -- solo position/tamaño. Al
+   ser footage sobre fondo negro, mix-blend-mode:screen hace que el negro
+   desaparezca y las llamas se integren directo con el fondo oscuro del
+   botón, sin caja ni recorte visible. */
+.lineup-molotov-fire-stack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.05);
+  transform-origin: center bottom;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out;
+}
+.lineup-filter.active.lineup-filter-utility-molotov .lineup-molotov-fire-stack {
+  opacity: 1;
+  transform: scale(1.1);
+}
+.lineup-filter-animate-molotov .lineup-molotov-fire-stack {
+  opacity: 1;
+  transform: scale(1.18);
+}
+.lineup-molotov-fire {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.lineup-filter-utility-molotov {
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 280ms ease;
+}
+.lineup-filter-utility-molotov:hover {
+  box-shadow:
+    0 0 10px -3px rgba(255, 140, 60, 0.45),
+    0 0 22px -6px rgba(255, 90, 20, 0.3);
+}
+.lineup-filter.active.lineup-filter-utility-molotov {
+  box-shadow:
+    0 0 8px -2px rgba(255, 150, 70, 0.3),
+    0 0 18px -6px rgba(255, 90, 20, 0.2);
+}
+.lineup-filter-animate-molotov {
+  animation: lineup-molotov-glow-pulse 1.4s ease-out forwards;
+}
+
+@keyframes lineup-molotov-glow-pulse {
+  0% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 150, 70, 0.3),
+      0 0 18px -6px rgba(255, 90, 20, 0.2);
+  }
+  30% {
+    box-shadow:
+      0 0 16px -2px rgba(255, 170, 90, 0.7),
+      0 0 34px -6px rgba(255, 110, 30, 0.5),
+      0 0 55px -10px rgba(255, 70, 15, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 150, 70, 0.3),
+      0 0 18px -6px rgba(255, 90, 20, 0.2);
+  }
+}
+
+/* ---- HE: gif real de explosión (public/fondo-lineups/explosion-he.gif) ----
+   Mismo patrón que humo/molotov: el <img> vive de fondo todo el tiempo y es
+   el wrapper (.lineup-he-stack) el que sube de opacity/scale en hover /
+   active / click. */
+.lineup-he-stack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.05);
+  transform-origin: center;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out;
+}
+.lineup-filter-utility-he:hover .lineup-he-stack {
+  opacity: 0.55;
+}
+.lineup-filter.active.lineup-filter-utility-he .lineup-he-stack {
+  opacity: 0.85;
+  transform: scale(1.1);
+}
+.lineup-filter-animate-he .lineup-he-stack {
+  opacity: 1;
+  transform: scale(1.18);
+}
+.lineup-he-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.lineup-filter-utility-he {
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 280ms ease;
+}
+.lineup-filter-utility-he:hover {
+  box-shadow:
+    0 0 10px -3px rgba(255, 190, 60, 0.45),
+    0 0 22px -6px rgba(237, 72, 21, 0.3);
+}
+.lineup-filter.active.lineup-filter-utility-he {
+  box-shadow:
+    0 0 8px -2px rgba(255, 200, 80, 0.3),
+    0 0 18px -6px rgba(237, 72, 21, 0.2);
+}
+
+@keyframes lineup-he-glow-pulse {
+  0% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 200, 80, 0.3),
+      0 0 18px -6px rgba(237, 72, 21, 0.2);
+  }
+  30% {
+    box-shadow:
+      0 0 16px -2px rgba(255, 210, 110, 0.7),
+      0 0 34px -6px rgba(237, 90, 25, 0.5),
+      0 0 55px -10px rgba(200, 60, 15, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 200, 80, 0.3),
+      0 0 18px -6px rgba(237, 72, 21, 0.2);
+  }
+}
+
+@keyframes lineup-smoke-button {
+  0% {
+    border-color: var(--recon);
+  }
+  45% {
+    border-color: #d9e5e8;
+  }
+  100% {
+    border-color: var(--recon);
+  }
+}
+
+@keyframes lineup-flash-burst {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15);
+    transform: scale(1);
+  }
+  20% {
+    box-shadow: 0 0 20px 8px rgba(255, 255, 255, 0.95);
+    transform: scale(1.04);
+  }
+  60% {
+    box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.7);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    transform: scale(1);
+  }
 }
 
 .lineup-grid {
@@ -3732,12 +4240,6 @@ button.map-pool-card.lineup-map-card {
 .landing-feature-icon-alert {
   border-color: var(--alert);
 }
-.landing-feature-icon-signal {
-  border-color: var(--signal);
-}
-.landing-feature-icon-recon {
-  border-color: var(--recon);
-}
 .landing-feature-icon-gold {
   border-color: var(--gold);
 }
@@ -3749,31 +4251,6 @@ button.map-pool-card.lineup-map-card {
   height: 14px;
   border-radius: 50%;
   background: var(--alert);
-}
-.landing-feature-icon-vs {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--signal);
-}
-.landing-feature-icon-bars {
-  display: flex;
-  gap: 2px;
-  align-items: flex-end;
-  height: 16px;
-}
-.landing-feature-icon-bars span {
-  width: 3px;
-  background: var(--recon);
-}
-.landing-feature-icon-bars span:nth-child(1) {
-  height: 8px;
-}
-.landing-feature-icon-bars span:nth-child(2) {
-  height: 14px;
-}
-.landing-feature-icon-bars span:nth-child(3) {
-  height: 11px;
 }
 .landing-feature-icon-play {
   width: 0;
@@ -3913,10 +4390,6 @@ button.map-pool-card.lineup-map-card {
 .cs-nav-tab.active {
   color: var(--text-primary);
   font-weight: 700;
-}
-.cs-nav-tab.inert {
-  opacity: 0.45;
-  cursor: default;
 }
 /* Fondo tipo "pill" del tab activo -- se desliza entre tabs con
    layoutId (motion), mismos tokens que .cs-btn-ghost para consistencia
@@ -4104,5 +4577,487 @@ button.map-pool-card.lineup-map-card {
   }
   .monthly-detail-cols {
     grid-template-columns: 1fr;
+  }
+}
+/* ============================================================
+   cStats — MAP CARD ATMOSPHERIC EFFECTS
+   ------------------------------------------------------------
+   NUEVO BLOQUE
+   No reemplaza ni modifica estilos existentes.
+   ============================================================ */
+
+
+/* ============================================================
+   SISTEMA BASE
+   ============================================================ */
+
+.lineup-map-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  --map-fx-opacity: 0.42;
+  --map-fx-hover-opacity: 0.62;
+  --map-accent: var(--recon);
+
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 200ms ease;
+}
+
+/* Color de acento propio de cada mapa: alimenta el glow de hover/selección. */
+.lineup-map-card.map-effect-de_ancient { --map-accent: #4fd9a3; }
+.lineup-map-card.map-effect-de_anubis  { --map-accent: #d9b876; }
+.lineup-map-card.map-effect-de_cache   { --map-accent: #5cc4ff; }
+.lineup-map-card.map-effect-de_dust2   { --map-accent: #e8a35a; }
+.lineup-map-card.map-effect-de_inferno { --map-accent: #ff7a3d; }
+.lineup-map-card.map-effect-de_mirage  { --map-accent: #f0cf8e; }
+.lineup-map-card.map-effect-de_nuke    { --map-accent: #4dff85; }
+
+.lineup-map-card:hover {
+  border-color: color-mix(in srgb, var(--map-accent) 60%, var(--line));
+  box-shadow:
+    0 14px 28px -14px rgba(0, 0, 0, 0.7),
+    0 0 22px -6px var(--map-accent);
+}
+
+
+/* Capa atmosférica */
+.lineup-map-card .map-card-fx {
+  position: absolute;
+  inset: 0;
+
+  z-index: 0;
+
+  display: block;
+
+  overflow: hidden;
+  pointer-events: none;
+
+  opacity: var(--map-fx-opacity);
+
+  border-radius: inherit;
+
+  transition:
+    opacity 250ms ease,
+    filter 250ms ease;
+}
+
+
+/* Contenido original */
+.lineup-map-card .map-card-content {
+  position: relative;
+  z-index: 5;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+}
+
+
+/*
+ * Icono y nombre siempre encima del efecto.
+ */
+.lineup-map-card .map-pool-icon,
+.lineup-map-card .map-pool-name {
+  position: relative;
+  z-index: 6;
+}
+
+
+/*
+ * Legibilidad del contenido.
+ */
+.lineup-map-card .map-pool-icon {
+  filter:
+    drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85));
+}
+
+.lineup-map-card .map-pool-name {
+  text-shadow:
+    0 2px 6px rgba(0, 0, 0, 1),
+    0 0 12px rgba(0, 0, 0, 0.9);
+}
+
+
+/* ============================================================
+   HOVER
+   ============================================================ */
+
+.lineup-map-card:hover .map-card-fx {
+  opacity: var(--map-fx-hover-opacity);
+}
+
+.lineup-map-card:hover .map-pool-icon {
+  filter:
+    drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 0 10px rgba(76, 205, 255, 0.2));
+}
+
+
+/* ============================================================
+   ANCIENT
+   El fondo es un video real (public/media/ancient-arena.mp4, arranca
+   desde el segundo 2 y loopea desde ahí -- ver MapArenaVideo en
+   LineUps.tsx), montado en el lugar del <span class="map-card-fx">
+   solo para esta card. El elemento sigue siendo `.map-card-fx` (mismo
+   position/inset/opacity/hover que el resto de los mapas); acá solo
+   hace falta el object-fit del <video>.
+   ============================================================ */
+
+.map-effect-de_ancient .map-card-fx {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* ============================================================
+   ANUBIS
+   El fondo es un video real (public/media/anubis-arena.mp4, arranca
+   desde el segundo 2 y loopea desde ahí -- ver MapArenaVideo en
+   LineUps.tsx), montado en el lugar del <span class="map-card-fx">
+   solo para esta card. El elemento sigue siendo `.map-card-fx` (mismo
+   position/inset/opacity/hover que el resto de los mapas); acá solo
+   hace falta el object-fit del <video>.
+   ============================================================ */
+
+.map-effect-de_anubis .map-card-fx {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* ============================================================
+   CACHE
+   Óxido industrial + niebla verde radiactiva a la deriva
+   ============================================================ */
+
+.map-effect-de_cache .map-card-fx {
+  background-image:
+    url("/logo/ussr-emblem.png"),
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(120, 70, 30, 0.35),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 75% 70%,
+      rgba(90, 50, 20, 0.3),
+      transparent 60%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(57, 255, 20, 0.05) 0 1px,
+      transparent 1px 10px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(57, 255, 20, 0.05) 0 1px,
+      transparent 1px 10px
+    );
+  background-position: bottom 4px right 4px, 0 0, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat;
+  background-size: 26% auto, 100% 100%, 100% 100%, auto, auto;
+
+  animation: cstats-cache-pulse 6s ease-in-out infinite;
+}
+
+/* Interferencia: GIF real de estática/TV vieja (public/media/interferencia.gif).
+   screen descarta el negro del clip y deja solo el ruido/lineas claras,
+   igual que el criterio de los videos de molotov/humo. */
+.map-effect-de_cache .map-card-fx::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+
+  background-image: url("/media/interferencia.gif");
+  background-size: 100% 220%;
+  background-position: center center;
+}
+
+/* Niebla: dos manchas radiales derivando en direcciones distintas
+   dentro del mismo elemento (una sola animación de background-position
+   por capa), para que se sientan mezclándose entre sí en vez de un
+   único bloque trasladándose parejo. */
+.map-effect-de_cache .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: -20%;
+
+  pointer-events: none;
+  mix-blend-mode: screen;
+
+  background-image:
+    radial-gradient(
+      circle,
+      rgba(57, 255, 20, 0.35) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      circle,
+      rgba(120, 255, 90, 0.28) 0%,
+      transparent 65%
+    );
+  background-repeat: no-repeat, no-repeat;
+  background-size: 70% 70%, 85% 85%;
+  filter: blur(14px);
+
+  animation: cstats-cache-fog 26s ease-in-out infinite;
+}
+
+@keyframes cstats-cache-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes cstats-cache-fog {
+  0%,
+  100% {
+    background-position: 10% 20%, 80% 70%;
+  }
+
+  50% {
+    background-position: 65% 60%, 25% 30%;
+  }
+}
+
+
+/* ============================================================
+   DUST II
+   El fondo es un video real (public/media/dust2-arena.mp4, arranca
+   desde el segundo 2 y loopea desde ahí -- ver MapArenaVideo en
+   LineUps.tsx), montado en el lugar del <span class="map-card-fx">
+   solo para esta card. El elemento sigue siendo `.map-card-fx` (mismo
+   position/inset/opacity/hover que el resto de los mapas); acá solo
+   hace falta el object-fit del <video>.
+   ============================================================ */
+
+.map-effect-de_dust2 .map-card-fx {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* ============================================================
+   INFERNO
+   Ascuas / fuego
+   ============================================================ */
+
+.map-effect-de_inferno .map-card-fx {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  background:
+    radial-gradient(
+      circle at 20% 100%,
+      rgba(255, 86, 24, 0.55) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 70% 110%,
+      rgba(255, 172, 52, 0.65) 0 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 50% 90%,
+      rgba(255, 71, 20, 0.3),
+      transparent 55%
+    );
+
+  background-size:
+    45px 45px,
+    65px 65px,
+    100% 100%;
+
+  animation: cstats-inferno-embers 3s linear infinite;
+}
+
+.map-effect-de_inferno .map-card-fx::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at 30% 80%,
+      rgba(255, 106, 25, 0.55) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 65% 65%,
+      rgba(255, 191, 75, 0.6) 0 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 85% 90%,
+      rgba(255, 81, 20, 0.5) 0 2px,
+      transparent 3px
+    );
+
+  animation: cstats-inferno-particles 2.2s ease-in-out infinite;
+}
+
+.map-effect-de_inferno .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      ellipse at 50% 100%,
+      rgba(255, 74, 18, 0.32),
+      transparent 65%
+    );
+
+  animation: cstats-inferno-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes cstats-inferno-embers {
+  from {
+    background-position:
+      0 100%,
+      0 100%,
+      center;
+  }
+
+  to {
+    background-position:
+      20px 0,
+      -30px 0,
+      center;
+  }
+}
+
+@keyframes cstats-inferno-particles {
+  0% {
+    transform: translateY(10px);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: translateY(-8px);
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: translateY(-20px);
+    opacity: 0.15;
+  }
+}
+
+@keyframes cstats-inferno-glow {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 0.75;
+  }
+}
+
+
+/* ============================================================
+   MIRAGE
+   El fondo es un video real (public/media/mirage-arena.mp4), montado
+   en el lugar del <span class="map-card-fx"> solo para esta card (ver
+   MirageArenaVideo en LineUps.tsx). A diferencia de Ancient/Anubis/
+   Dust2 (un solo <video loop>), acá el clip no tiene un punto de corte
+   disimulado, así que se usan DOS copias desfasadas medio período con
+   crossfade por distancia-al-corte (mismo criterio que
+   CrossfadeLoopVideo/MolotovFireVideo) para que el loop no salte.
+   ============================================================ */
+
+.map-arena-crossfade video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* ============================================================
+   NUKE
+   El fondo es un video real (public/media/nuke-arena.mp4), montado en
+   el lugar del <span class="map-card-fx"> solo para esta card (ver
+   NukeArenaVideo en LineUps.tsx). Mismo criterio que Mirage: el clip
+   no tiene una meseta recortada, así que se usan DOS copias desfasadas
+   medio período con crossfade por distancia-al-corte
+   (CrossfadeLoopVideo) para que el loop no salte.
+   ============================================================ */
+
+/* El clip original trae una marca de agua en la esquina inferior
+   derecha. En vez de taparla con un blur, se zoomea/desplaza el video
+   hacia abajo para que esa esquina quede fuera del recorte visible
+   (el contenedor padre tiene overflow: hidden). */
+.map-arena-nuke video {
+  transform: scale(1.32) translate(-2%, 9%);
+  transform-origin: center;
+}
+
+
+/* ============================================================
+   EFECTOS ESPECÍFICOS AL HACER HOVER
+   ============================================================ */
+
+.lineup-map-card:hover .map-card-fx {
+  filter: saturate(1.12);
+}
+
+.lineup-map-card.map-effect-de_cache:hover .map-card-fx {
+  filter: contrast(1.25) saturate(1.15);
+}
+
+.lineup-map-card.map-effect-de_inferno:hover .map-card-fx {
+  filter: saturate(1.3);
+}
+
+.lineup-map-card.map-effect-de_nuke:hover .map-card-fx {
+  filter: saturate(1.45) brightness(1.1);
+}
+
+.lineup-map-card.map-effect-de_ancient:hover .map-card-fx {
+  filter: saturate(1.25) brightness(1.08);
+}
+
+
+/* ============================================================
+   ACCESIBILIDAD
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .lineup-map-card .map-card-fx,
+  .lineup-map-card .map-card-fx::before,
+  .lineup-map-card .map-card-fx::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .lineup-map-card,
+  .lineup-map-card:hover {
+    transform: none !important;
+    transition: border-color 150ms ease !important;
   }
 }

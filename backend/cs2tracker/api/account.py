@@ -13,15 +13,23 @@ todavía (cookie pending).
 
 from __future__ import annotations
 
+import re
 import secrets
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from cs2tracker.api.schemas import ForgotPasswordIn, LoginIn, MeOut, RegisterIn, ResetPasswordIn
+from cs2tracker.api.schemas import (
+    CustomBackgroundIn,
+    ForgotPasswordIn,
+    LoginIn,
+    MeOut,
+    RegisterIn,
+    ResetPasswordIn,
+)
 from cs2tracker.auth import (
     COOKIE_NAME as REAL_COOKIE_NAME,
 )
@@ -32,6 +40,7 @@ from cs2tracker.auth import (
     build_login_url,
     create_session_cookie,
     fetch_profile,
+    get_current_steamid,
     get_current_steamid_optional,
     verify_callback,
 )
@@ -57,6 +66,11 @@ from cs2tracker.infra.mail import send_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Solo http(s): es lo único que un <img>/CSS background-image necesita, y
+# descarta esquemas raros (javascript:, data: gigante, etc.) sin tener que
+# validar la imagen en sí.
+_BACKGROUND_URL_RE = re.compile(r"^https?://", re.IGNORECASE)
+
 # Hash fijo precomputado para emparejar el tiempo de respuesta de
 # /auth/login cuando el email no existe (si no, un email inexistente
 # responde más rápido que uno con password incorrecta, porque Argon2 es
@@ -70,6 +84,8 @@ def _me_out_for_user(user: User) -> MeOut:
         steamid=user.steamid,
         display_name=user.display_name,
         avatar_url=user.avatar_url,
+        steam_background_url=user.steam_background_url,
+        custom_background_url=user.custom_background_url,
         email=user.email,
         email_verified_at=user.email_verified_at,
         onboarding_completed_at=user.onboarding_completed_at,
@@ -212,7 +228,7 @@ async def auth_callback(request: Request):
         if s.get(User, steamid) is not None:
             return RedirectResponse(f"{settings.frontend_url}/register?error=steam_already_linked")
 
-        display_name, avatar_url = await fetch_profile(steamid)
+        display_name, avatar_url, steam_background_url = await fetch_profile(steamid)
         now = datetime.now(UTC).isoformat()
         if s.get(Player, steamid) is None:
             s.add(Player(steamid=steamid, name=display_name))
@@ -221,6 +237,7 @@ async def auth_callback(request: Request):
             steamid=steamid,
             display_name=display_name,
             avatar_url=avatar_url,
+            steam_background_url=steam_background_url,
             last_login_at=now,
             email=pending.email,
             password_hash=pending.password_hash,
@@ -352,6 +369,33 @@ def auth_me(request: Request):
                 return _me_out_for_pending(pending)
 
     raise HTTPException(401, "no autenticado")
+
+
+@router.patch("/me/background", response_model=MeOut)
+def set_custom_background(
+    body: CustomBackgroundIn, steamid: str = Depends(get_current_steamid)
+) -> MeOut:
+    url = body.url.strip()
+    if not _BACKGROUND_URL_RE.match(url):
+        raise HTTPException(400, "la URL debe empezar con http:// o https://")
+    with Session(get_engine()) as s:
+        user = s.get(User, steamid)
+        if user is None:
+            raise HTTPException(401, "no autenticado")
+        user.custom_background_url = url
+        s.commit()
+        return _me_out_for_user(user)
+
+
+@router.delete("/me/background", response_model=MeOut)
+def clear_custom_background(steamid: str = Depends(get_current_steamid)) -> MeOut:
+    with Session(get_engine()) as s:
+        user = s.get(User, steamid)
+        if user is None:
+            raise HTTPException(401, "no autenticado")
+        user.custom_background_url = None
+        s.commit()
+        return _me_out_for_user(user)
 
 
 @router.post("/logout")

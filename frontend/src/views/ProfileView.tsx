@@ -3,18 +3,23 @@ import { Link, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { getProfile } from "../api";
 import { AccuracyPanel } from "../components/AccuracyPanel";
+import { BackgroundSettings } from "../components/BackgroundSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
 import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
+import { MapStatsPopover } from "../components/MapStatsPopover";
 import { MapWallpaperCarousel } from "../components/MapWallpaperCarousel";
+import { PremierRankUpEffect } from "../components/PremierRankUpEffect";
 import { ProfileTagChips } from "../components/ProfileTagChips";
 import { SquadCard } from "../components/SquadCard";
 import { CoachCorner } from "../components/CoachCorner";
 import { tierClass } from "../components/RankBadge";
 import { RankHistoryCard } from "../components/RankHistoryCard";
 import { csgoRankFor, RankCrest } from "../lib/csgoRankEquivalent";
+import { isPromotionalMatch } from "../lib/premierRating";
 import { TopMapsPanel } from "../components/TopMapsPanel";
 import { TopWeaponsPanel } from "../components/TopWeaponsPanel";
 import { useUser } from "../context/UserContext";
+import { useSteamBackground } from "../hooks/useSteamBackground";
 import { cardRise, staggerList } from "../components/motion/presets";
 import type { ProfileResponse } from "../types";
 
@@ -82,6 +87,7 @@ function MatchHistoryCard({ m }: { m: ProfileResponse["match_history"][number] }
 export function ProfileView() {
   const { steamid } = useParams<{ steamid: string }>();
   const user = useUser();
+  useSteamBackground(user.custom_background_url ?? user.steam_background_url);
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
@@ -89,7 +95,6 @@ export function ProfileView() {
     premier: true,
     competitivo: true,
   });
-
   useEffect(() => {
     setVisibleCount(10);
   }, [typeFilter]);
@@ -159,86 +164,91 @@ export function ProfileView() {
 
   return (
     <>
-      <div className="profile-hero">
-        {data.avatar_url ? (
-          <img className="pav" src={data.avatar_url} alt="" style={{ objectFit: "cover" }} />
-        ) : (
-          <div className="pav">🎯</div>
-        )}
-        <div>
-          <div className="pname-row">
-            {data.display_name && <span className="display pname">{data.display_name}</span>}
-            {/*<span className="prank">STEAMID {steamid}</span>*/}
-          </div>
-          <div className="pmeta">
-            <b>{lifetime.matches_played}</b> partidas jugadas ·{" "}
-            <b>{lifetime.win_rate.toFixed(0)}%</b> win rate
-          </div>
-          {currentRank !== null && (
-            <div className="premier-hero">
-              <span className={`ph-num mono ${tierClass(currentRank)}`}>
-                {currentRank.toLocaleString("en-US")}
-              </span>
-              {heroDelta !== null && heroDelta !== 0 && (
-                <span
-                  className={`ph-delta mono ${heroDelta > 0 ? "up" : "down"}`}
-                  title={
-                    liveRating !== null
-                      ? "Cambio en tu última partida (rating vivo del Game Coordinator)"
-                      : "Cambio en tu última partida con resultado ya calculado"
-                  }
-                >
-                  {heroDelta > 0 ? "▲" : "▼"} {Math.abs(heroDelta).toLocaleString("en-US")}
-                </span>
-              )}
-            </div>
+      <div className={`profile-hero ${currentRank !== null ? tierClass(currentRank) : ""}`}>
+        <div className="profile-hero-avatar-col">
+          {data.display_name && (
+            <span className="display pname pname-above-avatar">{data.display_name}</span>
           )}
-          {equivRank && (
-            <div className="csgo-equiv-chip" title={`Equivalente CS:GO: ${equivRank.name}`}>
-              <RankCrest rank={equivRank} />
-              <span>{equivRank.name}</span>
-            </div>
+          {data.avatar_url ? (
+            <img className="pav" src={data.avatar_url} alt="" style={{ objectFit: "cover" }} />
+          ) : (
+            <div className="pav">🎯</div>
           )}
-          {steamid && <ProfileTagChips steamid={steamid} />}
         </div>
-
-        {(topMap || topWeapon) && (
-          <div className="profile-hero-summary">
-            {topMap && (
-              <div className="phs-bg">
-                <MapWallpaperCarousel map={topMap.map} />
+        <div className="profile-hero-info">
+          <div className="pname-row">
+            {currentRank !== null && (
+              <div className="premier-hero-row">
+                <div className="premier-hero">
+                  {isPromotionalMatch(currentRank) && <PremierRankUpEffect />}
+                  <span className={`ph-num mono ${tierClass(currentRank)}`}>
+                    {currentRank.toLocaleString("en-US")}
+                  </span>
+                  {heroDelta !== null && heroDelta !== 0 && (
+                    <span
+                      className={`ph-delta mono ${heroDelta > 0 ? "up" : "down"}`}
+                      title={
+                        liveRating !== null
+                          ? "Cambio en tu última partida (rating vivo del Game Coordinator)"
+                          : "Cambio en tu última partida con resultado ya calculado"
+                      }
+                    >
+                      {heroDelta > 0 ? "▲" : "▼"} {Math.abs(heroDelta).toLocaleString("en-US")}
+                    </span>
+                  )}
+                </div>
+                {equivRank && (
+                  <span
+                    className={`csgo-equiv-chip ${tierClass(currentRank)}`}
+                    title={`Equivalente CS:GO: ${equivRank.name}`}
+                  >
+                    <RankCrest rank={equivRank} />
+                    <span className="equiv-name">{equivRank.name}</span>
+                  </span>
+                )}
               </div>
             )}
-            <div className="phs-grid">
-              <div className="phs-stat">
+          </div>
+          {steamid && <ProfileTagChips steamid={steamid} />}
+
+          {/* Agrupados en un solo bloque centrado verticalmente contra el
+              alto completo de la tarjeta (.profile-hero-info es
+              align-self:stretch) -- antes CS RATING y phs-inline eran dos
+              posicionamientos absolutos independientes con tops fijos, lo
+              que los dejaba pegados abajo con un hueco vacío arriba. */}
+          <div className="cs-rating-block">
+            {currentRank !== null && (
+              <span className="ph-unit mono cs-rating-label">CS RATING</span>
+            )}
+
+            {/* Cerca del chip de rango equivalente (misma columna), no en el
+                panel del carrusel de mapa -- fondo propio en degradé de tier
+                (ver .phs-inline .phs-stat) en vez de depender del wallpaper. */}
+            <div className="phs-inline">
+              <div className="phs-stat phs-stat-adr">
                 <span className="label">ADR</span>
                 <b>{lifetime.avg_adr.toFixed(1)}</b>
               </div>
-              <div className="phs-stat">
+              <div className="phs-stat phs-stat-hs">
                 <span className="label">HS%</span>
                 <b>{accuracy.head_pct.toFixed(0)}%</b>
               </div>
               {topWeapon && (
-                <div className="phs-stat phs-stat-wide">
+                <div className="phs-stat phs-stat-weapon">
                   <span className="label">Mejor arma</span>
-                  <span>
-                    <b>{topWeapon.name}</b>
-                    <span className="phs-sub"> · {topWeapon.kills} kills</span>
-                  </span>
-                </div>
-              )}
-              {topMap && (
-                <div className="phs-stat phs-stat-wide">
-                  <span className="label">Mejor mapa</span>
-                  <span>
-                    <b>{topMap.map}</b>
-                    {topMap.win_rate !== null && (
-                      <span className="phs-sub"> · {topMap.win_rate.toFixed(0)}% WR</span>
-                    )}
-                  </span>
+                  <b>{topWeapon.name}</b>
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {topMap && (
+          <div className="profile-hero-summary">
+            <div className="phs-bg">
+              <MapWallpaperCarousel map={topMap.map} />
+            </div>
+            <MapStatsPopover map={topMap.map} winRate={topMap.win_rate} />
           </div>
         )}
       </div>
@@ -323,6 +333,8 @@ export function ProfileView() {
           <TopMapsPanel mapPool={map_pool} />
 
           {user.steamid === steamid && steamid && <ClipsPanel steamid={steamid} />}
+
+          {user.steamid === steamid && <BackgroundSettings />}
         </div>
       </div>
     </>
