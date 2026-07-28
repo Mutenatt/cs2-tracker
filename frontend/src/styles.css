@@ -995,105 +995,6 @@ footer {
     transparent 100%
   );
 }
-/* Watermark de fondo del profile-hero: clip "Flying Crow" (ver
-   FlyingCrowWatermark.tsx) cruzando de izquierda a derecha, de perfil.
-   Ocupa TODO el ancho de la tarjeta (no se confina a una franja): al estar
-   en z-index:-1 pasa por detrás de absolutamente todo (texto, chip de
-   rango, y el carrusel de la derecha, que además pinta encima con
-   z-index:1) -- así puede recorrer toda la tarjeta sin tapar nunca nada. */
-.profile-hero .profile-hero-eagle {
-  /* .profile-hero > *:not(.profile-hero-summary) pone align-self:center,
-     que ignora nuestro top/bottom:0 y centra la caja por su propio alto
-     intrínseco (0, porque el contenido interno es absolute) -- de ahí
-     que necesite alta especificidad para pisarlo. */
-  align-self: stretch;
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-  border-radius: inherit;
-  opacity: 0.28;
-  /* El clip trae fondo blanco sólido (no tiene canal alfa) -- "multiply"
-     es lo que realmente lo hace desaparecer contra el degradado morado
-     (multiplicar por blanco no cambia nada, así que el blanco del video
-     se vuelve invisible y solo queda la silueta oscura del cuervo).
-     screen/overlay harían lo contrario: esos sirven para ocultar NEGRO,
-     no blanco. Va acá (en el contenedor) y no en el <video>: el propio
-     position:absolute + z-index del contenedor ya crea su stacking
-     context, así que un blend-mode puesto en el <video> hijo quedaría
-     aislado contra un fondo transparente en vez de ver el degradado
-     morado real -- por eso terminaba pintando un rectángulo blanco lavado
-     en vez de desaparecer. */
-  mix-blend-mode: multiply;
-}
-/* eagle-frame: la caja que efectivamente se mueve (left + fade, ver
-   eagle-flight) y la que lleva el vignette. El mp4 tiene fondo blanco que
-   "multiply" (en .profile-hero-eagle) vuelve invisible, pero la compresión
-   del clip deja un resto de recuadro cerca del borde que sin difuminar se
-   nota como un "cuadrado" cruzando la tarjeta -- el mask-image radial lo
-   apaga a transparente bastante antes del borde real, así nunca hay un
-   canto recto visible. */
-.eagle-frame {
-  position: absolute;
-  left: -25%;
-  top: 22%;
-  width: 220px;
-  height: 165px;
-  animation: eagle-flight 30s linear infinite;
-  -webkit-mask-image: radial-gradient(ellipse 60% 58% at 50% 50%, #000 45%, transparent 88%);
-  mask-image: radial-gradient(ellipse 60% 58% at 50% 50%, #000 45%, transparent 88%);
-}
-.eagle-icon {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  filter: blur(0.4px);
-}
-/* Capa de tiño: mismo tamaño que el video, pintada encima con
-   mix-blend-mode: color -- toma el matiz de --tier-accent y conserva la
-   luminosidad del video de abajo (duotono), así el cuervo cambia de tono
-   según el tier igual que el fondo del hero. Ninguno de los dos tiene
-   z-index propio, así que ambos quedan en el mismo grupo de blending
-   dentro de .profile-hero-eagle y el "color" blend ve al video como
-   backdrop real (no queda aislado contra transparente). */
-.eagle-tint {
-  position: absolute;
-  inset: 0;
-  background: var(--tier-accent, transparent);
-  mix-blend-mode: color;
-}
-
-/* Recorrido: entra por la izquierda fuera de la tarjeta, cruza y sale por
-   la derecha, y vuelve a arrancar -- bucle infinito, velocidad constante
-   (el "left" es siempre -25% + 1.5*p, interpolación lineal exacta en
-   todos los stops de abajo, así la velocidad de desplazamiento no cambia).
-   El aleteo en sí ya viene grabado en el clip.
-
-   La opacidad se anima en el mismo keyframe: aparece de a poco al entrar,
-   y se apaga por completo ANTES de llegar a la columna del carrusel
-   (arranca ~58% del ancho de la tarjeta) para que nunca se le note
-   cruzando por detrás de las estadísticas -- desaparece con transición,
-   no de golpe. */
-@keyframes eagle-flight {
-  0% { left: -25%; opacity: 0; }
-  12% { left: -7%; opacity: 1; }
-  48% { left: 47%; opacity: 1; }
-  60% { left: 65%; opacity: 0; }
-  100% { left: 125%; opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .eagle-frame {
-    animation: none;
-    left: 38%;
-  }
-  .profile-hero .profile-hero-eagle {
-    opacity: 0.22;
-  }
-}
-
 /* Columna que reemplaza al avatar suelto: nombre apilado arriba de la
    foto de perfil de Steam, en vez de al lado (ver profile-hero-info, que
    ahora solo tiene el badge de rango equivalente en su pname-row). */
@@ -1177,33 +1078,41 @@ footer {
    así se puede mover sin arrastrar a ProfileTagChips/.phs-inline hacia
    abajo, que es lo que pasaba cuando esto era margin-top en flujo. Ancla:
    .profile-hero-info (position:relative). */
+/* Chip equivalente CS:GO queda apilado debajo del chip Premier, mismo
+   ancla (.profile-hero-info, position:relative) -- antes colgaba abajo
+   con position:absolute propio (.equiv-chip-bottom, eliminada),
+   desalineado del chip Premier. align-items:stretch + width:fit-content
+   hace que ambos chips midan lo mismo (el ancho del más ancho de los
+   dos, sin hardcodear un valor fijo que no sirva para nombres de rango
+   más largos como "Distinguished Master Guardian"). Subido y con menos
+   gap entre chips para que el bloque completo (Premier + equivalente)
+   quede centrado contra .phs-inline (ADR/HS%/Mejor arma) en vez de
+   sobresalir por debajo de esa fila. */
 .premier-hero-row {
   position: absolute;
-  top: 26px;
+  top: 14px;
   left: 14px;
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-/* Badge de rango equivalente: clavado casi al fondo de la tarjeta, mismo
-   spot que antes ocupaba .premier-hero-row -- ver .profile-hero-info
-   (position:relative, contenedor). */
-.equiv-chip-bottom {
-  position: absolute;
-  left: 0;
-  bottom: -10px;
+  flex-direction: column;
+  align-items: stretch;
+  width: fit-content;
+  gap: 6px;
 }
 /* Premier Rating vigente en el header, encapsulado como el badge de
    "Rank Premier" (.rank-badge): rectángulo con fondo/borde teñidos del
-   color del tier -- sin las barras verticales de acento. */
+   color del tier -- sin las barras verticales de acento. Mismo
+   height/padding que .csgo-equiv-chip para que ambos chips queden del
+   mismo tamaño exacto. */
 .premier-hero {
   position: relative;
   isolation: isolate;
+  box-sizing: border-box;
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  width: fit-content;
-  padding: 6px 13px;
+  height: 34px;
+  padding: 0 14px;
   background: color-mix(in srgb, var(--tier-accent, transparent) 16%, var(--panel));
   border: 1px solid transparent;
   border-radius: 6px;
@@ -1237,7 +1146,7 @@ footer {
   mask-composite: exclude;
 }
 .premier-hero .ph-num {
-  font-size: 26px;
+  font-size: 19px;
   font-weight: 900;
   line-height: 1;
 }
@@ -1344,15 +1253,18 @@ footer {
    default (fuente, cursor, línea de foco propia) para que se vea igual
    que el chip de siempre. */
 .csgo-equiv-chip {
-  display: inline-flex;
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  height: 34px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 4px 12px 4px 6px;
+  padding: 0 14px;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--panel-accent);
@@ -1392,7 +1304,7 @@ footer {
   border-color: color-mix(in srgb, #e4ae39 45%, var(--line));
 }
 .rank-crest {
-  height: 29px;
+  height: 22px;
   width: auto;
   flex: none;
 }
@@ -1462,76 +1374,83 @@ footer {
 .profile-hero-summary .phs-bg .wallpaper-frame.active {
   opacity: 1;
 }
-/* ADR/HS%/Mejor arma viven en la columna del nombre (cerca del chip de
-   rango equivalente), no en el panel del carrusel -- ver .phs-inline más
-   abajo. Acá solo queda Mejor mapa, clavada a la esquina inferior derecha
-   del panel (.profile-hero-summary es su position:relative). */
-.phs-grid-single {
+/* Reemplaza el texto estático "Mejor mapa · Anubis · XX% WR" que vivía acá
+   (ver .phs-grid-single, ya eliminado): un ícono clavado en la misma
+   esquina inferior derecha del panel, que revela la info en una burbuja
+   al hover/focus en vez de mostrarla siempre. */
+.map-stats-popover {
   position: absolute;
   right: 16px;
-  bottom: 0;
+  bottom: 12px;
+  z-index: 2;
+  display: inline-flex;
+  cursor: help;
+}
+.map-stats-popover-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  opacity: 0.6;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.map-stats-popover:hover .map-stats-popover-icon,
+.map-stats-popover:focus-visible .map-stats-popover-icon {
+  opacity: 1;
+  transform: scale(1.08);
+}
+.map-stats-popover-bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: max-content;
+  max-width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none;
+}
+.map-stats-popover-bubble b {
+  color: var(--text);
+}
+.map-stats-popover:hover .map-stats-popover-bubble,
+.map-stats-popover:focus-visible .map-stats-popover-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Bloque CS RATING + ADR/HS%/Mejor arma como una sola unidad, centrada
+   verticalmente contra el alto completo de la tarjeta (.profile-hero-info
+   es align-self:stretch, así que top:50%+translateY(-50%) centra contra
+   el rectángulo entero del hero, no contra un contenido interno). Antes
+   cada pieza tenía su propio top fijo (34px / 65px) sin relación con el
+   alto real de la tarjeta, dejando un hueco vacío arriba. */
+.cs-rating-block {
+  position: absolute;
+  top: 50%;
+  left: 380px;
+  transform: translateY(-50%);
   display: flex;
-}
-/* Sin el recuadro/glow -- va directo sobre el wallpaper, en fila
-   horizontal (label "Mejor mapa" a la izquierda del nombre del mapa, no
-   apilados como el resto de .phs-stat). Color por tier (heredado de
-   .phs-stat .label/b/.phs-sub), sin contorno. */
-.phs-grid-single .phs-stat {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 6px;
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  border-radius: 0;
-}
-/* Contorno negro fino (0.6px en las 4 direcciones) para que se lea
-   encima del wallpaper sin verse grueso. */
-.phs-grid-single .phs-stat,
-.phs-grid-single .phs-stat * {
-  text-shadow:
-    -0.6px -0.6px 0 #000,
-    0.6px -0.6px 0 #000,
-    -0.6px 0.6px 0 #000,
-    0.6px 0.6px 0 #000;
-}
-/* Mejor mapa/anubis/WR, todo al tamaño chico del label "ADR" (10.5px) --
-   antes quedaban grandes (18px, igualados al nombre del mapa). */
-.phs-grid-single .phs-stat .label {
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: normal;
-}
-.phs-grid-single .phs-stat b {
-  font-size: 10.5px;
-}
-.phs-grid-single .phs-stat .phs-sub {
-  font-size: 10.5px;
-  font-weight: 700;
-}
-/* En vez del color fijo por tier (--tier-accent) que usa el resto de
-   .phs-stat, acá el texto toma el tono de lo que haya debajo en el
-   carrusel (mix-blend-mode) -- así no resalta como un color ajeno pegado
-   encima de la foto, sino que se integra con cada imagen que va pasando. */
-.phs-grid-single .phs-stat .label,
-.phs-grid-single .phs-stat b,
-.phs-grid-single .phs-stat .phs-sub {
-  color: #fff;
-  mix-blend-mode: overlay;
+  flex-direction: column;
+  gap: 8px;
 }
 /* "CS RATING": centrado arriba de "HS%" (segundo item de .phs-inline),
-   con el color del tier igual que el resto de los labels teñidos. */
-/* Position:absolute (no en flujo normal) -- así queda a la altura del chip
-   "Legendary Eagle" (misma fila que .pname-row) sin arrastrar/empujar
-   .phs-inline hacia abajo, que es lo que pasaba cuando era un bloque más
-   en el flujo. Ancla: .profile-hero-info (position:relative). */
+   con el color del tier igual que el resto de los labels teñidos. El
+   offset horizontal (antes left:426 vs. left:380 de .phs-inline, 46px de
+   diferencia) ahora es un margin-left dentro del flujo del bloque. */
 .cs-rating-label {
-  position: absolute;
-  top: 34px;
-  left: 426px;
   width: max-content;
+  margin-left: 46px;
   white-space: nowrap;
   text-align: center;
   padding: 2px 8px;
@@ -1544,15 +1463,7 @@ footer {
     0 0 4px color-mix(in srgb, var(--tier-accent, transparent) 80%, transparent),
     0 0 8px color-mix(in srgb, var(--tier-accent, transparent) 50%, transparent);
 }
-/* Position:absolute (no en flujo normal) -- para que mover esta fila no
-   estire .profile-hero-info y, con eso, arrastre el alto de
-   .profile-hero-summary (align-items:stretch en el grid de .profile-hero
-   iguala el alto de todos los items de la fila al más alto). Ancla:
-   .profile-hero-info (position:relative). */
 .phs-inline {
-  position: absolute;
-  top: 65px;
-  left: 380px;
   display: flex;
   flex-wrap: nowrap;
   gap: 26px;
@@ -1611,12 +1522,6 @@ footer {
   font-size: 18px;
   font-weight: 700;
   color: var(--tier-accent, var(--text));
-}
-.phs-stat .phs-sub {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  font-weight: 400;
-  color: color-mix(in srgb, var(--tier-accent, var(--text-dim)) 55%, var(--text-dim));
 }
 .profile-grid {
   display: grid;

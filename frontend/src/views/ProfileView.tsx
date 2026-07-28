@@ -6,8 +6,8 @@ import { AccuracyPanel } from "../components/AccuracyPanel";
 import { AutoFetchSettings } from "../components/AutoFetchSettings";
 import { BackgroundSettings } from "../components/BackgroundSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
-import { FlyingCrowWatermark } from "../components/FlyingCrowWatermark";
 import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
+import { MapStatsPopover } from "../components/MapStatsPopover";
 import { MapWallpaperCarousel } from "../components/MapWallpaperCarousel";
 import { PremierRankUpEffect } from "../components/PremierRankUpEffect";
 import { ProfileTagChips } from "../components/ProfileTagChips";
@@ -166,7 +166,6 @@ export function ProfileView() {
   return (
     <>
       <div className={`profile-hero ${currentRank !== null ? tierClass(currentRank) : ""}`}>
-        {equivRank?.name === "Legendary Eagle" && <FlyingCrowWatermark />}
         <div className="profile-hero-avatar-col">
           {data.display_name && (
             <span className="display pname pname-above-avatar">{data.display_name}</span>
@@ -199,40 +198,49 @@ export function ProfileView() {
                     </span>
                   )}
                 </div>
+                {equivRank && (
+                  <span
+                    className={`csgo-equiv-chip ${tierClass(currentRank)}`}
+                    title={`Equivalente CS:GO: ${equivRank.name}`}
+                  >
+                    <RankCrest rank={equivRank} />
+                    <span className="equiv-name">{equivRank.name}</span>
+                  </span>
+                )}
               </div>
             )}
           </div>
-          {equivRank && currentRank !== null && (
-            <span
-              className={`csgo-equiv-chip expanded equiv-chip-bottom ${tierClass(currentRank)}`}
-              title={`Equivalente CS:GO: ${equivRank.name}`}
-            >
-              <RankCrest rank={equivRank} />
-              <span className="equiv-name">{equivRank.name}</span>
-            </span>
-          )}
           {steamid && <ProfileTagChips steamid={steamid} />}
 
-          {currentRank !== null && <span className="ph-unit mono cs-rating-label">CS RATING</span>}
-
-          {/* Cerca del chip de rango equivalente (misma columna), no en el
-              panel del carrusel de mapa -- fondo propio en degradé de tier
-              (ver .phs-inline .phs-stat) en vez de depender del wallpaper. */}
-          <div className="phs-inline">
-            <div className="phs-stat phs-stat-adr">
-              <span className="label">ADR</span>
-              <b>{lifetime.avg_adr.toFixed(1)}</b>
-            </div>
-            <div className="phs-stat phs-stat-hs">
-              <span className="label">HS%</span>
-              <b>{accuracy.head_pct.toFixed(0)}%</b>
-            </div>
-            {topWeapon && (
-              <div className="phs-stat phs-stat-weapon">
-                <span className="label">Mejor arma</span>
-                <b>{topWeapon.name}</b>
-              </div>
+          {/* Agrupados en un solo bloque centrado verticalmente contra el
+              alto completo de la tarjeta (.profile-hero-info es
+              align-self:stretch) -- antes CS RATING y phs-inline eran dos
+              posicionamientos absolutos independientes con tops fijos, lo
+              que los dejaba pegados abajo con un hueco vacío arriba. */}
+          <div className="cs-rating-block">
+            {currentRank !== null && (
+              <span className="ph-unit mono cs-rating-label">CS RATING</span>
             )}
+
+            {/* Cerca del chip de rango equivalente (misma columna), no en el
+                panel del carrusel de mapa -- fondo propio en degradé de tier
+                (ver .phs-inline .phs-stat) en vez de depender del wallpaper. */}
+            <div className="phs-inline">
+              <div className="phs-stat phs-stat-adr">
+                <span className="label">ADR</span>
+                <b>{lifetime.avg_adr.toFixed(1)}</b>
+              </div>
+              <div className="phs-stat phs-stat-hs">
+                <span className="label">HS%</span>
+                <b>{accuracy.head_pct.toFixed(0)}%</b>
+              </div>
+              {topWeapon && (
+                <div className="phs-stat phs-stat-weapon">
+                  <span className="label">Mejor arma</span>
+                  <b>{topWeapon.name}</b>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -241,18 +249,7 @@ export function ProfileView() {
             <div className="phs-bg">
               <MapWallpaperCarousel map={topMap.map} />
             </div>
-            <div className="phs-grid-single">
-              <div className="phs-stat phs-stat-map">
-                <span className="label">Mejor mapa</span>
-                <span className="phs-sub">·</span>
-                <span>
-                  <b>{topMap.map.replace(/^de_/, "")}</b>
-                  {topMap.win_rate !== null && (
-                    <span className="phs-sub"> · {topMap.win_rate.toFixed(0)}% WR</span>
-                  )}
-                </span>
-              </div>
-            </div>
+            <MapStatsPopover map={topMap.map} winRate={topMap.win_rate} />
           </div>
         )}
       </div>
