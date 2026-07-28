@@ -252,11 +252,7 @@ export async function unlinkAutofetch(): Promise<AutofetchStatus> {
   return r.json();
 }
 
-<<<<<<< HEAD
 export async function setCustomBackground(url: string): Promise<MeOut> {
-=======
-export async function setCustomBackground(url: string): Promise<User> {
->>>>>>> f16c6fe518224679e9de87d6cb78333234665948
   const r = await fetch(`${BASE}/auth/me/background`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -269,18 +265,12 @@ export async function setCustomBackground(url: string): Promise<User> {
   return r.json();
 }
 
-<<<<<<< HEAD
 export async function clearCustomBackground(): Promise<MeOut> {
   const r = await fetch(`${BASE}/auth/me/background`, { method: "DELETE" });
   if (!r.ok) throw new Error(`DELETE me/background -> ${r.status}`);
   return r.json();
 }
 
-=======
-export async function clearCustomBackground(): Promise<User> {
-  const r = await fetch(`${BASE}/auth/me/background`, { method: "DELETE" });
-  if (!r.ok) throw new Error(`DELETE me/background -> ${r.status}`);
->>>>>>> f16c6fe518224679e9de87d6cb78333234665948
 export async function getOnboardingStatus(): Promise<OnboardingStatus> {
   const r = await fetch(`${BASE}/onboarding/status`);
   if (!r.ok) throw new Error(`GET onboarding status -> ${r.status}`);

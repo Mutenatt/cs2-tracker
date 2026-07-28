@@ -83,29 +83,6 @@ export function Topbar({ onLogout }: { onLogout: () => void }) {
           <span>Datos en vivo</span>
         </div>
         <UserMenu onLogout={onLogout} />
-<<<<<<< HEAD
-=======
-        <div className="user-chip" ref={ref}>
-          <button type="button" className="user-chip-trigger" onClick={() => setOpen((o) => !o)}>
-            {user.avatar_url ? (
-              <img className="av" src={user.avatar_url} alt="" width={24} height={24} />
-            ) : (
-              <span className="av" />
-            )}
-            <span className="name">{user.display_name ?? user.steamid}</span>
-          </button>
-          {open && (
-            <div className="user-chip-menu">
-              <Link className="user-chip-menu-item" to="/settings" onClick={() => setOpen(false)}>
-                Configuración
-              </Link>
-              <button type="button" className="user-chip-menu-item" onClick={onLogout}>
-                Salir
-              </button>
-            </div>
-          )}
-        </div>
->>>>>>> f16c6fe518224679e9de87d6cb78333234665948
       </div>
       <div className="nav-tabs">
         <NavPill to="/" end label="Inicio" />

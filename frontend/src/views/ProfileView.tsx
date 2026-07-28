@@ -3,10 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { getProfile } from "../api";
 import { AccuracyPanel } from "../components/AccuracyPanel";
-<<<<<<< HEAD
-=======
-import { AutoFetchSettings } from "../components/AutoFetchSettings";
->>>>>>> f16c6fe518224679e9de87d6cb78333234665948
 import { BackgroundSettings } from "../components/BackgroundSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
 import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
