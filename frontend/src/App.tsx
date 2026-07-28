@@ -11,20 +11,12 @@ import { LineUps } from "./views/LineUps";
 import { MatchDetailView } from "./views/MatchDetailView";
 import { ProfileView } from "./views/ProfileView";
 import { WeaponsView } from "./views/WeaponsView";
-import { PremierPromoPlayground } from "./components/mockups/PremierPromoPlayground";
 import type { User } from "./types";
 
 export function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
   const location = useLocation();
-
-  // TEMPORAL: playground de solo-lectura para probar isPromotionalMatch()
-  // sin pasar por el login. Quitar junto con components/mockups/ una vez
-  // confirmado el comportamiento.
-  if (location.pathname === "/mockup/premier-promo") {
-    return <PremierPromoPlayground />;
-  }
 
   useEffect(() => {
     (async () => {

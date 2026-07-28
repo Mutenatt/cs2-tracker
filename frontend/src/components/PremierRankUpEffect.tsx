@@ -2,8 +2,6 @@ import { useMemo } from "react";
 
 // Efecto "lluvia de +" de la pantalla de Rank Up / Premier de CS2. Se monta
 // dentro de .premier-hero (ver styles.css) y hereda su color de --tier-accent.
-// Aprobado como prueba de concepto en components/mockups/PremierRankUpMockup.tsx
-// antes de integrarse acá.
 
 type Plus = {
   id: number;
