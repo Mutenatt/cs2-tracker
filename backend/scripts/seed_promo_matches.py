@@ -131,26 +131,13 @@ def seed(steamid: str, target_rating: int, count: int = 5) -> None:
             )
             s.add(
                 MatchPlayer(
-                    match_id=match_id,
-                    steamid=steamid,
-                    team_num=2,
-                    rank=rank,
-                    rank_type=11,
-                    comp_wins=None,
+                    match_id=match_id, steamid=steamid, team_num=2, rank=rank, rank_type=11, comp_wins=None
                 )
             )
             for mate in TEAMMATES:
-                s.add(
-                    MatchPlayer(
-                        match_id=match_id, steamid=mate, team_num=2, rank=None, rank_type=None
-                    )
-                )
+                s.add(MatchPlayer(match_id=match_id, steamid=mate, team_num=2, rank=None, rank_type=None))
             for opp in OPPONENTS:
-                s.add(
-                    MatchPlayer(
-                        match_id=match_id, steamid=opp, team_num=3, rank=None, rank_type=None
-                    )
-                )
+                s.add(MatchPlayer(match_id=match_id, steamid=opp, team_num=3, rank=None, rank_type=None))
             if winning:
                 rounds = _rounds_for(match_id, n_wins=13, n_losses=n_against)
             else:
@@ -207,10 +194,7 @@ def seed(steamid: str, target_rating: int, count: int = 5) -> None:
         s.commit()
         kind = "ganadas" if winning else "perdidas"
         print(f"[ok] {count} partidas {kind} creadas ({next_id - count:010d}..{next_id - 1:010d})")
-        print(
-            f"[ok] {steamid}: entry_rank final={rank - steps[-1]} "
-            f"-> current_premier_rating={target_rating}"
-        )
+        print(f"[ok] {steamid}: entry_rank final={rank - steps[-1]} -> current_premier_rating={target_rating}")
         print(f"[ok] isPromotionalMatch({target_rating}) = {target_rating % 5000 == 4999}")
 
 
