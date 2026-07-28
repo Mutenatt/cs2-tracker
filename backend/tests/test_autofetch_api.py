@@ -20,7 +20,16 @@ def client(tmp_path, monkeypatch):
     engine = init_db(f"sqlite:///{tmp_path}/t.sqlite")
     with Session(engine) as s:
         s.add(Player(steamid=STEAMID, name="Ana"))
-        s.add(User(steamid=STEAMID, display_name="Ana", avatar_url=None))
+        s.add(
+            User(
+                steamid=STEAMID,
+                display_name="Ana",
+                avatar_url=None,
+                email=f"{STEAMID}@test.local",
+                password_hash="x",
+                email_verified_at="2026-01-01T00:00:00",
+            )
+        )
         s.commit()
     monkeypatch.setattr(autofetch.settings, "steam_api_key", "clave-de-test")
     c = TestClient(app)

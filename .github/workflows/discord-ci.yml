@@ -1,0 +1,75 @@
+# .github/workflows/discord-ci.yml
+#
+# Notifica a Discord el resultado del workflow de CI.
+# El webhook nativo de GitHub (/github) NO renderiza eventos workflow_run/check_run,
+# por eso el canal #ci necesita este job aparte con un webhook "plano".
+#
+# Setup:
+#   1. Discord: Editar canal #ci → Integraciones → Webhooks → Nuevo webhook → Copiar URL
+#      (SIN agregarle /github al final, a diferencia del resto)
+#   2. GitHub: Settings → Secrets and variables → Actions → New repository secret
+#      Nombre: DISCORD_CI_WEBHOOK
+#   3. Ajustar `workflows:` abajo al nombre exacto del workflow de CI existente.
+
+name: Discord CI notify
+
+on:
+  workflow_run:
+    workflows: ["CI"] # ← nombre del `name:` del workflow de CI, no el nombre del archivo
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # Ruido bajo: en main avisa siempre; en ramas, solo si falló.
+    if: >
+      github.event.workflow_run.head_branch == 'main' ||
+      github.event.workflow_run.conclusion != 'success'
+    steps:
+      - name: Armar y postear embed
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_CI_WEBHOOK }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          ACTOR: ${{ github.event.workflow_run.actor.login }}
+          TITLE: ${{ github.event.workflow_run.display_title }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          case "$CONCLUSION" in
+            success)   COLOR=3066993;  ICON="✅" ;;
+            failure)   COLOR=15158332; ICON="❌" ;;
+            cancelled) COLOR=9807270;  ICON="⚪" ;;
+            *)         COLOR=16776960; ICON="⚠️" ;;
+          esac
+
+          jq -n \
+            --arg name  "$ICON CI $CONCLUSION — $BRANCH" \
+            --arg url   "$RUN_URL" \
+            --arg title "$TITLE" \
+            --arg sha   "${SHA:0:7}" \
+            --arg actor "$ACTOR" \
+            --arg repo  "$REPO" \
+            --argjson color "$COLOR" \
+            '{
+              embeds: [{
+                title: $name,
+                url: $url,
+                color: $color,
+                description: $title,
+                fields: [
+                  { name: "Commit", value: $sha,   inline: true },
+                  { name: "Autor",  value: $actor, inline: true },
+                  { name: "Repo",   value: $repo,  inline: true }
+                ]
+              }]
+            }' > payload.json
+
+          curl -sS -X POST -H "Content-Type: application/json" \
+               -d @payload.json "$WEBHOOK"

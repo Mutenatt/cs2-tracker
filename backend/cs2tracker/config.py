@@ -59,6 +59,21 @@ class Settings(BaseSettings):
     # Pausa entre llamadas consecutivas a GetNextMatchSharingCode (segundos).
     autofetch_request_spacing: float = 1.5
 
+    # SMTP para verificación de email / reset de contraseña, opcional: sin
+    # configurar, infra/mail.py imprime el link a consola (dev-friendly).
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+
+    # Secreto compartido para las llamadas gc-sidecar -> backend
+    # (api/internal.py: auto-accept de amistad + notificación de partida
+    # lista). A propósito NO se autogenera como session_secret: son procesos
+    # separados y un secreto efímero por restart del backend rompería la
+    # sincronía con el sidecar. Sin configurar, /internal/* responde 401.
+    internal_shared_secret: str | None = None
+
     # Pro scene (Home). Twitch Helix para streams LATAM: credenciales de una
     # app en dev.twitch.tv/console (client credentials, gratis). Sin ellas el
     # bloque de streams responde "no configurado" sin romper nada.

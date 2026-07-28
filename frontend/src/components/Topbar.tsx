@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { motion } from "motion/react";
 import { useUser } from "../context/UserContext";
 import { Logo } from "./Logo";
@@ -70,6 +70,18 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
 
 export function Topbar({ onLogout }: { onLogout: () => void }) {
   const user = useUser();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
   return (
     <>
       <div className="topbar">
@@ -79,6 +91,26 @@ export function Topbar({ onLogout }: { onLogout: () => void }) {
           <span>Datos en vivo</span>
         </div>
         <UserMenu onLogout={onLogout} />
+        <div className="user-chip" ref={ref}>
+          <button type="button" className="user-chip-trigger" onClick={() => setOpen((o) => !o)}>
+            {user.avatar_url ? (
+              <img className="av" src={user.avatar_url} alt="" width={24} height={24} />
+            ) : (
+              <span className="av" />
+            )}
+            <span className="name">{user.display_name ?? user.steamid}</span>
+          </button>
+          {open && (
+            <div className="user-chip-menu">
+              <Link className="user-chip-menu-item" to="/settings" onClick={() => setOpen(false)}>
+                Configuración
+              </Link>
+              <button type="button" className="user-chip-menu-item" onClick={onLogout}>
+                Salir
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="nav-tabs">
         <NavPill to="/" end label="Inicio" />

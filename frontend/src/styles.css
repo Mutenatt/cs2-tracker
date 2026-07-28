@@ -339,17 +339,13 @@ html {
 }
 .user-chip-trigger {
   display: flex;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 50%;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
   cursor: pointer;
-  line-height: 0;
-  transition: box-shadow 0.15s ease;
-}
-.user-chip-trigger:hover {
-  box-shadow: 0 0 0 2px var(--recon);
-  border-radius: 50%;
 }
 .user-chip .av {
   width: 28px;
@@ -394,16 +390,19 @@ html {
 }
 .user-chip-menu .logout-btn {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  color: var(--text-faint);
+  font-size: 12px;
+  text-align: left;
+  color: var(--text);
   background: none;
   border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
   cursor: pointer;
-  padding: 0;
-  margin-left: 2px;
+  text-decoration: none;
 }
-.user-chip-menu .logout-btn:hover {
-  color: var(--alert);
+.user-chip-menu-item:hover {
+  background: var(--panel-2);
+  color: var(--signal);
 }
 
 /* ---------- match context card (sidebar del match detail split) ---------- */
@@ -3851,6 +3850,79 @@ button.map-pool-card.lineup-map-card {
   margin: 0;
   font-size: 12px;
   color: var(--alert);
+}
+
+/* Onboarding (wizard post-login: encuesta + auto-fetch + bot de Steam) */
+.onb-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 32px 20px 60px;
+}
+.onb-topbar {
+  width: 100%;
+  max-width: 480px;
+}
+.onb-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.onb-steps-nav {
+  display: flex;
+  gap: 14px;
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+}
+.onb-steps-nav li.active {
+  color: var(--signal);
+}
+.onb-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.onb-bot-benefit {
+  color: var(--text);
+}
+.onb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.onb-field label {
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.onb-select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 8px 10px;
+}
+.onb-select:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+.onb-actions {
+  display: flex;
+  margin-top: 4px;
 }
 
 /* =====================================================================
