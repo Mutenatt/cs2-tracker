@@ -1,6 +1,5 @@
 import { motion } from "motion/react";
-import { loginUrl } from "../api";
-import { Button } from "../components/Button";
+import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
 import { Logo } from "../components/Logo";
 import { livePulse } from "../components/motion/presets";
@@ -26,9 +25,12 @@ export function LandingView() {
         </p>
         <span className="landing-hero-kicker">Empezá el camino a tu sueño</span>
         <div className="landing-hero-ctas">
-          <Button as="a" href={loginUrl()} className="landing-hero-cta">
-            Iniciar sesión con Steam
-          </Button>
+          <Link className="cs-btn cs-btn-primary landing-hero-cta" to="/register">
+            Crear cuenta
+          </Link>
+          <Link className="cs-btn cs-btn-ghost landing-hero-cta" to="/login">
+            Iniciar sesión
+          </Link>
         </div>
       </div>
 
@@ -114,9 +116,9 @@ export function LandingView() {
         <p className="landing-final-cta-sub">
           Perfecciona tu gameplay con cStats y comparti al mundo tus momentos más destacados.{" "}
         </p>
-        <Button as="a" href={loginUrl()} className="landing-hero-cta">
-          Iniciar sesión con Steam
-        </Button>
+        <Link className="cs-btn cs-btn-primary landing-hero-cta" to="/register">
+          Crear cuenta
+        </Link>
       </div>
 
       <div className="landing-footer">

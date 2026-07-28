@@ -5,20 +5,22 @@ import type {
   ClipsResponse,
   ClutchTimelineResponse,
   CompareResponse,
+  DemographicsIn,
   HighlightsResponse,
   DuelsResponse,
   KillsResponse,
   MatchDetail,
   MatchEconomyResponse,
   MatchSummary,
+  MeOut,
   MonthlySummaryResponse,
   NewsResponse,
+  OnboardingStatus,
   ProfileResponse,
   ProfileTagsResponse,
   RivalsResponse,
   StreamsResponse,
   TeamRankingResponse,
-  User,
   WeaponsPageResponse,
   WeaponsResponse,
 } from "./types";
@@ -26,20 +28,67 @@ import type {
 // En dev, vite proxya /api -> FastAPI. En prod (webview) se sirve del mismo origen.
 const BASE = "/api";
 
-export async function getMe(): Promise<User | null> {
+export async function getMe(): Promise<MeOut | null> {
   const r = await fetch(`${BASE}/auth/me`);
   if (r.status === 401) return null;
   if (!r.ok) throw new Error(`GET /auth/me -> ${r.status}`);
   return r.json();
 }
 
-export function loginUrl(): string {
-  return `${BASE}/auth/login`;
+export function steamLinkUrl(): string {
+  return `${BASE}/auth/steam/link`;
 }
 
 export async function logout(): Promise<void> {
   const r = await fetch(`${BASE}/auth/logout`, { method: "POST" });
   if (!r.ok) throw new Error(`POST /auth/logout -> ${r.status}`);
+}
+
+async function _authPost(path: string, body: unknown): Promise<MeOut> {
+  const r = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `POST ${path} -> ${r.status}`);
+  }
+  return r.json();
+}
+
+export function register(email: string, password: string): Promise<MeOut> {
+  return _authPost("/auth/register", { email, password });
+}
+
+export function login(email: string, password: string): Promise<MeOut> {
+  return _authPost("/auth/login", { email, password });
+}
+
+export async function resendVerification(): Promise<void> {
+  const r = await fetch(`${BASE}/auth/resend-verification`, { method: "POST" });
+  if (!r.ok) throw new Error(`POST resend-verification -> ${r.status}`);
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  const r = await fetch(`${BASE}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!r.ok) throw new Error(`POST forgot-password -> ${r.status}`);
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const r = await fetch(`${BASE}/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `POST reset-password -> ${r.status}`);
+  }
 }
 
 export async function listMatches(): Promise<MatchSummary[]> {
@@ -200,5 +249,32 @@ export async function linkAutofetch(authCode: string, sharecode: string): Promis
 export async function unlinkAutofetch(): Promise<AutofetchStatus> {
   const r = await fetch(`${BASE}/autofetch/link`, { method: "DELETE" });
   if (!r.ok) throw new Error(`DELETE autofetch link -> ${r.status}`);
+  return r.json();
+}
+
+export async function getOnboardingStatus(): Promise<OnboardingStatus> {
+  const r = await fetch(`${BASE}/onboarding/status`);
+  if (!r.ok) throw new Error(`GET onboarding status -> ${r.status}`);
+  return r.json();
+}
+
+export async function postDemographics(body: DemographicsIn): Promise<OnboardingStatus> {
+  const r = await fetch(`${BASE}/onboarding/demographics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`POST onboarding demographics -> ${r.status}`);
+  return r.json();
+}
+
+export async function completeOnboarding(): Promise<OnboardingStatus> {
+  const r = await fetch(`${BASE}/onboarding/complete`, { method: "POST" });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(
+      typeof detail === "string" ? detail : `POST onboarding complete -> ${r.status}`
+    );
+  }
   return r.json();
 }

@@ -28,6 +28,8 @@ const gc = new GcSession({
   accountName: STEAM_BOT_USERNAME,
   password: STEAM_BOT_PASSWORD,
   dataDir: process.env.GC_SIDECAR_DATA_DIR ?? "data",
+  backendInternalUrl: process.env.CS2_BACKEND_INTERNAL_URL ?? "http://127.0.0.1:8000",
+  internalSecret: process.env.GC_SIDECAR_INTERNAL_SECRET ?? null,
 });
 gc.logOn();
 
@@ -74,6 +76,24 @@ app.post("/resolve", async (req, res) => {
     if (err instanceof GcNotReadyError) return res.status(503).json({ error: "GC_NOT_READY" });
     console.error("[resolve] fallo:", err.message);
     res.status(502).json({ error: "GC_ERROR", detail: err.message });
+  }
+});
+
+app.post("/notify", async (req, res) => {
+  const { steamid, message } = req.body ?? {};
+  if (typeof steamid !== "string" || !/^\d{17}$/.test(steamid)) {
+    return res.status(400).json({ error: "BAD_STEAMID" });
+  }
+  if (typeof message !== "string" || !message.trim()) {
+    return res.status(400).json({ error: "BAD_MESSAGE" });
+  }
+  if (!gc.ready) return res.status(503).json({ error: "GC_NOT_READY" });
+  try {
+    await gc.sendMessage(steamid, message);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[notify] fallo:", err.message);
+    res.status(502).json({ error: "SEND_FAILED", detail: err.message });
   }
 });
 

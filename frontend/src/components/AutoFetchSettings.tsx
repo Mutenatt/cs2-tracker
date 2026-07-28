@@ -1,9 +1,7 @@
-import { FormEvent, useEffect, useState } from "react";
-import { getAutofetchStatus, linkAutofetch, unlinkAutofetch } from "../api";
+import { useEffect, useState } from "react";
+import { getAutofetchStatus, unlinkAutofetch } from "../api";
 import type { AutofetchStatus } from "../types";
-
-const VALVE_CODES_URL =
-  "https://help.steampowered.com/en/wizard/HelpWithGameIssue/?appid=730&issueid=128";
+import { AutofetchLinkForm } from "./AutofetchLinkForm";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -12,12 +10,10 @@ function fmtDate(iso: string | null): string {
 }
 
 // Card de vinculación del auto-fetch (solo visible en el perfil propio):
-// el usuario pega su Game Authentication Code + un sharecode y sus partidas
-// de matchmaking se ingieren solas. Nunca se piden credenciales de Steam.
+// gestiona/revincula un auto-fetch que ya se dio de alta en el onboarding
+// (ver views/OnboardingView.tsx, que usa el mismo AutofetchLinkForm).
 export function AutoFetchSettings() {
   const [status, setStatus] = useState<AutofetchStatus | null>(null);
-  const [authCode, setAuthCode] = useState("");
-  const [sharecode, setSharecode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,21 +26,6 @@ export function AutoFetchSettings() {
       }
     })();
   }, []);
-
-  const handleLink = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      setStatus(await linkAutofetch(authCode.trim(), sharecode.trim()));
-      setAuthCode("");
-      setSharecode("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo vincular.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleUnlink = async () => {
     setBusy(true);
@@ -59,7 +40,6 @@ export function AutoFetchSettings() {
   };
 
   const active = status?.linked && status.status === "active";
-  const broken = status?.linked && status.status !== "active";
 
   return (
     <>
@@ -86,58 +66,10 @@ export function AutoFetchSettings() {
             <button type="button" className="af-btn ghost" onClick={handleUnlink} disabled={busy}>
               Desvincular
             </button>
-          </>
-        ) : (
-          <>
-            {broken && (
-              <div className="af-row">
-                <span className="af-chip off">
-                  {status?.status === "revoked" ? "CÓDIGO REVOCADO" : "ERROR"}
-                </span>
-                <span className="af-meta">
-                  {status?.error ?? "Volvé a vincular tus códigos para retomar."}
-                </span>
-              </div>
-            )}
-            {!broken && (
-              <ol className="af-steps">
-                <li>
-                  Abrí la{" "}
-                  <a href={VALVE_CODES_URL} target="_blank" rel="noreferrer">
-                    página oficial de Valve
-                  </a>{" "}
-                  (inicia sesión en Steam, no acá).
-                </li>
-                <li>
-                  Creá tu <b>Game Authentication Code</b> y copiá también un <b>match sharecode</b>{" "}
-                  (elegí el más viejo para importar historial: hasta 8 partidas hacia atrás).
-                </li>
-                <li>Pegá los dos acá. Nunca te pedimos tu contraseña de Steam.</li>
-              </ol>
-            )}
-            <form className="af-form" onSubmit={handleLink}>
-              <input
-                className="af-input mono"
-                placeholder="AAAA-AAAAA-AAAA"
-                value={authCode}
-                onChange={(e) => setAuthCode(e.target.value)}
-                aria-label="Game Authentication Code"
-                required
-              />
-              <input
-                className="af-input mono"
-                placeholder="CSGO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX (o el link steam:// entero)"
-                value={sharecode}
-                onChange={(e) => setSharecode(e.target.value)}
-                aria-label="Match sharecode"
-                required
-              />
-              <button type="submit" className="af-btn" disabled={busy}>
-                {busy ? "Vinculando…" : broken ? "Volver a vincular" : "Activar auto-fetch"}
-              </button>
-            </form>
             {error && <p className="af-error">{error}</p>}
           </>
+        ) : (
+          <AutofetchLinkForm status={status} onLinked={setStatus} />
         )}
       </div>
     </>
