@@ -89,8 +89,8 @@ def test_parse_profile_background_url_extrae_url_de_html():
 
 def test_parse_profile_background_url_acepta_background_shorthand_y_url_relativa():
     html = (
-        '<style>.profile_page_background { background: url(\'//steamcommunity-a.akamaihd.net/'
-        'steamcommunity/public/images/profile_backgrounds/abc123.jpg\') center / cover; }</style>'
+        "<style>.profile_page_background { background: url('//steamcommunity-a.akamaihd.net/"
+        "steamcommunity/public/images/profile_backgrounds/abc123.jpg') center / cover; }</style>"
     )
     assert parse_profile_background_url(html) == (
         "https://steamcommunity-a.akamaihd.net/steamcommunity/public/images/profile_backgrounds/abc123.jpg"

@@ -90,9 +90,7 @@ def seed(steamid: str, target_rating: int, count: int = 5) -> None:
         last_played = s.execute(
             select(Match.played_at).order_by(Match.match_id.desc()).limit(1)
         ).scalar()
-        played_at = (
-            datetime.fromisoformat(last_played) if last_played else datetime.now(UTC)
-        )
+        played_at = datetime.fromisoformat(last_played) if last_played else datetime.now(UTC)
 
         # Reparte los puntos que faltan hasta target_rating en `count` pasos
         # de tamaño creciente (así se ve una progresión, no saltos iguales).

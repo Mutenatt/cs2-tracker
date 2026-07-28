@@ -68,6 +68,7 @@ def _normalise_steam_url(url: str) -> str | None:
         return url
     return None
 
+
 # Si no hay CS2_SESSION_SECRET en el entorno, se genera uno al arrancar el
 # proceso: nunca hay un secreto débil hardcodeado, a costa de invalidar
 # sesiones existentes en cada restart (aceptable para este prototipo).
@@ -232,16 +233,14 @@ async def fetch_profiles(steamids: list[str]) -> ProfileMap:
                     )
             except Exception as exc:
                 print(
-                    f"[cs2tracker.auth] steam background {steamid}: "
-                    f"excepción al parsear -> {exc!r}"
+                    f"[cs2tracker.auth] steam background {steamid}: excepción al parsear -> {exc!r}"
                 )
                 background_url = None
             result[steamid] = (p.get("personaname"), p.get("avatarfull"), background_url)
         return result
     except Exception as exc:
         print(
-            "[cs2tracker.auth] fetch_profiles: excepción al llamar a "
-            f"GetPlayerSummaries -> {exc!r}"
+            f"[cs2tracker.auth] fetch_profiles: excepción al llamar a GetPlayerSummaries -> {exc!r}"
         )
         return {}
 
