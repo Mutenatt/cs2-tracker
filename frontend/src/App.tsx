@@ -5,6 +5,10 @@ import { getMe, logout } from "./api";
 import { Topbar } from "./components/Topbar";
 import { ROUTE_FADE } from "./components/motion/presets";
 import { UserContext, UserUpdateContext } from "./context/UserContext";
+<<<<<<< HEAD
+=======
+import { UserContext } from "./context/UserContext";
+>>>>>>> f16c6fe518224679e9de87d6cb78333234665948
 import { EmailVerificationPendingView } from "./views/EmailVerificationPendingView";
 import { ForgotPasswordView } from "./views/ForgotPasswordView";
 import { HomeView } from "./views/HomeView";
@@ -96,12 +100,15 @@ export function App() {
     onboarding_completed_at: me.onboarding_completed_at,
   };
 
+<<<<<<< HEAD
   // BackgroundSettings recibe el MeOut actualizado del PATCH/DELETE de
   // fondo -- se pisa acá en vez de re-pegarle a /auth/me.
   const updateUser = (updated: User) => {
     setMe((prev) => (prev ? { ...prev, ...updated } : prev));
   };
 
+=======
+>>>>>>> f16c6fe518224679e9de87d6cb78333234665948
   if (user.onboarding_completed_at === null) {
     return (
       <UserContext.Provider value={user}>
@@ -110,6 +117,7 @@ export function App() {
     );
   }
 
+<<<<<<< HEAD
   const isLineupsRoute = location.pathname === "/lineups";
 
   return (
@@ -137,6 +145,31 @@ export function App() {
           </AnimatePresence>
         </div>
       </UserUpdateContext.Provider>
+=======
+  return (
+    <UserContext.Provider value={user}>
+      <div className="wrap">
+        <Topbar onLogout={handleLogout} />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: ROUTE_FADE, ease: "linear" }}
+          >
+            <Routes location={location}>
+              <Route path="/" element={<HomeView />} />
+              <Route path="/lineups" element={<LineUps />} />
+              <Route path="/profile/:steamid" element={<ProfileView />} />
+              <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
+              <Route path="/match/:matchId" element={<MatchDetailView />} />
+              <Route path="/settings" element={<SettingsView />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+>>>>>>> f16c6fe518224679e9de87d6cb78333234665948
     </UserContext.Provider>
   );
 }

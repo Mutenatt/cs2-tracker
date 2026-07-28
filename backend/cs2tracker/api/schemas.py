@@ -34,13 +34,22 @@ class MeOut(BaseModel):
     avatar_url: str | None
     steam_background_url: str | None = None
     custom_background_url: str | None = None
+<<<<<<< HEAD
     email: str | None
     email_verified_at: str | None
     onboarding_completed_at: str | None
+=======
+>>>>>>> f16c6fe518224679e9de87d6cb78333234665948
 
 
 class CustomBackgroundIn(BaseModel):
     url: str
+<<<<<<< HEAD
+=======
+    email: str | None
+    email_verified_at: str | None
+    onboarding_completed_at: str | None
+>>>>>>> f16c6fe518224679e9de87d6cb78333234665948
 
 
 class AutofetchLinkIn(BaseModel):
