@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import re
 import secrets
-from urllib.parse import urlencode
 from html.parser import HTMLParser
+from urllib.parse import urlencode
 
 import httpx
 from fastapi import HTTPException, Request
@@ -147,7 +147,8 @@ def parse_profile_background_url(html: str) -> str | None:
     # la página de perfil.
     for match in _BACKGROUND_URL_RE.finditer(html):
         candidate = _normalise_steam_url(match.group(1))
-        if candidate and any(host in candidate for host in ("steamcommunity", "steamstatic", "akamaihd", "fastly")):
+        cdn_hosts = ("steamcommunity", "steamstatic", "akamaihd", "fastly")
+        if candidate and any(host in candidate for host in cdn_hosts):
             return candidate
     # Fallback tolerante a markup no previsto: primera URL de video de Steam
     # que aparezca en todo el documento.
@@ -192,10 +193,16 @@ async def fetch_profile(steamid: str) -> tuple[str | None, str | None, str | Non
     return profiles.get(steamid, (None, None, None))
 
 
-async def fetch_profiles(steamids: list[str]) -> dict[str, tuple[str | None, str | None, str | None]]:
+ProfileMap = dict[str, tuple[str | None, str | None, str | None]]
+
+
+async def fetch_profiles(steamids: list[str]) -> ProfileMap:
     """steamid -> (personaname, avatar_url, background_url)."""
     if not settings.steam_api_key or not steamids:
-        print("[cs2tracker.auth] fetch_profiles: sin CS2_STEAM_API_KEY o steamids vacío, no se busca nada")
+        print(
+            "[cs2tracker.auth] fetch_profiles: sin CS2_STEAM_API_KEY o steamids "
+            "vacío, no se busca nada"
+        )
         return {}
     try:
         async with httpx.AsyncClient(timeout=10.0, headers=_BROWSER_HEADERS) as client:
@@ -204,7 +211,7 @@ async def fetch_profiles(steamids: list[str]) -> dict[str, tuple[str | None, str
                 params={"key": settings.steam_api_key, "steamids": ",".join(steamids)},
             )
         players = resp.json().get("response", {}).get("players", [])
-        result: dict[str, tuple[str | None, str | None, str | None]] = {}
+        result: ProfileMap = {}
         for p in players:
             steamid = str(p["steamid"])
             background_url = None
@@ -224,12 +231,18 @@ async def fetch_profiles(steamids: list[str]) -> dict[str, tuple[str | None, str
                         f"status={public_resp.status_code} (perfil no accesible)"
                     )
             except Exception as exc:
-                print(f"[cs2tracker.auth] steam background {steamid}: excepción al parsear -> {exc!r}")
+                print(
+                    f"[cs2tracker.auth] steam background {steamid}: "
+                    f"excepción al parsear -> {exc!r}"
+                )
                 background_url = None
             result[steamid] = (p.get("personaname"), p.get("avatarfull"), background_url)
         return result
     except Exception as exc:
-        print(f"[cs2tracker.auth] fetch_profiles: excepción al llamar a GetPlayerSummaries -> {exc!r}")
+        print(
+            "[cs2tracker.auth] fetch_profiles: excepción al llamar a "
+            f"GetPlayerSummaries -> {exc!r}"
+        )
         return {}
 
 
