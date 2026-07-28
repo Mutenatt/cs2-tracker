@@ -1,6 +1,7 @@
 """Capa de persistencia: modelos SQLAlchemy y sesión."""
 
 from cs2tracker.db.models import (
+    AccountSignup,
     Base,
     Blind,
     ClipJob,
@@ -23,6 +24,7 @@ from cs2tracker.db.models import (
 from cs2tracker.db.session import get_engine, get_session, init_db
 
 __all__ = [
+    "AccountSignup",
     "Base",
     "Match",
     "Player",

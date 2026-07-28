@@ -19,7 +19,8 @@ from cs2tracker.auth import (
     read_session_cookie,
     verify_callback,
 )
-from cs2tracker.db import User
+from cs2tracker.auth_password import PENDING_COOKIE_NAME, create_pending_cookie
+from cs2tracker.db import AccountSignup, User
 from cs2tracker.db.session import init_db
 
 VALID_CLAIMED_ID = "https://steamcommunity.com/openid/id/76561198000000000"
@@ -92,13 +93,39 @@ def client(tmp_path):
         from cs2tracker.db import Player
 
         s.add(Player(steamid="76561198000000000", name="Ana"))
-        s.add(User(steamid="76561198000000000", display_name="Ana", avatar_url=None))
+        s.add(
+            User(
+                steamid="76561198000000000",
+                display_name="Ana",
+                avatar_url=None,
+                email="ana@test.local",
+                password_hash="x",
+                email_verified_at="2026-01-01T00:00:00",
+            )
+        )
         s.commit()
     return TestClient(app)
 
 
-def test_auth_login_redirige_a_steam(client):
-    r = client.get("/auth/login", follow_redirects=False)
+def test_steam_link_requiere_sesion_pending(client):
+    assert client.get("/auth/steam/link").status_code == 401
+
+
+def test_steam_link_redirige_a_steam_con_email_verificado(client, tmp_path):
+    engine = init_db(f"sqlite:///{tmp_path}/t.sqlite")
+    with Session(engine) as s:
+        pending = AccountSignup(
+            email="nueva@test.local",
+            password_hash="x",
+            email_verified_at="2026-01-01T00:00:00",
+            created_at="2026-01-01T00:00:00",
+        )
+        s.add(pending)
+        s.commit()
+        s.refresh(pending)
+        pending_id = pending.id
+    client.cookies.set(PENDING_COOKIE_NAME, create_pending_cookie(pending_id))
+    r = client.get("/auth/steam/link", follow_redirects=False)
     assert r.status_code in (302, 307)
     assert "steamcommunity.com" in r.headers["location"]
 

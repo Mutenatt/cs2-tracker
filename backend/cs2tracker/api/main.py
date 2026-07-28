@@ -8,15 +8,18 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from cs2tracker import maps
 from cs2tracker.api import queries
+from cs2tracker.api.account import router as account_router
 from cs2tracker.api.autofetch import router as autofetch_router
+from cs2tracker.api.internal import router as internal_router
+from cs2tracker.api.onboarding import router as onboarding_router
 from cs2tracker.api.scene import router as scene_router
 from cs2tracker.api.schemas import (
     AccuracyStats,
@@ -74,7 +77,6 @@ from cs2tracker.api.schemas import (
     TopMapEntry,
     TopWeaponEntry,
     TradeUtilitySummary,
-    UserOut,
     UtilityHeatmapResponse,
     WeaponDetailEntry,
     WeaponsPageResponse,
@@ -82,16 +84,7 @@ from cs2tracker.api.schemas import (
     WeaponStat,
     WinrateTogetherSummary,
 )
-from cs2tracker.auth import (
-    COOKIE_NAME,
-    SESSION_MAX_AGE,
-    build_login_url,
-    create_session_cookie,
-    fetch_profile,
-    fetch_profiles,
-    get_current_steamid,
-    verify_callback,
-)
+from cs2tracker.auth import fetch_profiles, get_current_steamid
 from cs2tracker.config import settings
 from cs2tracker.db import (
     ClipJob,
@@ -135,74 +128,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(account_router)
 app.include_router(autofetch_router)
+app.include_router(onboarding_router)
+app.include_router(internal_router)
 app.include_router(scene_router)
-
-
-@app.get("/auth/login")
-def auth_login() -> RedirectResponse:
-    return RedirectResponse(build_login_url())
-
-
-@app.get("/auth/callback")
-async def auth_callback(request: Request) -> RedirectResponse:
-    steamid = await verify_callback(dict(request.query_params))
-    if steamid is None:
-        raise HTTPException(400, "login de Steam inválido")
-
-    display_name, avatar_url = await fetch_profile(steamid)
-    now = datetime.now(UTC).isoformat()
-    with Session(get_engine()) as s:
-        if s.get(Player, steamid) is None:
-            s.add(Player(steamid=steamid, name=display_name))
-        elif display_name:
-            s.get(Player, steamid).name = display_name
-
-        user = s.get(User, steamid)
-        if user is None:
-            s.add(
-                User(
-                    steamid=steamid,
-                    display_name=display_name,
-                    avatar_url=avatar_url,
-                    last_login_at=now,
-                )
-            )
-        else:
-            user.last_login_at = now
-            if display_name:
-                user.display_name = display_name
-            if avatar_url:
-                user.avatar_url = avatar_url
-        s.commit()
-
-    resp = RedirectResponse(settings.frontend_url)
-    resp.set_cookie(
-        COOKIE_NAME,
-        create_session_cookie(steamid),
-        max_age=SESSION_MAX_AGE,
-        httponly=True,
-        samesite="lax",
-    )
-    return resp
-
-
-@app.get("/auth/me", response_model=UserOut)
-def auth_me(steamid: str = Depends(get_current_steamid)) -> UserOut:
-    with Session(get_engine()) as s:
-        user = s.get(User, steamid)
-        if user is None:
-            raise HTTPException(404, "usuario no encontrado")
-        return UserOut(
-            steamid=user.steamid, display_name=user.display_name, avatar_url=user.avatar_url
-        )
-
-
-@app.post("/auth/logout")
-def auth_logout() -> JSONResponse:
-    resp = JSONResponse({"ok": True})
-    resp.delete_cookie(COOKIE_NAME)
-    return resp
 
 
 @app.get("/matches", response_model=list[MatchSummary])

@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { getProfile } from "../api";
 import { AccuracyPanel } from "../components/AccuracyPanel";
-import { AutoFetchSettings } from "../components/AutoFetchSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
 import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
 import { MapWallpaperCarousel } from "../components/MapWallpaperCarousel";
@@ -324,8 +323,6 @@ export function ProfileView() {
           <TopMapsPanel mapPool={map_pool} />
 
           {user.steamid === steamid && steamid && <ClipsPanel steamid={steamid} />}
-
-          {user.steamid === steamid && <AutoFetchSettings />}
         </div>
       </div>
     </>

@@ -4,6 +4,21 @@ export interface User {
   steamid: string;
   display_name: string | null;
   avatar_url: string | null;
+  email: string | null;
+  email_verified_at: string | null;
+  onboarding_completed_at: string | null;
+}
+
+// Shape unificado de GET /auth/me: cubre tanto una cuenta pending (creada
+// por email+contraseña, Steam todavía no vinculado) como un User real.
+export interface MeOut {
+  pending: boolean;
+  steamid: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+  email_verified_at: string | null;
+  onboarding_completed_at: string | null;
 }
 
 export interface MatchSummary {
@@ -383,6 +398,25 @@ export interface AutofetchStatus {
   last_sharecode: string | null;
   last_polled_at: string | null;
   last_fetched_at: string | null;
+}
+
+export type AgeBucket = "13-17" | "18-24" | "25-34" | "35-44" | "45+";
+export type AcquisitionChannel = "youtube" | "twitch" | "reddit" | "amigo" | "buscador" | "otro";
+export type PrimaryGoal = "competitivo" | "casual" | "coaching" | "equipo" | "otro";
+
+export interface DemographicsIn {
+  age_bucket: AgeBucket;
+  country: string;
+  acquisition_channel: AcquisitionChannel;
+  primary_goal: PrimaryGoal;
+}
+
+export interface OnboardingStatus {
+  demographics_completed: boolean;
+  autofetch_linked: boolean;
+  bot_friend_added_at: string | null;
+  bot_steamid: string | null;
+  onboarding_completed_at: string | null;
 }
 
 export interface NewsItemDto {
