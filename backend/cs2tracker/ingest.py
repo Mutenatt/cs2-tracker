@@ -449,10 +449,28 @@ def _on_demo(
     force: bool = False,
     ingested_by: str | None = None,
     played_at: str | None = None,
-) -> None:
+) -> dict:
     res = ingest_demo(dem, force=force, ingested_by=ingested_by, played_at=played_at)
     tag = "skip" if res.get("skipped") else "ok"
     print(f"[{tag}] {dem.name} -> {res}")
+    return res
+
+
+def _notify_match_ready(steamid: str, match_id: str) -> None:
+    """Avisa por chat de Steam (vía gc-sidecar) que la partida ya está
+    disponible. Best-effort: si el usuario no agregó al bot todavía o el
+    sidecar está caído, no pasa nada -- la partida ya quedó en la DB."""
+    from cs2tracker.infra.gc_client import notify_match_ready
+
+    try:
+        notify_match_ready(
+            steamid,
+            match_id,
+            base_url=settings.gc_sidecar_url,
+            frontend_url=settings.frontend_url,
+        )
+    except Exception:
+        pass
 
 
 def _update_premier_rating(steamid: str) -> None:
@@ -501,7 +519,7 @@ def main(argv=None) -> int:
 
         def on_autofetch_demo(dem: Path) -> None:
             owner = src.owner_of(dem)
-            _on_demo(
+            res = _on_demo(
                 dem,
                 force=args.force,
                 ingested_by=owner,
@@ -512,6 +530,9 @@ def main(argv=None) -> int:
             # serie derivada del demo (Capa 1) sigue cubriendo.
             if owner:
                 _update_premier_rating(owner)
+                # Aviso por chat de Steam (best-effort, misma lógica que arriba).
+                if not res.get("skipped") and res.get("match_id"):
+                    _notify_match_ready(owner, res["match_id"])
             # Los datos ya quedaron en la DB; no hace falta conservar el
             # .dem crudo (si no, el disco crece sin límite en producción).
             dem.unlink(missing_ok=True)

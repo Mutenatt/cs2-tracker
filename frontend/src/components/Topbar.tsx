@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { motion } from "motion/react";
 import { useUser } from "../context/UserContext";
 import { Logo } from "./Logo";
@@ -59,7 +59,10 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
       {open && (
         <div className="user-chip-menu">
           <span className="name">{user.display_name ?? user.steamid}</span>
-          <button className="logout-btn" onClick={onLogout}>
+          <Link className="user-chip-menu-item" to="/settings" onClick={() => setOpen(false)}>
+            Configuración
+          </Link>
+          <button type="button" className="user-chip-menu-item danger" onClick={onLogout}>
             Salir
           </button>
         </div>
@@ -70,6 +73,7 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
 
 export function Topbar({ onLogout }: { onLogout: () => void }) {
   const user = useUser();
+
   return (
     <>
       <div className="topbar">

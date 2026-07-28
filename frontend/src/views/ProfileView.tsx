@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { getProfile } from "../api";
 import { AccuracyPanel } from "../components/AccuracyPanel";
-import { AutoFetchSettings } from "../components/AutoFetchSettings";
 import { BackgroundSettings } from "../components/BackgroundSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
 import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
@@ -335,7 +334,6 @@ export function ProfileView() {
 
           {user.steamid === steamid && steamid && <ClipsPanel steamid={steamid} />}
 
-          {user.steamid === steamid && <AutoFetchSettings />}
           {user.steamid === steamid && <BackgroundSettings />}
         </div>
       </div>

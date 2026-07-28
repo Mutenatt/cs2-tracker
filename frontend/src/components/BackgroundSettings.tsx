@@ -18,7 +18,12 @@ export function BackgroundSettings() {
     setBusy(true);
     setError(null);
     try {
-      updateUser(await setCustomBackground(url.trim()));
+      const me = await setCustomBackground(url.trim());
+      updateUser({
+        ...user,
+        steam_background_url: me.steam_background_url,
+        custom_background_url: me.custom_background_url,
+      });
       setUrl("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar el fondo.");
@@ -31,7 +36,12 @@ export function BackgroundSettings() {
     setBusy(true);
     setError(null);
     try {
-      updateUser(await clearCustomBackground());
+      const me = await clearCustomBackground();
+      updateUser({
+        ...user,
+        steam_background_url: me.steam_background_url,
+        custom_background_url: me.custom_background_url,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo quitar el fondo.");
     } finally {

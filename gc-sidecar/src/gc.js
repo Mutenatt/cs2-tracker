@@ -26,11 +26,22 @@ export class ProfileUnavailableError extends Error {}
 const PREMIER_RANK_TYPE = 11;
 
 export class GcSession {
-  constructor({ accountName, password, dataDir = "data" }) {
+  constructor({
+    accountName,
+    password,
+    dataDir = "data",
+    backendInternalUrl = null,
+    internalSecret = null,
+  }) {
     this.accountName = accountName;
     this.password = password;
     this.dataDir = dataDir;
     this.tokenPath = path.join(dataDir, "refresh_token.txt");
+    // Para decidir a quién auto-aceptar de amigo y avisarle al backend
+    // cuando se confirma. Si no están seteados, el auto-accept queda
+    // deshabilitado (las solicitudes quedan pendientes sin acción).
+    this.backendInternalUrl = backendInternalUrl;
+    this.internalSecret = internalSecret;
     this.user = new SteamUser();
     this.csgo = new GlobalOffensive(this.user);
     // El GC atiende de a un requestGame por vez: cola serializada.
@@ -86,6 +97,14 @@ export class GcSession {
     this.user.on("disconnected", (_eresult, msg) => {
       console.warn("[steam] desconectado:", msg ?? "");
     });
+    // Auto-accept de amistad, acotado a steamids que YA son un usuario
+    // registrado del sitio (verificable contra el backend) -- nunca a
+    // cualquiera que encuentre el perfil de la bot.
+    this.user.on("friendRelationship", (steamID, relationship) => {
+      this._onFriendRelationship(steamID, relationship).catch((err) =>
+        console.warn("[friends] fallo procesando friendRelationship:", err.message)
+      );
+    });
     this.csgo.on("connectedToGC", () => {
       // El steamid de la bot: el usuario tiene que AGREGARLO de amigo para
       // que requestPlayersProfile devuelva su rating Premier (ver Capa 2).
@@ -98,6 +117,57 @@ export class GcSession {
     if (process.env.GC_SIDECAR_DEBUG) {
       this.user.on("debug", (msg) => console.log("[debug]", msg));
     }
+  }
+
+  async _onFriendRelationship(steamID, relationship) {
+    const steamid = steamID.getSteamID64();
+    if (relationship === SteamUser.EFriendRelationship.RequestRecipient) {
+      // Solicitud entrante pendiente: aceptar solo si es un usuario del sitio.
+      if (await this._isRegisteredUser(steamid)) {
+        this.user.addFriend(steamID);
+      }
+      return;
+    }
+    if (relationship === SteamUser.EFriendRelationship.Friend) {
+      await this._confirmBotFriend(steamid);
+    }
+  }
+
+  async _isRegisteredUser(steamid) {
+    if (!this.backendInternalUrl || !this.internalSecret) return false;
+    try {
+      const resp = await fetch(
+        `${this.backendInternalUrl}/internal/steam-users/${steamid}/registered`,
+        { headers: { "X-Internal-Secret": this.internalSecret } }
+      );
+      if (!resp.ok) return false;
+      const body = await resp.json();
+      return body.registered === true;
+    } catch (err) {
+      console.warn("[friends] no se pudo consultar el backend:", err.message);
+      return false;
+    }
+  }
+
+  async _confirmBotFriend(steamid) {
+    if (!this.backendInternalUrl || !this.internalSecret) return;
+    try {
+      await fetch(
+        `${this.backendInternalUrl}/internal/steam-users/${steamid}/bot-friend-confirmed`,
+        { method: "POST", headers: { "X-Internal-Secret": this.internalSecret } }
+      );
+    } catch (err) {
+      console.warn("[friends] no se pudo avisar al backend:", err.message);
+    }
+  }
+
+  sendMessage(steamid, message) {
+    return new Promise((resolve, reject) => {
+      this.user.chat.sendFriendMessage(steamid, message, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
   }
 
   logOn() {

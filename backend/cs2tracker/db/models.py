@@ -44,10 +44,28 @@ class Player(Base):
     name: Mapped[str | None] = mapped_column(String)
 
 
+class AccountSignup(Base):
+    """Cuenta creada por email+contraseña, ANTES de vincular Steam. Fila
+    efímera: se borra al completar el link a Steam (ver api/account.py::
+    auth_callback), momento en el que sus 3 campos se copian a una fila
+    NUEVA de User (PK steamid). Separada de User a propósito: no tocar la
+    PK de users (steamid, con FK activa desde afuera) es lo que hace esta
+    migración de bajo riesgo -- ver el comentario en User.email más abajo."""
+
+    __tablename__ = "account_signups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    # None hasta que se hace click en el link de /auth/verify-email.
+    email_verified_at: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
 class User(Base):
-    """Cuenta con la que un steamid inició sesión (Steam OpenID). Distinta de
-    Player (cualquier steamid visto en una demo, se haya registrado o no).
-    El login debe upsertear Player además de User para no violar la FK."""
+    """Cuenta con la que un steamid inició sesión. Distinta de Player
+    (cualquier steamid visto en una demo, se haya registrado o no). El login
+    debe upsertear Player además de User para no violar la FK."""
 
     __tablename__ = "users"
 
@@ -61,6 +79,15 @@ class User(Base):
     # usuario prefiere elegir su propia imagen.
     custom_background_url: Mapped[str | None] = mapped_column(String)
     last_login_at: Mapped[str | None] = mapped_column(String)
+
+    # Login por email+contraseña (obligatorio, alta previa a vincular
+    # Steam -- ver AccountSignup). NOT NULL: una fila de User solo se crea
+    # en el paso de vincular Steam, que exige email_verified_at no-nulo en
+    # el pending -- el invariante "todo User tiene email verificado" queda
+    # garantizado a nivel DB, no solo por convención.
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    email_verified_at: Mapped[str] = mapped_column(String, nullable=False)
 
     # Auto-fetch estilo Leetify. El auth code SOLO da acceso al historial de
     # partidas del propio usuario (Web API), nunca a su cuenta; se guarda en
@@ -81,6 +108,25 @@ class User(Base):
     # si nunca se pudo consultar (bot no amiga / offline).
     current_premier_rating: Mapped[int | None] = mapped_column(Integer)
     current_premier_updated_at: Mapped[str | None] = mapped_column(String)
+
+    # Onboarding post-login (wizard tipo Leetify). None = todavía no lo
+    # completó (usuarios pre-existentes a esta feature también quedan en
+    # None y lo ven la próxima vez que entran). api/onboarding.py exige,
+    # antes de setear esto, los 4 campos demográficos + autofetch activo +
+    # bot_friend_added_at -- server-side, nunca confía en el cliente.
+    onboarding_completed_at: Mapped[str | None] = mapped_column(String)
+    # Seteado por gc-sidecar (vía api/internal.py) cuando confirma la
+    # amistad con la cuenta bot -- necesaria para mandar la notificación de
+    # "partida lista" por chat de Steam y mejora fetch_premier_profile.
+    bot_friend_added_at: Mapped[str | None] = mapped_column(String)
+
+    # Encuesta demográfica corta (estudio de mercado). Buckets, no datos
+    # exactos (ni fecha de nacimiento ni ciudad) -- suficiente para segmentar
+    # sin pedir de más.
+    age_bucket: Mapped[str | None] = mapped_column(String)
+    country: Mapped[str | None] = mapped_column(String)
+    acquisition_channel: Mapped[str | None] = mapped_column(String)
+    primary_goal: Mapped[str | None] = mapped_column(String)
 
 
 class MatchPlayer(Base):

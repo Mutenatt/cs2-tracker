@@ -18,7 +18,15 @@ def client(tmp_path):
     with Session(engine) as s:
         for sid in (A, B, C):
             s.add(Player(steamid=sid, name=sid))
-            s.add(User(steamid=sid, display_name=sid))
+            s.add(
+                User(
+                    steamid=sid,
+                    display_name=sid,
+                    email=f"{sid}@test.local",
+                    password_hash="x",
+                    email_verified_at="2026-01-01T00:00:00",
+                )
+            )
         s.add(
             Match(
                 match_id="m1",

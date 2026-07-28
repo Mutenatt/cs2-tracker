@@ -3,16 +3,40 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
 
-class UserOut(BaseModel):
-    steamid: str
+class RegisterIn(BaseModel):
+    email: str
+    password: str
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    new_password: str
+
+
+class MeOut(BaseModel):
+    pending: bool
+    steamid: str | None
     display_name: str | None
     avatar_url: str | None
     steam_background_url: str | None = None
     custom_background_url: str | None = None
+    email: str | None
+    email_verified_at: str | None
+    onboarding_completed_at: str | None
 
 
 class CustomBackgroundIn(BaseModel):
@@ -31,6 +55,26 @@ class AutofetchStatusOut(BaseModel):
     last_sharecode: str | None
     last_polled_at: str | None
     last_fetched_at: str | None
+
+
+AgeBucket = Literal["13-17", "18-24", "25-34", "35-44", "45+"]
+AcquisitionChannel = Literal["youtube", "twitch", "reddit", "amigo", "buscador", "otro"]
+PrimaryGoal = Literal["competitivo", "casual", "coaching", "equipo", "otro"]
+
+
+class DemographicsIn(BaseModel):
+    age_bucket: AgeBucket
+    country: str
+    acquisition_channel: AcquisitionChannel
+    primary_goal: PrimaryGoal
+
+
+class OnboardingStatusOut(BaseModel):
+    demographics_completed: bool
+    autofetch_linked: bool
+    bot_friend_added_at: str | None
+    bot_steamid: str | None
+    onboarding_completed_at: str | None
 
 
 class MatchSummary(BaseModel):

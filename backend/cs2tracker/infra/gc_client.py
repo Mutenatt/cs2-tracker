@@ -20,6 +20,55 @@ class DemoExpired(Exception):
     """El GC no tiene URL para esta partida (~30 días): skip deliberado."""
 
 
+# Cache en memoria del steamid del bot: no cambia en la vida del proceso.
+# Solo se cachea un valor no-nulo (si el sidecar todavía no logueó a Steam,
+# /health devuelve botSteamId=None, y eso no debe quedar pegado para siempre).
+_bot_steamid_cache: str | None = None
+
+
+def get_bot_steamid(*, base_url: str, client: httpx.Client | None = None) -> str | None:
+    """steamid64 de la cuenta bot del gc-sidecar (para el link "agregar de
+    amigo" del onboarding). Lo expone /health; nunca hace falta duplicarlo
+    en la config del backend."""
+    global _bot_steamid_cache
+    if _bot_steamid_cache is not None:
+        return _bot_steamid_cache
+    try:
+        if client is not None:
+            resp = client.get(f"{base_url}/health")
+        else:
+            with httpx.Client(timeout=5.0) as c:
+                resp = c.get(f"{base_url}/health")
+    except httpx.HTTPError:
+        return None
+    steamid = resp.json().get("botSteamId")
+    if steamid:
+        _bot_steamid_cache = steamid
+    return steamid
+
+
+def notify_match_ready(
+    steamid: str,
+    match_id: str,
+    *,
+    base_url: str,
+    frontend_url: str,
+    client: httpx.Client | None = None,
+) -> None:
+    """Avisa por chat de Steam que una partida terminó de ingerirse.
+    Best-effort puro: cualquier fallo (sidecar caído, usuario no amigo del
+    bot todavía) se ignora, la partida ya quedó disponible en el sitio."""
+    message = f"Tu partida ya está lista: {frontend_url}/matches/{match_id}"
+    try:
+        if client is not None:
+            client.post(f"{base_url}/notify", json={"steamid": steamid, "message": message})
+        else:
+            with httpx.Client(timeout=10.0) as c:
+                c.post(f"{base_url}/notify", json={"steamid": steamid, "message": message})
+    except httpx.HTTPError:
+        pass
+
+
 def sidecar_healthy(*, base_url: str, client: httpx.Client | None = None) -> bool:
     try:
         if client is not None:
