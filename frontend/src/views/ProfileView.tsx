@@ -201,7 +201,6 @@ export function ProfileView() {
                 </div>
               </div>
             )}
-            {/*<span className="prank">STEAMID {steamid}</span>*/}
           </div>
           {equivRank && currentRank !== null && (
             <span

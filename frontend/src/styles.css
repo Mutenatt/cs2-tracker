@@ -80,28 +80,6 @@ body {
   margin-bottom: 22px;
 }
 
-.logo {
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  font-size: 20px;
-}
-.logo span {
-  color: var(--accent);
-}
-
-.src {
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--muted);
-  border: 1px solid var(--signal);
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-.src.live {
-  color: var(--good);
-  border-color: #2c5;
-}
-
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -110,12 +88,6 @@ body {
   margin-bottom: 20px;
 }
 
-.hdr {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
-}
 .map {
   font-size: 26px;
   font-weight: 800;
@@ -157,68 +129,6 @@ h3 {
   font-weight: 700;
 }
 
-/* --- Scoreboard legado: queda por si algo lo reusa, Scoreboard.tsx ya no lo usa --- */
-table.sb {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  table-layout: fixed;
-}
-table.sb col.c-rank {
-  width: 34px;
-}
-table.sb col.c-name {
-  width: auto;
-}
-table.sb col.c-num {
-  width: 62px;
-}
-table.sb col.c-dmg {
-  width: 78px;
-}
-
-table.sb th,
-table.sb td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #20232c;
-}
-table.sb thead th {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--line);
-}
-table.sb .num {
-  text-align: right;
-}
-table.sb .txt {
-  text-align: left;
-}
-table.sb .pname {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-table.sb tbody tr:hover {
-  background: var(--panel2);
-}
-table.sb tr.top .pname {
-  color: var(--accent);
-}
-.rank {
-  color: var(--muted);
-}
-.kd-good {
-  color: var(--good);
-  font-weight: 700;
-}
-.kd-bad {
-  color: var(--bad);
-  font-weight: 700;
-}
 .dim {
   color: var(--muted);
 }
@@ -405,27 +315,6 @@ html {
   border-bottom: 1px solid var(--line);
   margin-bottom: 26px;
 }
-.wordmark {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.wordmark .display {
-  font-size: 20px;
-  color: var(--text);
-}
-.wordmark .display span {
-  color: var(--signal);
-}
-.wordmark .tag {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  color: var(--text-faint);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 2px 6px;
-  letter-spacing: 0.08em;
-}
 .live {
   margin-left: auto;
   display: flex;
@@ -446,28 +335,64 @@ html {
   letter-spacing: 0.06em;
 }
 .user-chip {
+  position: relative;
+}
+.user-chip-trigger {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px 5px 6px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 0;
+  transition: box-shadow 0.15s ease;
+}
+.user-chip-trigger:hover {
+  box-shadow: 0 0 0 2px var(--recon);
+  border-radius: 50%;
 }
 .user-chip .av {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--signal), var(--recon));
   flex: none;
   object-fit: cover;
 }
-.user-chip .name {
+.user-chip-menu {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  white-space: nowrap;
+
+  animation: user-chip-menu-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes user-chip-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+.user-chip-menu .name {
   font-family: "IBM Plex Mono", monospace;
   font-size: 12.5px;
   font-weight: 700;
 }
-.user-chip .logout-btn {
+.user-chip-menu .logout-btn {
   font-family: "IBM Plex Mono", monospace;
   font-size: 11px;
   color: var(--text-faint);
@@ -477,7 +402,7 @@ html {
   padding: 0;
   margin-left: 2px;
 }
-.user-chip .logout-btn:hover {
+.user-chip-menu .logout-btn:hover {
   color: var(--alert);
 }
 
@@ -846,53 +771,6 @@ html {
   text-align: right;
 }
 
-/* ---------- performance / heatmap ---------- */
-.modes {
-  display: flex;
-  gap: 6px;
-  margin: 4px 2px 14px;
-  flex-wrap: wrap;
-}
-.mode-btn {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 8px 14px;
-  border-radius: 5px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--text-dim);
-  cursor: pointer;
-}
-.mode-btn.active {
-  color: var(--ink);
-  background: var(--signal);
-  border-color: var(--signal);
-  font-weight: 700;
-}
-@media (prefers-color-scheme: dark) {
-  .mode-btn.active {
-    color: #150c04;
-  }
-}
-:root[data-theme="dark"] .mode-btn.active {
-  color: #150c04;
-}
-
-.map-layout {
-  display: grid;
-  grid-template-columns: 1fr 240px;
-  gap: 14px;
-  align-items: start;
-}
-.map-panel {
-  position: relative;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 34px 14px 14px 34px;
-}
 .map-frame {
   position: relative;
   width: 100%;
@@ -917,195 +795,11 @@ html {
   width: 100%;
   height: 100%;
 }
-.grid-ticks {
-  position: absolute;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  color: var(--text-faint);
-  letter-spacing: 0.04em;
-}
-.grid-ticks.top {
-  top: 12px;
-  left: 34px;
-  right: 14px;
-  display: flex;
-  justify-content: space-between;
-}
-.grid-ticks.left {
-  top: 34px;
-  left: 10px;
-  bottom: 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.sparse-note {
-  position: absolute;
-  left: 34px;
-  right: 14px;
-  bottom: 14px;
-  padding: 8px 12px;
-  background: color-mix(in srgb, var(--ink) 60%, transparent);
-  backdrop-filter: blur(2px);
-  border: 1px dashed var(--line);
-  border-radius: 6px;
-  font-size: 11px;
-  color: var(--text-dim);
-  z-index: 5;
-}
-.sparse-note b {
-  color: var(--text);
-}
-.callout {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
-  letter-spacing: 0.05em;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  background: color-mix(in srgb, var(--ink) 45%, transparent);
-  padding: 1px 5px;
-  border-radius: 3px;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* ---------- toolbar: filtros ---------- */
-.util-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-}
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.toolbar-group .label {
-  white-space: nowrap;
-}
-.side-toggle {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  overflow: hidden;
-}
-.side-toggle button {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 5px 12px;
-  border: none;
-  background: var(--panel-2);
-  color: var(--text-dim);
-  cursor: pointer;
-}
-.side-toggle button.on.t {
-  background: var(--signal);
-  color: #150c04;
-}
-.side-toggle button.on.ct {
-  background: var(--recon);
-  color: #051820;
-}
-.range-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.range-control input[type="range"] {
-  accent-color: var(--signal);
-  width: 110px;
-}
-.range-control .rv {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  color: var(--text-dim);
-  width: 64px;
-}
-
-.side-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.ff-card,
-.metrics-card,
 .legend-card {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
-}
-.ff-card .label {
-  margin-bottom: 8px;
-}
-.ff-num {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 26px;
-  font-weight: 700;
-}
-.ff-num small {
-  font-size: 13px;
-  color: var(--text-dim);
-  font-weight: 400;
-}
-.ff-bar {
-  height: 5px;
-  border-radius: 3px;
-  background: var(--line);
-  margin-top: 10px;
-  overflow: hidden;
-}
-.ff-bar i {
-  display: block;
-  height: 100%;
-  background: var(--alert);
-}
-.ff-note {
-  margin-top: 9px;
-  font-size: 11.5px;
-  color: var(--text-dim);
-  line-height: 1.45;
-}
-
-.metrics-card .m-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 10px;
-}
-.metrics-card .m-row:first-of-type {
-  margin-top: 0;
-}
-.metrics-card .m-row .k {
-  font-size: 11.5px;
-  color: var(--text-dim);
-}
-.metrics-card .m-row .v {
-  font-family: "IBM Plex Mono", monospace;
-  font-weight: 700;
-  font-size: 13px;
-}
-.eff-bar {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--line);
-  margin-top: 6px;
-  overflow: hidden;
-}
-.eff-bar i {
-  display: block;
-  height: 100%;
-  background: var(--go);
 }
 
 .legend-card .label {
@@ -1189,9 +883,6 @@ footer {
   }
   .match-split-side {
     position: static;
-  }
-  .map-layout {
-    grid-template-columns: 1fr;
   }
   .profile-grid {
     grid-template-columns: 1fr;
@@ -1954,18 +1645,6 @@ footer {
   font-size: 24px;
   font-weight: 700;
 }
-.lt-card .trend {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  margin-left: 8px;
-}
-.lt-card .trend.up {
-  color: var(--go);
-}
-.lt-card .trend.down {
-  color: var(--alert);
-}
-
 .mh-list {
   display: flex;
   flex-direction: column;
@@ -2983,81 +2662,6 @@ a.panel-cta:hover {
   color: var(--text);
 }
 
-/* ---------- home: hero banner ---------- */
-.home-hero {
-  position: relative;
-  width: 100%;
-  height: clamp(180px, 24vw, 260px);
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 24px;
-  background-color: var(--panel);
-  background-size: cover;
-  background-position: center;
-  border: 1px solid var(--line);
-}
-.home-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(8, 10, 15, 0.95) 0%,
-    rgba(8, 10, 15, 0.75) 45%,
-    rgba(8, 10, 15, 0.1) 100%
-  );
-}
-.home-hero-content {
-  position: relative;
-  z-index: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 32px;
-  max-width: 520px;
-}
-.home-hero-title {
-  font-size: 34px;
-  color: #fff;
-  letter-spacing: 0.02em;
-}
-.home-hero-title span {
-  color: var(--signal);
-}
-.home-hero-sub {
-  margin: 0;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
-}
-.home-hero-sub b {
-  color: #fff;
-}
-.home-hero-date {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--signal);
-}
-.home-hero-cta {
-  align-self: flex-start;
-  margin-top: 4px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--signal);
-  border-radius: 20px;
-  padding: 8px 18px;
-  text-decoration: none;
-}
-.home-hero-cta:hover {
-  filter: brightness(1.08);
-}
-
 /* ---------- home: mapas activos ---------- */
 .map-pool-grid {
   display: grid;
@@ -3134,11 +2738,23 @@ a.panel-cta:hover {
   padding: 0 20px 24px;
 }
 
+.lineup-page-content .map-pool-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+}
 button.map-pool-card.lineup-map-card {
   cursor: pointer;
   font: inherit;
   color: inherit;
   width: 100%;
+  padding: 20px 14px;
+}
+.lineup-map-card .map-pool-icon {
+  width: 72px;
+  height: 72px;
+}
+.lineup-map-card .map-pool-name {
+  font-size: 14px;
 }
 .lineup-map-card.active {
   border-color: var(--map-accent, var(--recon));
@@ -3209,139 +2825,166 @@ button.map-pool-card.lineup-map-card {
   animation: lineup-flash-burst 1s ease forwards !important;
 }
 .lineup-filter-animate-he {
-  animation: lineup-he-shatter 820ms cubic-bezier(0.18, 0.84, 0.28, 1) forwards !important;
+  animation: lineup-he-glow-pulse 820ms ease-out forwards !important;
 }
-.lineup-filter-side.active-t {
-  color: var(--signal);
+.lineup-side-toggle-wrap {
+  position: relative;
+  isolation: isolate;
+}
+.lineup-side-toggle {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+/* Al elegir bando, el arma asociada (C4 en TT, kit de desarme en CT)
+   entra deslizándose desde su costado y queda flotando detrás de los
+   botones -- ver AnimatePresence en LineUps.tsx. Los slots fijan la
+   posición (izquierda/derecha del toggle) sin usar transform, porque
+   framer-motion escribe su propio transform inline en el <img> para
+   animar x/rotate y pisaría cualquier transform puesto por CSS. */
+.lineup-side-slide-slot {
+  position: absolute;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  margin-top: -27px;
+  z-index: 0;
+  pointer-events: none;
+}
+.lineup-side-slide-slot-t {
+  left: calc(50% - 178px);
+  width: 78px;
+  height: 78px;
+  margin-top: -39px;
+}
+.lineup-side-slide-slot-ct {
+  left: calc(50% + 110px);
+}
+.lineup-side-slide-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.6));
+}
+/* Contornos neón calcados a la silueta del PNG (drop-shadow sigue el
+   canal alpha), a tono con el glow de cada botón de bando activo. */
+.lineup-side-slide-img-t {
+  filter:
+    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 1px var(--signal))
+    drop-shadow(0 0 3px var(--signal));
+}
+.lineup-side-slide-img-ct {
+  filter:
+    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 1px var(--recon))
+    drop-shadow(0 0 3px var(--recon));
+}
+.lineup-side-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  padding: 4px;
   background: #05070a;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lineup-side-btn:hover {
   border-color: var(--signal);
 }
-.lineup-filter-side.active-ct {
-  color: var(--recon);
-  background: #05070a;
+.lineup-side-btn-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.lineup-side-btn.active-t {
+  border-color: var(--signal);
+  box-shadow: 0 0 12px 1px rgba(255, 138, 61, 0.55);
+}
+.lineup-side-btn.active-ct {
   border-color: var(--recon);
+  box-shadow: 0 0 12px 1px rgba(63, 214, 255, 0.55);
+}
+
+.lineup-filters-category {
+  justify-content: center;
 }
 
 /* El lado elegido también define el código de color de sus utilidades. */
-.lineup-side-t .lineup-filter:not(.lineup-filter-side) {
+.lineup-side-t .lineup-filter {
   color: var(--signal);
   border-color: var(--signal);
 }
-.lineup-side-ct .lineup-filter:not(.lineup-filter-side) {
+.lineup-side-ct .lineup-filter {
   color: var(--recon);
   border-color: var(--recon);
 }
-.lineup-side-ct .lineup-filter:not(.lineup-filter-side).active {
+.lineup-side-ct .lineup-filter.active {
   color: var(--recon);
   border-color: var(--recon);
 }
 
 /* Los efectos viven dentro del botón: su overflow:hidden evita que humo,
-   fuego o esquirlas se dibujen sobre la página. */
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke,
+   fuego o el gif de la HE se dibujen sobre la página. */
 .lineup-filter-animate-molotov .lineup-filter-effect-molotov,
 .lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-effect-molotov,
-.lineup-filter-animate-he .lineup-filter-effect-he {
+.lineup-filter-utility-he .lineup-filter-effect-he,
+.lineup-filter-utility-smoke .lineup-filter-effect-smoke {
   opacity: 1;
 }
 
-/* ---- Humo: nube con estados idle / hover / active ----
-   Reutiliza los mismos 5 <i> de siempre, pero como manchas orgánicas
-   (border-radius asimétrico, nunca un círculo) en vez de burbujas
-   perfectas. La nube nunca está en 0: solo cambia cuánto se nota. */
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke {
-  opacity: 0.4;
-}
-.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke {
-  opacity: 0.65;
-}
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke {
-  opacity: 0.88;
-}
-
-/* Capa principal: base difusa y constante detrás de las manchas,
-   morfando de forma orgánica -- nunca un scale(1)->scale(2). */
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke::before {
-  content: "";
+/* ---- Humo: video real de explosión (public/media/explosion-humo.mp4) ----
+   Mismo patrón que el molotov: el <video> vive en loop de fondo todo el
+   tiempo y es el wrapper (.lineup-smoke-video-stack) el que sube de
+   opacity/scale en hover / active / click. */
+.lineup-smoke-video-stack {
   position: absolute;
-  right: -6px;
-  bottom: -16px;
-  left: -6px;
-  height: 40px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  background: radial-gradient(ellipse at 38% 72%, rgba(198, 206, 214, 0.34), rgba(140, 150, 160, 0.16) 55%, transparent 78%);
-  filter: blur(5px);
-  border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
-  opacity: 0.55;
-  animation: lineup-smoke-body 15s ease-in-out infinite;
-}
-.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke::before {
-  opacity: 0.75;
-}
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke::before {
-  opacity: 0.92;
-}
-
-/* Turbulencia: dos manchas de luz/sombra derivando en direcciones
-   distintas, para que la textura se sienta mezclándose consigo misma. */
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke::after {
-  content: "";
-  position: absolute;
-  right: -10px;
-  bottom: -18px;
-  left: -10px;
-  height: 42px;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 30% 60%, rgba(212, 218, 224, 0.24), transparent 55%),
-    radial-gradient(circle at 68% 45%, rgba(168, 176, 186, 0.22), transparent 58%);
-  background-size: 140% 140%, 130% 130%;
-  mix-blend-mode: soft-light;
-  filter: blur(2.5px);
-  opacity: 0.5;
-  animation: lineup-smoke-turbulence 8s ease-in-out infinite;
-}
-.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke::after {
-  opacity: 0.68;
-}
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke::after {
-  opacity: 0.82;
-}
-
-/* Capa secundaria: 5 manchas orgánicas (nunca círculos) que aparecen,
-   se deforman, derivan y pierden densidad cada una a su propio ritmo.
-   El tamaño distinto de cada una es lo que da la sensación de
-   profundidad (más grande/definida = más cerca). */
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
-  bottom: -14px;
-  width: 30px;
-  height: 24px;
-  border-radius: 46% 54% 61% 39% / 52% 44% 56% 48%;
-  background: radial-gradient(ellipse at 40% 32%, rgba(214, 222, 228, 0.55), rgba(150, 160, 170, 0.32) 46%, rgba(90, 98, 108, 0.05) 74%);
-  filter: blur(3px);
   opacity: 0;
-  transform-origin: bottom center;
-  animation: lineup-smoke-puff 11s ease-in-out infinite;
+  transform: scale(1.05);
+  transform-origin: center bottom;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out;
 }
-.lineup-filter-utility-smoke:hover .lineup-filter-effect-smoke i {
-  filter: blur(2.6px) brightness(1.08);
+.lineup-filter-utility-smoke:hover .lineup-smoke-video-stack {
+  opacity: 0.55;
 }
-.lineup-filter.active.lineup-filter-utility-smoke .lineup-filter-effect-smoke i {
-  filter: blur(2.2px) brightness(1.15);
+.lineup-filter.active.lineup-filter-utility-smoke .lineup-smoke-video-stack {
+  opacity: 0.85;
+  transform: scale(1.1);
 }
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(1) { left: 10%; animation-duration: 12.5s; animation-delay: 0s; }
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(2) { left: 28%; width: 26px; height: 20px; animation-duration: 9.5s; animation-delay: -3.1s; }
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(3) { left: 46%; width: 34px; height: 27px; animation-duration: 15s; animation-delay: -6.4s; }
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(4) { left: 63%; width: 24px; height: 19px; animation-duration: 10.8s; animation-delay: -1.8s; }
-.lineup-filter-utility-smoke .lineup-filter-effect-smoke i:nth-child(5) { left: 80%; animation-duration: 13.6s; animation-delay: -8.2s; }
-
-/* El click sigue disparando la ráfaga de siempre (lineup-smoke-cloud,
-   sin tocar) por encima de la animación idle. */
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(1) { animation: lineup-smoke-cloud 950ms 40ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(2) { animation: lineup-smoke-cloud 1s 0ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(3) { animation: lineup-smoke-cloud 900ms 100ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(4) { animation: lineup-smoke-cloud 1.05s 50ms ease-out forwards; }
-.lineup-filter-animate-smoke .lineup-filter-effect-smoke i:nth-child(5) { animation: lineup-smoke-cloud 920ms 130ms ease-out forwards; }
+.lineup-filter-animate-smoke .lineup-smoke-video-stack {
+  opacity: 1;
+  transform: scale(1.18);
+}
+.lineup-smoke-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
 
 /* Glow apenas perceptible -- mucho más discreto que el del molotov. */
 .lineup-filter-utility-smoke {
@@ -3442,39 +3085,80 @@ button.map-pool-card.lineup-map-card {
   }
 }
 
-/* HE: destello central y esquirlas, contenidos en el botón. */
-.lineup-filter-animate-he .lineup-filter-effect-he::before {
-  content: "";
+/* ---- HE: gif real de explosión (public/fondo-lineups/explosion-he.gif) ----
+   Mismo patrón que humo/molotov: el <img> vive de fondo todo el tiempo y es
+   el wrapper (.lineup-he-stack) el que sube de opacity/scale en hover /
+   active / click. */
+.lineup-he-stack {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #fff8bf;
-  box-shadow: 0 0 8px 4px #ffbe3d, 0 0 20px 10px rgba(237, 72, 21, 0.85);
-  transform: translate(-50%, -50%) scale(0);
-  animation: lineup-he-core 680ms ease-out forwards;
-}
-.lineup-filter-animate-he .lineup-filter-effect-he i {
-  left: 50%;
-  top: 50%;
-  width: 7px;
-  height: 4px;
-  background: linear-gradient(135deg, #ffe38a, #e44a20 68%, transparent 69%);
-  clip-path: polygon(0 50%, 100% 0, 72% 100%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
   opacity: 0;
-  transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(0);
-  animation: lineup-he-spark 650ms ease-out forwards;
+  transform: scale(1.05);
+  transform-origin: center;
+  transition:
+    opacity 240ms ease-out,
+    transform 240ms ease-out;
 }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(1) { --spark-angle: 0deg; }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(2) { --spark-angle: 45deg; }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(3) { --spark-angle: 90deg; }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(4) { --spark-angle: 135deg; }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(5) { --spark-angle: 180deg; }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(6) { --spark-angle: 225deg; }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(7) { --spark-angle: 270deg; }
-.lineup-filter-animate-he .lineup-filter-effect-he i:nth-child(8) { --spark-angle: 315deg; }
+.lineup-filter-utility-he:hover .lineup-he-stack {
+  opacity: 0.55;
+}
+.lineup-filter.active.lineup-filter-utility-he .lineup-he-stack {
+  opacity: 0.85;
+  transform: scale(1.1);
+}
+.lineup-filter-animate-he .lineup-he-stack {
+  opacity: 1;
+  transform: scale(1.18);
+}
+.lineup-he-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.lineup-filter-utility-he {
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 280ms ease;
+}
+.lineup-filter-utility-he:hover {
+  box-shadow:
+    0 0 10px -3px rgba(255, 190, 60, 0.45),
+    0 0 22px -6px rgba(237, 72, 21, 0.3);
+}
+.lineup-filter.active.lineup-filter-utility-he {
+  box-shadow:
+    0 0 8px -2px rgba(255, 200, 80, 0.3),
+    0 0 18px -6px rgba(237, 72, 21, 0.2);
+}
+
+@keyframes lineup-he-glow-pulse {
+  0% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 200, 80, 0.3),
+      0 0 18px -6px rgba(237, 72, 21, 0.2);
+  }
+  30% {
+    box-shadow:
+      0 0 16px -2px rgba(255, 210, 110, 0.7),
+      0 0 34px -6px rgba(237, 90, 25, 0.5),
+      0 0 55px -10px rgba(200, 60, 15, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 8px -2px rgba(255, 200, 80, 0.3),
+      0 0 18px -6px rgba(237, 72, 21, 0.2);
+  }
+}
 
 @keyframes lineup-smoke-button {
   0% {
@@ -3485,70 +3169,6 @@ button.map-pool-card.lineup-map-card {
   }
   100% {
     border-color: var(--recon);
-  }
-}
-
-@keyframes lineup-smoke-cloud {
-  0% { opacity: 0; transform: translateY(9px) scale(0.2); }
-  35% { opacity: 0.9; }
-  100% { opacity: 0; transform: translateY(-20px) scale(2.2); }
-}
-
-@keyframes lineup-smoke-body {
-  0% {
-    transform: translate(-2%, 1%) scale(0.97, 1);
-    border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
-  }
-  50% {
-    transform: translate(2%, -3%) scale(1.04, 0.96);
-    border-radius: 46% 54% 58% 42% / 44% 60% 40% 56%;
-  }
-  100% {
-    transform: translate(-2%, 1%) scale(0.97, 1);
-    border-radius: 55% 45% 48% 52% / 58% 42% 58% 42%;
-  }
-}
-
-@keyframes lineup-smoke-turbulence {
-  0%, 100% {
-    background-position: 10% 20%, 90% 70%;
-    opacity: 0.4;
-  }
-  50% {
-    background-position: 32% 48%, 64% 38%;
-    opacity: 0.6;
-  }
-}
-
-/* Cada mancha aparece, se deforma en varios pasos (no un simple ida y
-   vuelta), deriva de forma leve e irregular y pierde densidad de a
-   poco -- nunca queda en 0 opacidad para siempre, ni desaparece de
-   golpe. */
-@keyframes lineup-smoke-puff {
-  0% {
-    opacity: 0;
-    transform: translate(-2%, 6px) scale(0.62, 0.58) rotate(-4deg);
-    border-radius: 46% 54% 61% 39% / 52% 44% 56% 48%;
-  }
-  22% {
-    opacity: 0.85;
-    transform: translate(1%, -1px) scale(0.9, 0.86) rotate(2deg);
-    border-radius: 58% 42% 39% 61% / 44% 58% 42% 56%;
-  }
-  48% {
-    opacity: 0.6;
-    transform: translate(-3%, -9px) scale(1.05, 0.94) rotate(-3deg);
-    border-radius: 41% 59% 55% 45% / 60% 38% 62% 40%;
-  }
-  74% {
-    opacity: 0.32;
-    transform: translate(4%, -17px) scale(0.97, 1.12) rotate(4deg);
-    border-radius: 53% 47% 44% 56% / 39% 61% 44% 56%;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(2%, -25px) scale(0.8, 1.2) rotate(-2deg);
-    border-radius: 46% 54% 61% 39% / 52% 44% 56% 48%;
   }
 }
 
@@ -3569,23 +3189,6 @@ button.map-pool-card.lineup-map-card {
     box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
     transform: scale(1);
   }
-}
-
-@keyframes lineup-he-shatter {
-  0% { border-radius: 20px; transform: scale(1); }
-  18% { border-radius: 4px 17px 6px 15px; transform: scale(0.94) rotate(-1.5deg); }
-  42% { border-radius: 15px 3px 18px 4px; transform: scale(1.035) rotate(1deg); }
-  100% { border-radius: 20px; transform: scale(1); }
-}
-@keyframes lineup-he-core {
-  0% { opacity: 1; transform: translate(-50%, -50%) scale(0); }
-  25% { opacity: 1; transform: translate(-50%, -50%) scale(1.9); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(4.8); }
-}
-@keyframes lineup-he-spark {
-  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(0) scale(0.4); }
-  18% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(58px) scale(0.7); }
 }
 
 .lineup-grid {
@@ -4664,12 +4267,6 @@ button.map-pool-card.lineup-map-card {
 .landing-feature-icon-alert {
   border-color: var(--alert);
 }
-.landing-feature-icon-signal {
-  border-color: var(--signal);
-}
-.landing-feature-icon-recon {
-  border-color: var(--recon);
-}
 .landing-feature-icon-gold {
   border-color: var(--gold);
 }
@@ -4681,31 +4278,6 @@ button.map-pool-card.lineup-map-card {
   height: 14px;
   border-radius: 50%;
   background: var(--alert);
-}
-.landing-feature-icon-vs {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--signal);
-}
-.landing-feature-icon-bars {
-  display: flex;
-  gap: 2px;
-  align-items: flex-end;
-  height: 16px;
-}
-.landing-feature-icon-bars span {
-  width: 3px;
-  background: var(--recon);
-}
-.landing-feature-icon-bars span:nth-child(1) {
-  height: 8px;
-}
-.landing-feature-icon-bars span:nth-child(2) {
-  height: 14px;
-}
-.landing-feature-icon-bars span:nth-child(3) {
-  height: 11px;
 }
 .landing-feature-icon-play {
   width: 0;
@@ -4845,10 +4417,6 @@ button.map-pool-card.lineup-map-card {
 .cs-nav-tab.active {
   color: var(--text-primary);
   font-weight: 700;
-}
-.cs-nav-tab.inert {
-  opacity: 0.45;
-  cursor: default;
 }
 /* Fondo tipo "pill" del tab activo -- se desliza entre tabs con
    layoutId (motion), mismos tokens que .cs-btn-ghost para consistencia
@@ -5161,190 +4729,159 @@ button.map-pool-card.lineup-map-card {
 
 /* ============================================================
    ANCIENT
-   El fondo ya no es CSS: es un shader WebGL real (ver
-   src/components/CenoteWaterBackground.tsx), montado en el lugar del
-   <span class="map-card-fx"> solo para esta card. El elemento sigue
-   siendo `.map-card-fx` (mismo position/inset/opacity/hover que el
-   resto de los mapas), así que no hace falta CSS aparte acá.
+   El fondo es un video real (public/media/ancient-arena.mp4, arranca
+   desde el segundo 2 y loopea desde ahí -- ver MapArenaVideo en
+   LineUps.tsx), montado en el lugar del <span class="map-card-fx">
+   solo para esta card. El elemento sigue siendo `.map-card-fx` (mismo
+   position/inset/opacity/hover que el resto de los mapas); acá solo
+   hace falta el object-fit del <video>.
    ============================================================ */
+
+.map-effect-de_ancient .map-card-fx {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 
 /* ============================================================
    ANUBIS
-   El fondo ya no es CSS: es una escena Canvas2D real (ver
-   src/components/DesertDuneBackground.tsx), montada en el lugar del
-   <span class="map-card-fx"> solo para esta card -- mismo criterio que
-   Ancient (src/components/CenoteWaterBackground.tsx).
+   El fondo es un video real (public/media/anubis-arena.mp4, arranca
+   desde el segundo 2 y loopea desde ahí -- ver MapArenaVideo en
+   LineUps.tsx), montado en el lugar del <span class="map-card-fx">
+   solo para esta card. El elemento sigue siendo `.map-card-fx` (mismo
+   position/inset/opacity/hover que el resto de los mapas); acá solo
+   hace falta el object-fit del <video>.
    ============================================================ */
+
+.map-effect-de_anubis .map-card-fx {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 
 /* ============================================================
    CACHE
-   Interferencia / TV antigua
+   Óxido industrial + niebla verde radiactiva a la deriva
    ============================================================ */
 
 .map-effect-de_cache .map-card-fx {
-  background:
+  background-image:
+    url("/logo/ussr-emblem.png"),
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(120, 70, 30, 0.35),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 75% 70%,
+      rgba(90, 50, 20, 0.3),
+      transparent 60%
+    ),
     repeating-linear-gradient(
       0deg,
-      rgba(255, 255, 255, 0.04) 0 1px,
-      transparent 1px 4px
+      rgba(57, 255, 20, 0.05) 0 1px,
+      transparent 1px 10px
     ),
     repeating-linear-gradient(
       90deg,
-      rgba(80, 190, 255, 0.025) 0 2px,
-      transparent 2px 4px
+      rgba(57, 255, 20, 0.05) 0 1px,
+      transparent 1px 10px
     );
+  background-position: bottom 4px right 4px, 0 0, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat;
+  background-size: 26% auto, 100% 100%, 100% 100%, auto, auto;
 
-  animation: cstats-cache-static 0.16s steps(2) infinite;
+  animation: cstats-cache-pulse 6s ease-in-out infinite;
 }
 
+/* Interferencia: GIF real de estática/TV vieja (public/media/interferencia.gif).
+   screen descarta el negro del clip y deja solo el ruido/lineas claras,
+   igual que el criterio de los videos de molotov/humo. */
 .map-effect-de_cache .map-card-fx::before {
-  content: "";
-
-  position: absolute;
-  inset: -30%;
-
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0 5px,
-      rgba(255, 255, 255, 0.1) 6px,
-      transparent 7px 11px
-    );
-
-  animation: cstats-cache-scanline 1.2s linear infinite;
-
-  mix-blend-mode: screen;
-}
-
-.map-effect-de_cache .map-card-fx::after {
   content: "";
 
   position: absolute;
   inset: 0;
 
-  background:
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+
+  background-image: url("/media/interferencia.gif");
+  background-size: 100% 220%;
+  background-position: center center;
+}
+
+/* Niebla: dos manchas radiales derivando en direcciones distintas
+   dentro del mismo elemento (una sola animación de background-position
+   por capa), para que se sientan mezclándose entre sí en vez de un
+   único bloque trasladándose parejo. */
+.map-effect-de_cache .map-card-fx::after {
+  content: "";
+
+  position: absolute;
+  inset: -20%;
+
+  pointer-events: none;
+  mix-blend-mode: screen;
+
+  background-image:
     radial-gradient(
       circle,
-      rgba(255, 255, 255, 0.15) 0 1px,
-      transparent 1px
+      rgba(57, 255, 20, 0.35) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      circle,
+      rgba(120, 255, 90, 0.28) 0%,
+      transparent 65%
     );
+  background-repeat: no-repeat, no-repeat;
+  background-size: 70% 70%, 85% 85%;
+  filter: blur(14px);
 
-  background-size: 5px 5px;
-
-  animation: cstats-cache-noise 0.12s steps(2) infinite;
+  animation: cstats-cache-fog 26s ease-in-out infinite;
 }
 
-@keyframes cstats-cache-static {
-  0% {
-    transform: translate(0, 0);
-  }
-
-  25% {
-    transform: translate(-2%, 1%);
+@keyframes cstats-cache-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
   }
 
   50% {
-    transform: translate(1%, -2%);
+    filter: brightness(1.2);
   }
+}
 
-  75% {
-    transform: translate(2%, 1%);
-  }
-
+@keyframes cstats-cache-fog {
+  0%,
   100% {
-    transform: translate(-1%, -1%);
-  }
-}
-
-@keyframes cstats-cache-scanline {
-  from {
-    transform: translateY(-25%);
-  }
-
-  to {
-    transform: translateY(25%);
-  }
-}
-
-@keyframes cstats-cache-noise {
-  0% {
-    opacity: 0.15;
+    background-position: 10% 20%, 80% 70%;
   }
 
   50% {
-    opacity: 0.45;
-  }
-
-  100% {
-    opacity: 0.1;
+    background-position: 65% 60%, 25% 30%;
   }
 }
 
 
 /* ============================================================
    DUST II
-   Heat haze / calor
+   El fondo es un video real (public/media/dust2-arena.mp4, arranca
+   desde el segundo 2 y loopea desde ahí -- ver MapArenaVideo en
+   LineUps.tsx), montado en el lugar del <span class="map-card-fx">
+   solo para esta card. El elemento sigue siendo `.map-card-fx` (mismo
+   position/inset/opacity/hover que el resto de los mapas); acá solo
+   hace falta el object-fit del <video>.
    ============================================================ */
 
 .map-effect-de_dust2 .map-card-fx {
-  background:
-    radial-gradient(
-      ellipse at 50% 100%,
-      rgba(244, 170, 82, 0.3),
-      transparent 65%
-    ),
-    linear-gradient(
-      to top,
-      rgba(221, 148, 64, 0.12),
-      transparent
-    );
-
-  filter: blur(0.5px);
-
-  animation: cstats-dust2-heat 3s ease-in-out infinite;
-}
-
-.map-effect-de_dust2 .map-card-fx::after {
-  content: "";
-
-  position: absolute;
-  inset: -15%;
-
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 20px,
-      rgba(240, 178, 91, 0.05) 22px,
-      transparent 27px
-    );
-
-  filter: blur(3px);
-
-  animation: cstats-dust2-distortion 2.5s ease-in-out infinite;
-}
-
-@keyframes cstats-dust2-heat {
-  0%,
-  100% {
-    transform: scale(1.02) translateY(1%);
-  }
-
-  50% {
-    transform: scale(1.07) translateY(-2%);
-  }
-}
-
-@keyframes cstats-dust2-distortion {
-  0%,
-  100% {
-    transform: skewX(-1deg) translateX(-2%);
-  }
-
-  50% {
-    transform: skewX(1deg) translateX(2%);
-  }
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 
@@ -5354,6 +4891,10 @@ button.map-pool-card.lineup-map-card {
    ============================================================ */
 
 .map-effect-de_inferno .map-card-fx {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
   background:
     radial-gradient(
       circle at 20% 100%,
@@ -5467,228 +5008,41 @@ button.map-pool-card.lineup-map-card {
 
 /* ============================================================
    MIRAGE
-   Polvo + destellos
+   El fondo es un video real (public/media/mirage-arena.mp4), montado
+   en el lugar del <span class="map-card-fx"> solo para esta card (ver
+   MirageArenaVideo en LineUps.tsx). A diferencia de Ancient/Anubis/
+   Dust2 (un solo <video loop>), acá el clip no tiene un punto de corte
+   disimulado, así que se usan DOS copias desfasadas medio período con
+   crossfade por distancia-al-corte (mismo criterio que
+   CrossfadeLoopVideo/MolotovFireVideo) para que el loop no salte.
    ============================================================ */
 
-.map-effect-de_mirage .map-card-fx {
-  background:
-    radial-gradient(
-      circle at 20% 35%,
-      rgba(226, 191, 126, 0.25) 0 1px,
-      transparent 2px
-    ),
-    radial-gradient(
-      circle at 75% 65%,
-      rgba(239, 210, 153, 0.22) 0 1px,
-      transparent 2px
-    ),
-    linear-gradient(
-      120deg,
-      transparent 35%,
-      rgba(255, 220, 156, 0.13) 50%,
-      transparent 65%
-    );
-
-  background-size:
-    35px 35px,
-    55px 55px,
-    180% 100%;
-
-  animation: cstats-mirage-dust 6s linear infinite;
-}
-
-.map-effect-de_mirage .map-card-fx::after {
-  content: "";
-
+.map-arena-crossfade video {
   position: absolute;
-  inset: -50%;
-
-  background:
-    linear-gradient(
-      115deg,
-      transparent 42%,
-      rgba(255, 238, 190, 0.16) 49%,
-      transparent 56%
-    );
-
-  animation: cstats-mirage-flash 5s ease-in-out infinite;
-}
-
-@keyframes cstats-mirage-dust {
-  from {
-    background-position:
-      0 0,
-      0 0,
-      -100% 0;
-  }
-
-  to {
-    background-position:
-      80px -30px,
-      -60px 50px,
-      100% 0;
-  }
-}
-
-@keyframes cstats-mirage-flash {
-  0%,
-  65%,
-  100% {
-    transform: translateX(-35%);
-    opacity: 0;
-  }
-
-  72% {
-    transform: translateX(5%);
-    opacity: 1;
-  }
-
-  80% {
-    transform: translateX(35%);
-    opacity: 0;
-  }
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 
 /* ============================================================
    NUKE
-   Radiación verde + partículas
+   El fondo es un video real (public/media/nuke-arena.mp4), montado en
+   el lugar del <span class="map-card-fx"> solo para esta card (ver
+   NukeArenaVideo en LineUps.tsx). Mismo criterio que Mirage: el clip
+   no tiene una meseta recortada, así que se usan DOS copias desfasadas
+   medio período con crossfade por distancia-al-corte
+   (CrossfadeLoopVideo) para que el loop no salte.
    ============================================================ */
 
-/* Capa 1: glow ambiental + rejilla industrial muy tenue, para que no
-   se lea como un simple overlay verde plano. */
-.map-effect-de_nuke .map-card-fx {
-  background:
-    radial-gradient(
-      ellipse at 50% 40%,
-      rgba(70, 255, 140, 0.24),
-      transparent 62%
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(80, 255, 140, 0.045) 0 1px,
-      transparent 1px 6px
-    ),
-    radial-gradient(
-      circle at 22% 25%,
-      rgba(80, 255, 130, 0.4) 0 1px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 78% 75%,
-      rgba(91, 255, 127, 0.4) 0 1px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 58% 12%,
-      rgba(70, 255, 130, 0.3) 0 1px,
-      transparent 3px
-    );
-
-  background-size:
-    100% 100%,
-    100% 6px,
-    38px 38px,
-    52px 52px,
-    44px 44px;
-
-  animation: cstats-nuke-radiation-pulse 4.2s ease-in-out infinite;
-}
-
-/* Capa 2: partículas — recorrido en varios tramos (no un simple ida y
-   vuelta lineal) para que floten de forma más orgánica. */
-.map-effect-de_nuke .map-card-fx::before {
-  content: "";
-
-  position: absolute;
-  inset: 0;
-
-  background:
-    radial-gradient(
-      circle at 30% 80%,
-      rgba(93, 255, 128, 0.7) 0 1px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 70% 20%,
-      rgba(94, 255, 133, 0.55) 0 1px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 90% 60%,
-      rgba(94, 255, 133, 0.65) 0 1px,
-      transparent 3px
-    );
-
-  animation: cstats-nuke-particles 5.5s ease-in-out infinite;
-}
-
-/* Capa 3: dos anillos de radiación a distinta escala, para dar
-   profundidad al pulso en vez de un único halo. */
-.map-effect-de_nuke .map-card-fx::after {
-  content: "";
-
-  position: absolute;
-  inset: -20%;
-
-  border-radius: 50%;
-
-  background:
-    radial-gradient(
-      circle,
-      transparent 30%,
-      rgba(59, 255, 104, 0.14) 50%,
-      transparent 66%
-    ),
-    radial-gradient(
-      circle,
-      transparent 55%,
-      rgba(90, 255, 140, 0.1) 68%,
-      transparent 80%
-    );
-
-  animation: cstats-nuke-radiation-wave 3.4s ease-in-out infinite;
-}
-
-@keyframes cstats-nuke-radiation-pulse {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scale(1);
-    filter: brightness(1);
-  }
-
-  50% {
-    opacity: 0.6;
-    transform: scale(1.06);
-    filter: brightness(1.25);
-  }
-}
-
-@keyframes cstats-nuke-particles {
-  0%,
-  100% {
-    transform: translate(0, 6%) scale(1);
-    opacity: 0.45;
-  }
-
-  50% {
-    transform: translate(4%, -6%) scale(1.08);
-    opacity: 0.85;
-  }
-}
-
-@keyframes cstats-nuke-radiation-wave {
-  0%,
-  100% {
-    transform: scale(0.85);
-    opacity: 0.2;
-  }
-
-  50% {
-    transform: scale(1.18);
-    opacity: 0.7;
-  }
+/* El clip original trae una marca de agua en la esquina inferior
+   derecha. En vez de taparla con un blur, se zoomea/desplaza el video
+   hacia abajo para que esa esquina quede fuera del recorte visible
+   (el contenedor padre tiene overflow: hidden). */
+.map-arena-nuke video {
+  transform: scale(1.32) translate(-2%, 9%);
+  transform-origin: center;
 }
 
 

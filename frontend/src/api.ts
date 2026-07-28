@@ -10,7 +10,6 @@ import type {
   KillsResponse,
   MatchDetail,
   MatchEconomyResponse,
-  MatchSummary,
   MonthlySummaryResponse,
   NewsResponse,
   ProfileResponse,
@@ -40,12 +39,6 @@ export function loginUrl(): string {
 export async function logout(): Promise<void> {
   const r = await fetch(`${BASE}/auth/logout`, { method: "POST" });
   if (!r.ok) throw new Error(`POST /auth/logout -> ${r.status}`);
-}
-
-export async function listMatches(): Promise<MatchSummary[]> {
-  const r = await fetch(`${BASE}/matches`);
-  if (!r.ok) throw new Error(`GET /matches -> ${r.status}`);
-  return r.json();
 }
 
 export async function getMatch(matchId: string): Promise<MatchDetail> {

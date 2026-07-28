@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
-import { CenoteWaterBackground } from "../components/CenoteWaterBackground";
-import { DesertDuneBackground } from "../components/DesertDuneBackground";
+import { AnimatePresence, motion } from "motion/react";
 import { SectionLabel } from "../components/SectionLabel";
 import { Topbar } from "../components/Topbar";
 import { cardRise, staggerList } from "../components/motion/presets";
@@ -279,20 +277,27 @@ function itemsFor(mapKey: string, category: Category | "all", side: Side): Lineu
     .filter((i) => i.side === side);
 }
 
-// fuego-molotov-loop.mp4 (2.375s) es la meseta "zoomeada" recortada del
-// video original. El <video loop> nativo evita el tranco de reiniciar a
-// mano con currentTime, pero el corte en sí (donde el fuego cambia de
-// forma de golpe) sigue siendo visible una vez por vuelta. Para tapar
-// ESE corte usamos DOS copias del mismo clip desfasadas medio período:
-// mientras una pasa por su propio corte (currentTime ~0 o ~fin), la
-// otra está a mitad de camino, lejos del suyo, así que un crossfade por
+// Para clips cuyo loop nativo (<video loop>) deja un corte visible una
+// vez por vuelta (el contenido cambia de forma de golpe al reiniciar),
+// se usan DOS copias del mismo clip desfasadas medio período: mientras
+// una pasa por su propio corte (currentTime ~0 o ~fin), la otra está a
+// mitad de camino, lejos del suyo, así que un crossfade por
 // distancia-al-corte (calculado por rAF sobre el currentTime real de
 // cada video, no en tiempo de reloj/CSS) siempre deja una copia
 // totalmente opaca tapando el salto de la otra.
-const MOLOTOV_LOOP_DURATION = 2.375;
-const MOLOTOV_CROSSFADE_WINDOW = 0.18;
-
-function MolotovFireVideo() {
+function CrossfadeLoopVideo({
+  src,
+  duration,
+  crossfadeWindow,
+  wrapperClassName,
+  videoClassName,
+}: {
+  src: string;
+  duration: number;
+  crossfadeWindow: number;
+  wrapperClassName?: string;
+  videoClassName?: string;
+}) {
   const videoARef = useRef<HTMLVideoElement>(null);
   const videoBRef = useRef<HTMLVideoElement>(null);
 
@@ -302,7 +307,7 @@ function MolotovFireVideo() {
     if (!videoA || !videoB) return;
 
     const offsetB = () => {
-      videoB.currentTime = MOLOTOV_LOOP_DURATION / 2;
+      videoB.currentTime = duration / 2;
     };
     if (videoB.readyState >= 1) {
       offsetB();
@@ -311,8 +316,8 @@ function MolotovFireVideo() {
     }
 
     const opacityFor = (currentTime: number) => {
-      const distanceToSeam = Math.min(currentTime, MOLOTOV_LOOP_DURATION - currentTime);
-      return Math.min(1, distanceToSeam / MOLOTOV_CROSSFADE_WINDOW);
+      const distanceToSeam = Math.min(currentTime, duration - currentTime);
+      return Math.min(1, distanceToSeam / crossfadeWindow);
     };
 
     let frame: number;
@@ -327,23 +332,109 @@ function MolotovFireVideo() {
       cancelAnimationFrame(frame);
       videoB.removeEventListener("loadedmetadata", offsetB);
     };
-  }, []);
+  }, [duration, crossfadeWindow]);
 
   return (
-    <span className="lineup-molotov-fire-stack">
+    <span className={wrapperClassName}>
+      <video ref={videoARef} className={videoClassName} src={src} autoPlay loop muted playsInline />
+      <video ref={videoBRef} className={videoClassName} src={src} autoPlay loop muted playsInline />
+    </span>
+  );
+}
+
+// fuego-molotov-loop.mp4 (2.375s) es la meseta "zoomeada" recortada del
+// video original.
+const MOLOTOV_LOOP_DURATION = 2.375;
+const MOLOTOV_CROSSFADE_WINDOW = 0.18;
+
+function MolotovFireVideo() {
+  return (
+    <CrossfadeLoopVideo
+      src="/media/fuego-molotov-loop.mp4"
+      duration={MOLOTOV_LOOP_DURATION}
+      crossfadeWindow={MOLOTOV_CROSSFADE_WINDOW}
+      wrapperClassName="lineup-molotov-fire-stack"
+      videoClassName="lineup-molotov-fire"
+    />
+  );
+}
+
+// mirage-arena.mp4 (~5.04s) no tiene una meseta recortada como el
+// molotov, así que el crossfade es lo único que disimula el corte del
+// loop.
+const MIRAGE_ARENA_DURATION = 5.041667;
+const MIRAGE_ARENA_CROSSFADE_WINDOW = 0.35;
+
+function MirageArenaVideo() {
+  return (
+    <CrossfadeLoopVideo
+      src="/media/mirage-arena.mp4"
+      duration={MIRAGE_ARENA_DURATION}
+      crossfadeWindow={MIRAGE_ARENA_CROSSFADE_WINDOW}
+      wrapperClassName="map-card-fx map-arena-crossfade"
+    />
+  );
+}
+
+// nuke-arena.mp4 (~5.875s) tampoco tiene una meseta recortada.
+const NUKE_ARENA_DURATION = 5.875;
+const NUKE_ARENA_CROSSFADE_WINDOW = 0.4;
+
+function NukeArenaVideo() {
+  return (
+    <CrossfadeLoopVideo
+      src="/media/nuke-arena.mp4"
+      duration={NUKE_ARENA_DURATION}
+      crossfadeWindow={NUKE_ARENA_CROSSFADE_WINDOW}
+      wrapperClassName="map-card-fx map-arena-crossfade map-arena-nuke"
+    />
+  );
+}
+
+function MapArenaVideo({
+  className,
+  src,
+  startAt,
+}: {
+  className?: string;
+  src: string;
+  startAt: number;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const seekToStart = () => {
+      video.currentTime = startAt;
+    };
+    const restartLoop = () => {
+      video.currentTime = startAt;
+      video.play();
+    };
+    if (video.readyState >= 1) {
+      seekToStart();
+    } else {
+      video.addEventListener("loadedmetadata", seekToStart, { once: true });
+    }
+    video.addEventListener("ended", restartLoop);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", seekToStart);
+      video.removeEventListener("ended", restartLoop);
+    };
+  }, [startAt]);
+
+  return <video ref={videoRef} className={className} src={src} autoPlay muted playsInline />;
+}
+
+function SmokeExplosionVideo() {
+  return (
+    <span className="lineup-smoke-video-stack">
       <video
-        ref={videoARef}
-        className="lineup-molotov-fire"
-        src="/media/fuego-molotov-loop.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-      />
-      <video
-        ref={videoBRef}
-        className="lineup-molotov-fire"
-        src="/media/fuego-molotov-loop.mp4"
+        className="lineup-smoke-video"
+        src="/media/explosion-humo.mp4"
         autoPlay
         loop
         muted
@@ -354,14 +445,17 @@ function MolotovFireVideo() {
 }
 
 function UtilityButtonEffect({ category }: { category: Category }) {
-  const particles = category === "smoke" ? 5 : 8;
   return (
     <span className={`lineup-filter-effect lineup-filter-effect-${category}`} aria-hidden="true">
       {category === "molotov" ? (
         <MolotovFireVideo />
-      ) : (
-        Array.from({ length: particles }, (_, index) => <i key={index} />)
-      )}
+      ) : category === "smoke" ? (
+        <SmokeExplosionVideo />
+      ) : category === "he" ? (
+        <span className="lineup-he-stack">
+          <img className="lineup-he-bg" src="/fondo-lineups/explosion-he.gif" alt="" />
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -464,9 +558,17 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
   >
     {/* Efecto atmosférico específico del mapa */}
     {m.key === "de_ancient" ? (
-      <CenoteWaterBackground className="map-card-fx" />
+      <MapArenaVideo className="map-card-fx" src="/media/ancient-arena.mp4" startAt={2} />
     ) : m.key === "de_anubis" ? (
-      <DesertDuneBackground className="map-card-fx" />
+      <MapArenaVideo className="map-card-fx" src="/media/anubis-arena.mp4" startAt={2} />
+    ) : m.key === "de_dust2" ? (
+      <MapArenaVideo className="map-card-fx" src="/media/dust2-arena.mp4" startAt={2} />
+    ) : m.key === "de_inferno" ? (
+      <MapArenaVideo className="map-card-fx" src="/media/inferno-arena.mp4" startAt={2} />
+    ) : m.key === "de_mirage" ? (
+      <MirageArenaVideo />
+    ) : m.key === "de_nuke" ? (
+      <NukeArenaVideo />
     ) : (
       <span className="map-card-fx" aria-hidden="true" />
     )}
@@ -493,24 +595,65 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
           <span className="rule" />
         </div>
 
-        <div className="lineup-filters">
-          <button
-            type="button"
-            className={`lineup-filter lineup-filter-side${activeSide === "T" ? " active-t" : ""}`}
-            onClick={() => setActiveSide("T")}
-          >
-            Granadas TT
-          </button>
-          <button
-            type="button"
-            className={`lineup-filter lineup-filter-side${activeSide === "CT" ? " active-ct" : ""}`}
-            onClick={() => setActiveSide("CT")}
-          >
-            Granadas CT
-          </button>
+        <div className="lineup-side-toggle-wrap">
+          <div className="lineup-side-slide-slot lineup-side-slide-slot-t">
+            <AnimatePresence>
+              {activeSide === "T" && (
+                <motion.img
+                  key="t"
+                  className="lineup-side-slide-img lineup-side-slide-img-t"
+                  src="/fondo-lineups/c4-tt-v5.png"
+                  alt=""
+                  aria-hidden="true"
+                  initial={{ x: -140, opacity: 0, rotate: -10 }}
+                  animate={{ x: 0, opacity: 1, rotate: 0 }}
+                  exit={{ x: -140, opacity: 0, rotate: -10 }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="lineup-side-slide-slot lineup-side-slide-slot-ct">
+            <AnimatePresence>
+              {activeSide === "CT" && (
+                <motion.img
+                  key="ct"
+                  className="lineup-side-slide-img lineup-side-slide-img-ct"
+                  src="/fondo-lineups/defuse-ct-v2.png"
+                  alt=""
+                  aria-hidden="true"
+                  initial={{ x: 140, opacity: 0, rotate: 10 }}
+                  animate={{ x: 0, opacity: 1, rotate: 0 }}
+                  exit={{ x: 140, opacity: 0, rotate: 10 }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="lineup-side-toggle">
+            <button
+              type="button"
+              className={`lineup-side-btn${activeSide === "T" ? " active-t" : ""}`}
+              onClick={() => setActiveSide("T")}
+              aria-label="Granadas TT"
+              aria-pressed={activeSide === "T"}
+            >
+              <img className="lineup-side-btn-logo" src="/fondo-lineups/logo-tt.jpg" alt="Logo TT" />
+            </button>
+            <button
+              type="button"
+              className={`lineup-side-btn${activeSide === "CT" ? " active-ct" : ""}`}
+              onClick={() => setActiveSide("CT")}
+              aria-label="Granadas CT"
+              aria-pressed={activeSide === "CT"}
+            >
+              <img className="lineup-side-btn-logo" src="/fondo-lineups/logo-ct.jpg" alt="Logo CT" />
+            </button>
+          </div>
         </div>
 
-        <div className="lineup-filters">
+        <div className="lineup-filters lineup-filters-category">
           <button
             type="button"
             className={`lineup-filter${activeCategory === "all" ? " active" : ""}`}
