@@ -38,10 +38,6 @@ from cs2tracker.api.schemas import (
     DuelRosterPlayer,
     DuelsResponse,
     DuelTeam,
-    EntryHeatmapResponse,
-    FriendlyFireSummary,
-    HeatmapCell,
-    HeatmapResponse,
     HighlightMomentOut,
     HighlightsResponse,
     KillPoint,
@@ -77,7 +73,6 @@ from cs2tracker.api.schemas import (
     TopMapEntry,
     TopWeaponEntry,
     TradeUtilitySummary,
-    UtilityHeatmapResponse,
     WeaponDetailEntry,
     WeaponsPageResponse,
     WeaponsResponse,
@@ -93,7 +88,6 @@ from cs2tracker.db import (
     Match,
     MatchPlayer,
     Player,
-    PlayerMapZone,
     PlayerMatchStats,
     Round,
     RoundEconomy,
@@ -432,14 +426,6 @@ def match_weapons(match_id: str, viewer: str = Depends(get_current_steamid)) -> 
         return WeaponsResponse(players=players)
 
 
-_UTILITY_TYPE_TO_EVENT = {
-    "flash": "flash_thrown",
-    "he": "he_thrown",
-    "molotov": "molotov_thrown",
-    "smoke": "smoke_thrown",
-}
-
-
 def _authorize_view(s: Session, viewer: str, target: str) -> None:
     if not queries.shares_a_match(s, viewer, target):
         raise HTTPException(403, "no compartís ninguna partida con ese jugador")
@@ -453,128 +439,9 @@ def _authorize_match(s: Session, viewer: str, match_id: str) -> None:
 def _authorize_self(viewer: str, steamid: str) -> None:
     """Más estricto que _authorize_view: el resumen mensual es privado del
     usuario, ni siquiera compartir una partida alcanza para verlo (a
-    diferencia de heatmaps/profile/rivals/compare)."""
+    diferencia de profile/rivals/compare)."""
     if viewer != steamid:
         raise HTTPException(403, "el resumen mensual es privado")
-
-
-def _to_cell(zone: PlayerMapZone, count: int) -> HeatmapCell:
-    return HeatmapCell(
-        grid_x=zone.grid_x,
-        grid_y=zone.grid_y,
-        count=count,
-        top_weapon=zone.top_weapon,
-        avg_enemies_blinded=zone.avg_enemies_blinded,
-        total_blind_duration=zone.total_blind_duration,
-        avg_damage=zone.avg_damage,
-    )
-
-
-@app.get("/players/{steamid}/heatmaps/deaths", response_model=HeatmapResponse)
-def heatmap_deaths(
-    steamid: str,
-    map: str,
-    viewer: str = Depends(get_current_steamid),
-) -> HeatmapResponse:
-    with Session(get_engine()) as s:
-        _authorize_view(s, viewer, steamid)
-        zones = queries.zones_by_event_type(s, steamid, map, "death")
-        cells = [_to_cell(z, z.count) for z in zones if z.count >= queries.MIN_SAMPLE]
-        return HeatmapResponse(
-            steamid=steamid,
-            map=map,
-            has_radar=maps.has_radar(map),
-            grid_size=maps.GRID_CELLS_PER_AXIS,
-            cells=cells,
-        )
-
-
-@app.get("/players/{steamid}/heatmaps/entries", response_model=EntryHeatmapResponse)
-def heatmap_entries(
-    steamid: str,
-    map: str,
-    viewer: str = Depends(get_current_steamid),
-) -> EntryHeatmapResponse:
-    """Dónde gana (entry_kills) y dónde pierde (entry_deaths) la apertura de
-    ronda. El conteo por celda es la cantidad de ENTRIES, no de kills/deaths
-    en general -- mezclar ambas cosas sería otra métrica."""
-    with Session(get_engine()) as s:
-        _authorize_view(s, viewer, steamid)
-        kills = queries.zones_by_event_type(s, steamid, map, "kill")
-        deaths = queries.zones_by_event_type(s, steamid, map, "death")
-        min_sample = queries.MIN_SAMPLE
-        entry_kills = [_to_cell(z, z.entry_count) for z in kills if z.entry_count >= min_sample]
-        entry_deaths = [_to_cell(z, z.entry_count) for z in deaths if z.entry_count >= min_sample]
-        return EntryHeatmapResponse(
-            steamid=steamid,
-            map=map,
-            has_radar=maps.has_radar(map),
-            grid_size=maps.GRID_CELLS_PER_AXIS,
-            entry_kills=entry_kills,
-            entry_deaths=entry_deaths,
-        )
-
-
-@app.get("/players/{steamid}/heatmaps/trades", response_model=HeatmapResponse)
-def heatmap_trades(
-    steamid: str,
-    map: str,
-    viewer: str = Depends(get_current_steamid),
-) -> HeatmapResponse:
-    """Dónde muere SIN ser vengado (count = muertes - muertes tradeadas)."""
-    with Session(get_engine()) as s:
-        _authorize_view(s, viewer, steamid)
-        zones = queries.zones_by_event_type(s, steamid, map, "death")
-        cells = []
-        for z in zones:
-            untraded = z.count - z.traded_count
-            if untraded >= queries.MIN_SAMPLE:
-                cells.append(_to_cell(z, untraded))
-        return HeatmapResponse(
-            steamid=steamid,
-            map=map,
-            has_radar=maps.has_radar(map),
-            grid_size=maps.GRID_CELLS_PER_AXIS,
-            cells=cells,
-        )
-
-
-@app.get("/players/{steamid}/heatmaps/utility", response_model=UtilityHeatmapResponse)
-def heatmap_utility(
-    steamid: str,
-    map: str,
-    type: str = "flash",
-    viewer: str = Depends(get_current_steamid),
-) -> UtilityHeatmapResponse:
-    """Efectividad de utilidad por zona. type=flash|he|molotov|smoke -- smoke
-    solo trae frecuencia (sin score de efectividad, ver plan Fase 3/4).
-    El self/team-flash va aparte en `friendly_fire`, no mezclado en el mapa."""
-    event_type = _UTILITY_TYPE_TO_EVENT.get(type)
-    if event_type is None:
-        raise HTTPException(400, f"type inválido: {type!r}")
-    with Session(get_engine()) as s:
-        _authorize_view(s, viewer, steamid)
-        zones = queries.zones_by_event_type(s, steamid, map, event_type)
-        cells = [_to_cell(z, z.count) for z in zones if z.count >= queries.MIN_SAMPLE]
-
-        friendly_fire = None
-        if type == "flash":
-            total, friendly = queries.friendly_fire_summary(s, steamid)
-            friendly_fire = FriendlyFireSummary(
-                total_flashes=total,
-                friendly_flashes=friendly,
-                friendly_flash_rate=round(100.0 * friendly / total, 1) if total else 0.0,
-            )
-
-        return UtilityHeatmapResponse(
-            steamid=steamid,
-            map=map,
-            has_radar=maps.has_radar(map),
-            grid_size=maps.GRID_CELLS_PER_AXIS,
-            event_type=event_type,
-            cells=cells,
-            friendly_fire=friendly_fire,
-        )
 
 
 @app.get("/matches/{match_id}/badges", response_model=BadgesResponse)

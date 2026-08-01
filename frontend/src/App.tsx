@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { getMe, logout } from "./api";
 import { Topbar } from "./components/Topbar";
+import { LogoIntroTransition } from "./components/motion/LogoIntroTransition";
 import { ROUTE_FADE } from "./components/motion/presets";
-import { UserContext, UserUpdateContext } from "./context/UserContext";
+import { UserContext } from "./context/UserContext";
 import { EmailVerificationPendingView } from "./views/EmailVerificationPendingView";
 import { ForgotPasswordView } from "./views/ForgotPasswordView";
 import { HomeView } from "./views/HomeView";
@@ -20,10 +21,29 @@ import { SettingsView } from "./views/SettingsView";
 import { WeaponsView } from "./views/WeaponsView";
 import type { MeOut, User } from "./types";
 
+// Code-split igual que el resto de las rutas secundarias -- ahora mismo
+// PrefireView es una landing "en desarrollo" liviana (sin three.js/rapier,
+// ver PrefireView.tsx), pero mantenerla separada evita tener que tocar este
+// archivo cuando el módulo 3D vuelva a activarse.
+const PrefireView = lazy(() => import("./views/PrefireView").then((m) => ({ default: m.PrefireView })));
+
 export function App() {
   const [me, setMe] = useState<MeOut | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
   const location = useLocation();
+
+  // Cortina de la medalla 3D entre las landings de pre-login (Landing/
+  // Register/Login/etc.) -- solo se dispara en navegaciones posteriores al
+  // mount inicial, nunca en la primera carga de la landing.
+  const [preLoginTransitioning, setPreLoginTransitioning] = useState(false);
+  const prevPreLoginPath = useRef(location.pathname);
+
+  useEffect(() => {
+    if (me !== null) return;
+    if (prevPreLoginPath.current === location.pathname) return;
+    prevPreLoginPath.current = location.pathname;
+    setPreLoginTransitioning(true);
+  }, [location.pathname, me]);
 
   const refreshMe = async () => {
     try {
@@ -60,14 +80,19 @@ export function App() {
 
   if (me === null) {
     return (
-      <Routes location={location}>
-        <Route path="/" element={<LandingView />} />
-        <Route path="/register" element={<RegisterView onRegistered={refreshMe} />} />
-        <Route path="/login" element={<LoginView onLoggedIn={refreshMe} />} />
-        <Route path="/forgot-password" element={<ForgotPasswordView />} />
-        <Route path="/reset-password" element={<ResetPasswordView />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <>
+        <Routes location={location}>
+          <Route path="/" element={<LandingView />} />
+          <Route path="/register" element={<RegisterView onRegistered={refreshMe} />} />
+          <Route path="/login" element={<LoginView onLoggedIn={refreshMe} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordView />} />
+          <Route path="/reset-password" element={<ResetPasswordView />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        {preLoginTransitioning && (
+          <LogoIntroTransition onFinished={() => setPreLoginTransitioning(false)} />
+        )}
+      </>
     );
   }
 
@@ -90,16 +115,9 @@ export function App() {
     display_name: me.display_name,
     avatar_url: me.avatar_url,
     steam_background_url: me.steam_background_url,
-    custom_background_url: me.custom_background_url,
     email: me.email,
     email_verified_at: me.email_verified_at,
     onboarding_completed_at: me.onboarding_completed_at,
-  };
-
-  // BackgroundSettings recibe el MeOut actualizado del PATCH/DELETE de
-  // fondo -- se pisa acá en vez de re-pegarle a /auth/me.
-  const updateUser = (updated: User) => {
-    setMe((prev) => (prev ? { ...prev, ...updated } : prev));
   };
 
   if (user.onboarding_completed_at === null) {
@@ -111,32 +129,41 @@ export function App() {
   }
 
   const isLineupsRoute = location.pathname === "/lineups";
+  const isPrefireRoute = location.pathname === "/prefire";
+  const isFullscreenRoute = isLineupsRoute || isPrefireRoute;
 
   return (
     <UserContext.Provider value={user}>
-      <UserUpdateContext.Provider value={updateUser}>
-        <div className={isLineupsRoute ? "lineup-route-shell" : "wrap"}>
-          {!isLineupsRoute && <Topbar onLogout={handleLogout} />}
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: ROUTE_FADE, ease: "linear" }}
-            >
-              <Routes location={location}>
-                <Route path="/" element={<HomeView />} />
-                <Route path="/lineups" element={<LineUps onLogout={handleLogout} />} />
-                <Route path="/profile/:steamid" element={<ProfileView />} />
-                <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
-                <Route path="/match/:matchId" element={<MatchDetailView />} />
-                <Route path="/settings" element={<SettingsView />} />
-              </Routes>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </UserUpdateContext.Provider>
+      <div className={isFullscreenRoute ? "lineup-route-shell" : "wrap"}>
+        {!isFullscreenRoute && <Topbar onLogout={handleLogout} />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: ROUTE_FADE, ease: "linear" }}
+          >
+            <Routes location={location}>
+              <Route path="/" element={<HomeView />} />
+              <Route path="/lineups" element={<LineUps onLogout={handleLogout} />} />
+              <Route
+                path="/prefire"
+                element={
+                  <Suspense fallback={<div className="wrap center">Cargando…</div>}>
+                    <PrefireView />
+                  </Suspense>
+                }
+              />
+              <Route path="/profile/:steamid" element={<ProfileView />} />
+              <Route path="/profile/:steamid/weapons" element={<WeaponsView />} />
+              <Route path="/match/:matchId" element={<MatchDetailView />} />
+              <Route path="/settings" element={<SettingsView />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </UserContext.Provider>
   );
 }

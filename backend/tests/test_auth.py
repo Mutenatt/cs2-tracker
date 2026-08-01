@@ -5,6 +5,7 @@ verify_callback/fetch_profile hablan con steamcommunity.com/api.steampowered.com
 """
 
 import asyncio
+from datetime import UTC, datetime
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -122,6 +123,11 @@ def client(tmp_path):
                 email="ana@test.local",
                 password_hash="x",
                 email_verified_at="2026-01-01T00:00:00",
+                # "Recién sincronizado" -- sin esto, /auth/me lo considera
+                # stale y dispara un fetch_profile real (ver
+                # test_auth_me_refresca_steam_profile_stale para ese caso,
+                # mockeado).
+                steam_profile_synced_at=datetime.now(UTC).isoformat(),
             )
         )
         s.commit()
@@ -160,6 +166,55 @@ def test_auth_me_con_sesion(client):
     r = client.get("/auth/me")
     assert r.status_code == 200
     assert r.json()["steamid"] == "76561198000000000"
+    assert r.json()["display_name"] == "Ana"
+
+
+def test_auth_me_refresca_steam_profile_stale(client, monkeypatch, tmp_path):
+    """Sin sync previo (steam_profile_synced_at None), /auth/me re-scrapea el
+    perfil y persiste el background nuevo -- este es el fix a "cambié el
+    fondo en Steam y acá sigue siendo el mismo": ya no hace falta
+    desvincular/re-vincular la cuenta para que se note."""
+    engine = init_db(f"sqlite:///{tmp_path}/t.sqlite")
+    with Session(engine) as s:
+        user = s.get(User, "76561198000000000")
+        user.steam_profile_synced_at = None
+        s.commit()
+
+    async def fake_fetch_profile(steamid):
+        return (
+            "Ana Nueva",
+            "https://example.com/avatar.jpg",
+            "https://example.com/nuevo-fondo.jpg",
+        )
+
+    monkeypatch.setattr("cs2tracker.api.account.fetch_profile", fake_fetch_profile)
+
+    client.cookies.set(COOKIE_NAME, create_session_cookie("76561198000000000"))
+    r = client.get("/auth/me")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["display_name"] == "Ana Nueva"
+    assert body["steam_background_url"] == "https://example.com/nuevo-fondo.jpg"
+
+    with Session(engine) as s:
+        user = s.get(User, "76561198000000000")
+        assert user.steam_background_url == "https://example.com/nuevo-fondo.jpg"
+        assert user.steam_profile_synced_at is not None
+
+
+def test_auth_me_no_refresca_si_ya_esta_sincronizado(client, monkeypatch):
+    """Con steam_profile_synced_at reciente (fixture client), /auth/me NO
+    llama a Steam -- el throttle existe para no pegarle a
+    steamcommunity.com en cada carga de página."""
+
+    async def boom(steamid):
+        raise AssertionError("no debería llamar a fetch_profile todavía")
+
+    monkeypatch.setattr("cs2tracker.api.account.fetch_profile", boom)
+
+    client.cookies.set(COOKIE_NAME, create_session_cookie("76561198000000000"))
+    r = client.get("/auth/me")
+    assert r.status_code == 200
     assert r.json()["display_name"] == "Ana"
 
 

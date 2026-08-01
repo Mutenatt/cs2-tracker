@@ -1,7 +1,6 @@
 """
-Queries cross-match para heatmaps: leen player_map_zones (agregado, el
-read-path barato) y player_map_events solo para el resumen de friendly-fire
-(un escalar simple, no vale la pena precomputarlo -- ver Fase 3/4 del plan).
+Queries cross-match compartidas por los distintos endpoints de perfil/partida
+(historial, rivals, compare, badges, monthly, etc.).
 """
 
 from __future__ import annotations
@@ -22,7 +21,6 @@ from cs2tracker.db import (
     Player,
     PlayerClutch,
     PlayerMapEvent,
-    PlayerMapZone,
     PlayerMatchStats,
     PlayerProfileTag,
     Round,
@@ -39,27 +37,6 @@ from cs2tracker.domain import social as social_domain
 from cs2tracker.domain.badges import catalog as badges_catalog
 
 MIN_SAMPLE = 5  # celdas con menos eventos que esto no se muestran (ruido)
-
-
-def zones_by_event_type(
-    s: Session,
-    steamid: str,
-    map_name: str,
-    event_type: str,
-) -> list[PlayerMapZone]:
-    """Sin filtro de muestra mÃ­nima: cada endpoint lo aplica sobre la mÃ©trica
-    que le corresponda (no siempre es `count`, ver entries/trades)."""
-    return list(
-        s.execute(
-            select(PlayerMapZone).where(
-                PlayerMapZone.steamid == steamid,
-                PlayerMapZone.map == map_name,
-                PlayerMapZone.event_type == event_type,
-            )
-        )
-        .scalars()
-        .all()
-    )
 
 
 def shares_a_match(s: Session, viewer: str, target: str) -> bool:
@@ -89,18 +66,6 @@ def is_participant(s: Session, steamid: str, match_id: str) -> bool:
             .where(MatchPlayer.match_id == match_id, MatchPlayer.steamid == steamid)
         )
     )
-
-
-def friendly_fire_summary(s: Session, steamid: str) -> tuple[int, int]:
-    """(total_flashes, friendly_flashes) del jugador, todas sus partidas."""
-    base = (
-        select(func.count())
-        .select_from(PlayerMapEvent)
-        .where(PlayerMapEvent.steamid == steamid, PlayerMapEvent.event_type == "flash_thrown")
-    )
-    total = s.scalar(base) or 0
-    friendly = s.scalar(base.where(PlayerMapEvent.teammates_blinded > 0)) or 0
-    return total, friendly
 
 
 def _match_scores(s: Session, match_id: str) -> dict[int, int]:

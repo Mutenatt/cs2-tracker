@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { getProfile } from "../api";
 import { AccuracyPanel } from "../components/AccuracyPanel";
-import { BackgroundSettings } from "../components/BackgroundSettings";
 import { ClipsPanel } from "../components/ClipsPanel";
-import { MatchTypeFilter, type MatchTypeFilterValue } from "../components/MatchTypeFilter";
+import { MatchHistory } from "../components/match-history/MatchHistory";
 import { MapStatsPopover } from "../components/MapStatsPopover";
 import { MapWallpaperCarousel } from "../components/MapWallpaperCarousel";
 import { PremierRankUpEffect } from "../components/PremierRankUpEffect";
@@ -23,87 +22,17 @@ import { useSteamBackground } from "../hooks/useSteamBackground";
 import { cardRise, staggerList } from "../components/motion/presets";
 import type { ProfileResponse } from "../types";
 
-const SIDE_LABEL: Record<number, string> = { 2: "T", 3: "CT" };
-const MotionLink = motion.create(Link);
-
-function MatchHistoryCard({ m }: { m: ProfileResponse["match_history"][number] }) {
-  const resultLabel = m.won === null ? "" : m.won ? "Victoria" : "Derrota";
-  const resultClass = m.won === null ? "" : m.won ? "w" : "l";
-  const side = m.team_num !== null ? SIDE_LABEL[m.team_num] : null;
-  // Fecha REAL de juego (matchtime del GC); sin ella no se muestra fecha
-  // (ingested_at sería engañoso: es cuándo se cargó el demo, no cuándo se jugó).
-  const playedDate = m.played_at
-    ? new Date(m.played_at).toLocaleDateString(undefined, { day: "numeric", month: "short" })
-    : null;
-  return (
-    <MotionLink className="mh-card" to={`/match/${m.match_id}`} variants={cardRise}>
-      <span className={`stripe ${resultClass}`} />
-      {m.map && (
-        <img
-          className="mh-emblem"
-          src={`/map-icons/${m.map}.png`}
-          alt={m.map}
-          onError={(e) => {
-            // Mapa sin emblema -> cae al radar; sin radar tampoco -> se oculta.
-            const img = e.currentTarget as HTMLImageElement;
-            if (!img.src.endsWith(`/radar/${m.map}_radar_psd.png`)) {
-              img.src = `/radar/${m.map}_radar_psd.png`;
-              img.className = "mh-thumb";
-            } else {
-              img.style.visibility = "hidden";
-            }
-          }}
-        />
-      )}
-      <span className="mh-mid">
-        <span className="mh-top">
-          <span className="mh-map">{(m.map ?? "—").toUpperCase()}</span>
-          {resultLabel && <span className={`mh-result ${resultClass}`}>{resultLabel}</span>}
-        </span>
-        <span className="mh-sub">
-          {playedDate ? `${playedDate} · ` : ""}
-          {m.my_score ?? "—"} – {m.opponent_score ?? "—"}
-          {side ? ` · empezaste ${side}` : ""} · {m.n_rounds ?? "—"} rondas
-        </span>
-      </span>
-      <span className="mh-stats">
-        <span>
-          <b>{m.kd.toFixed(2)}</b>
-          <span>K/D</span>
-        </span>
-        <span>
-          <b>{m.adr.toFixed(1)}</b>
-          <span>ADR</span>
-        </span>
-        <span>
-          <b>{m.rating.toFixed(2)}</b>
-          <span>Rating</span>
-        </span>
-      </span>
-    </MotionLink>
-  );
-}
-
 export function ProfileView() {
   const { steamid } = useParams<{ steamid: string }>();
   const user = useUser();
-  useSteamBackground(user.custom_background_url ?? user.steam_background_url);
+  useSteamBackground(user.steam_background_url);
   const [data, setData] = useState<ProfileResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(10);
-  const [typeFilter, setTypeFilter] = useState<MatchTypeFilterValue>({
-    premier: true,
-    competitivo: true,
-  });
-  useEffect(() => {
-    setVisibleCount(10);
-  }, [typeFilter]);
 
   useEffect(() => {
     if (!steamid) return;
     setData(null);
     setError(null);
-    setVisibleCount(10);
     (async () => {
       try {
         setData(await getProfile(steamid));
@@ -146,13 +75,6 @@ export function ProfileView() {
     [...rated].reverse().find((p) => p.rating_delta !== null)?.rating_delta ?? null;
   const heroDelta =
     liveRating !== null && entryRank !== null ? liveRating - entryRank : lastResolvedDelta;
-
-  // rank_type === null: demo vieja sin re-ingerir, no se puede clasificar ->
-  // se muestra siempre para no ocultar historial existente.
-  const filteredHistory = match_history.filter((m) => {
-    if (m.rank_type === null) return true;
-    return m.rank_type === 11 ? typeFilter.premier : typeFilter.competitivo;
-  });
 
   // "Mejor mapa" ya viene resuelto por el backend (win rate + desempate por
   // muestra, ver profile_domain.best_map) -- se busca la fila de map_pool
@@ -273,22 +195,8 @@ export function ProfileView() {
           <div className="section-head">
             <span className="display">Historial de partidas</span>
             <span className="rule" />
-            <MatchTypeFilter value={typeFilter} onChange={setTypeFilter} />
           </div>
-          <motion.div className="mh-list" variants={staggerList} initial="hidden" animate="show">
-            {filteredHistory.slice(0, visibleCount).map((m) => (
-              <MatchHistoryCard key={m.match_id} m={m} />
-            ))}
-          </motion.div>
-          {visibleCount < filteredHistory.length && (
-            <button className="panel-cta" onClick={() => setVisibleCount((v) => v + 10)}>
-              Cargar más partidas
-            </button>
-          )}
-          <div className="mh-note">
-            El historial crece con cada demo que ingerís (ver <code>INGESTA_MANUAL.md</code>) —
-            click en una tarjeta para ver su Match Detail.
-          </div>
+          <MatchHistory matches={match_history} />
         </div>
 
         <div>
@@ -333,8 +241,6 @@ export function ProfileView() {
           <TopMapsPanel mapPool={map_pool} />
 
           {user.steamid === steamid && steamid && <ClipsPanel steamid={steamid} />}
-
-          {user.steamid === steamid && <BackgroundSettings />}
         </div>
       </div>
     </>

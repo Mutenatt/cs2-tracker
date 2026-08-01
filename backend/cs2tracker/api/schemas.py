@@ -33,14 +33,9 @@ class MeOut(BaseModel):
     display_name: str | None
     avatar_url: str | None
     steam_background_url: str | None = None
-    custom_background_url: str | None = None
     email: str | None
     email_verified_at: str | None
     onboarding_completed_at: str | None
-
-
-class CustomBackgroundIn(BaseModel):
-    url: str
 
 
 class AutofetchLinkIn(BaseModel):
@@ -148,49 +143,6 @@ class PlayerWeapons(BaseModel):
 
 class WeaponsResponse(BaseModel):
     players: list[PlayerWeapons]
-
-
-class HeatmapCell(BaseModel):
-    grid_x: int
-    grid_y: int
-    count: int  # métrica principal de esta vista (no siempre = total de eventos)
-    top_weapon: str | None = None
-    avg_enemies_blinded: float | None = None
-    total_blind_duration: float | None = None
-    avg_damage: float | None = None
-
-
-class HeatmapResponse(BaseModel):
-    steamid: str
-    map: str
-    has_radar: bool
-    grid_size: int
-    cells: list[HeatmapCell]
-
-
-class EntryHeatmapResponse(BaseModel):
-    steamid: str
-    map: str
-    has_radar: bool
-    grid_size: int
-    entry_kills: list[HeatmapCell]
-    entry_deaths: list[HeatmapCell]
-
-
-class FriendlyFireSummary(BaseModel):
-    total_flashes: int
-    friendly_flashes: int
-    friendly_flash_rate: float  # 0..100
-
-
-class UtilityHeatmapResponse(BaseModel):
-    steamid: str
-    map: str
-    has_radar: bool
-    grid_size: int
-    event_type: str
-    cells: list[HeatmapCell]
-    friendly_fire: FriendlyFireSummary | None = None
 
 
 class LifetimeStats(BaseModel):

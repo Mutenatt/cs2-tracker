@@ -1,5 +1,5 @@
 import type { AccuracyStats } from "../types";
-import { AccuracySilhouette } from "./AccuracySilhouette";
+import { AccuracySilhouette, type ZoneVisual } from "./AccuracySilhouette";
 
 const SPARK_W = 300;
 const SPARK_H = 80;
@@ -12,15 +12,22 @@ interface Zone {
   hits: number;
 }
 
-// Mayor % -> verde (--go), segunda -> cian (--recon), menor -> sin color
-// (var(--text)) -- calculado dinámicamente, no una zona fija por nombre.
-function zoneColors(zones: Zone[]): Record<string, string> {
+// Mayor % -> verde neón (--go) con glow, segunda -> cian neón (--recon) con
+// glow, menor -> gris apagado sin glow. Calculado dinámicamente por ranking,
+// no una zona fija por nombre (ver spec: en el ejemplo de referencia esto da
+// Torso=verde/Cabeza=cian, pero cambia según los datos reales del jugador).
+function zoneVisuals(zones: Zone[]): Record<string, ZoneVisual> {
   const ranked = [...zones].sort((a, b) => b.pct - a.pct);
-  const colors: Record<string, string> = {};
+  const visuals: Record<string, ZoneVisual> = {};
   ranked.forEach((z, i) => {
-    colors[z.key] = i === 0 ? "var(--go)" : i === 1 ? "var(--recon)" : "var(--text)";
+    visuals[z.key] =
+      i === 0
+        ? { color: "var(--go)", glow: "go" }
+        : i === 1
+          ? { color: "var(--recon)", glow: "recon" }
+          : { color: "var(--text-faint)", glow: "none" };
   });
-  return colors;
+  return visuals;
 }
 
 function Sparkline({ series }: { series: number[] }) {
@@ -31,20 +38,55 @@ function Sparkline({ series }: { series: number[] }) {
   const x = (i: number) => SPARK_PAD + (i / (series.length - 1)) * (SPARK_W - 2 * SPARK_PAD);
   const y = (v: number) =>
     span === 0 ? SPARK_H / 2 : SPARK_PAD + ((max - v) / span) * (SPARK_H - 2 * SPARK_PAD);
-  const d = series
+  const line = series
     .map((v, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`)
     .join(" ");
+  const area = `${line} L ${x(series.length - 1).toFixed(1)} ${SPARK_H - SPARK_PAD} L ${x(0)} ${SPARK_H - SPARK_PAD} Z`;
 
   return (
     <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} style={{ width: "100%", display: "block" }}>
-      <line x1={0} y1={18} x2={SPARK_W} y2={18} stroke="var(--line)" strokeWidth={1} />
-      <line x1={0} y1={42} x2={SPARK_W} y2={42} stroke="var(--line)" strokeWidth={1} />
-      <line x1={0} y1={66} x2={SPARK_W} y2={66} stroke="var(--line)" strokeWidth={1} />
-      <path d={d} fill="none" stroke="#ff5454" strokeWidth={2.5} />
-      <text x={SPARK_W - 2} y={22} fill="var(--text-faint)" fontSize={9} textAnchor="end">
+      <defs>
+        <linearGradient id="accuracy-spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--recon)" stopOpacity={0.35} />
+          <stop offset="100%" stopColor="var(--recon)" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <line
+        x1={0}
+        y1={SPARK_PAD}
+        x2={SPARK_W}
+        y2={SPARK_PAD}
+        stroke="var(--line)"
+        strokeOpacity={0.6}
+        strokeWidth={1}
+      />
+      <line
+        x1={0}
+        y1={SPARK_H - SPARK_PAD}
+        x2={SPARK_W}
+        y2={SPARK_H - SPARK_PAD}
+        stroke="var(--line)"
+        strokeOpacity={0.6}
+        strokeWidth={1}
+      />
+      <path d={area} fill="url(#accuracy-spark-fill)" stroke="none" />
+      <path d={line} fill="none" stroke="var(--recon)" strokeWidth={2} strokeLinecap="round" />
+      <text
+        x={SPARK_W - 2}
+        y={SPARK_PAD + 10}
+        fill="var(--text-faint)"
+        fontSize={9}
+        textAnchor="end"
+      >
         {max.toFixed(0)}%
       </text>
-      <text x={SPARK_W - 2} y={46} fill="var(--text-faint)" fontSize={9} textAnchor="end">
+      <text
+        x={SPARK_W - 2}
+        y={SPARK_H - SPARK_PAD - 3}
+        fill="var(--text-faint)"
+        fontSize={9}
+        textAnchor="end"
+      >
         {min.toFixed(0)}%
       </text>
     </svg>
@@ -57,7 +99,7 @@ export function AccuracyPanel({ data }: { data: AccuracyStats }) {
     { key: "body", label: "Torso", pct: data.body_pct, hits: data.body_hits },
     { key: "legs", label: "Piernas", pct: data.legs_pct, hits: data.legs_hits },
   ];
-  const colors = zoneColors(zones);
+  const visuals = zoneVisuals(zones);
   const totalHits = data.head_hits + data.body_hits + data.legs_hits;
 
   return (
@@ -69,19 +111,23 @@ export function AccuracyPanel({ data }: { data: AccuracyStats }) {
       ) : (
         <>
           <div className="accuracy-body">
-            <AccuracySilhouette
-              headColor={colors.head}
-              bodyColor={colors.body}
-              legsColor={colors.legs}
-            />
+            <AccuracySilhouette head={visuals.head} body={visuals.body} legs={visuals.legs} />
             <div className="accuracy-zones">
               {zones.map((z) => (
                 <div className="accuracy-zone" key={z.key}>
-                  <span className="az-label">{z.label}</span>
-                  <span className="az-values">
-                    <b style={{ color: colors[z.key] }}>{z.pct.toFixed(1)}%</b>
-                    <b className="az-hits">{z.hits} hits</b>
-                  </span>
+                  <div className="az-top">
+                    <span className="az-label">{z.label}</span>
+                    <b className="az-pct mono" style={{ color: visuals[z.key].color }}>
+                      {z.pct.toFixed(1)}%
+                    </b>
+                  </div>
+                  <span className="az-hits">{z.hits} hits</span>
+                  <div className="az-bar">
+                    <span
+                      className="az-bar-fill"
+                      style={{ width: `${z.pct}%`, background: visuals[z.key].color }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

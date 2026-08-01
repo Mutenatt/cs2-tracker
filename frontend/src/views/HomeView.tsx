@@ -100,9 +100,6 @@ export function HomeView() {
         <SectionLabel>Mapas activos · Premier</SectionLabel>
         <span className="rule" />
       </div>
-      <div className="section-note" style={{ marginTop: -4 }}>
-        Pool vigente desde la Season 5 (julio 2026) — se actualiza a mano si Valve vuelve a rotarlo.
-      </div>
       <motion.div className="map-pool-grid" variants={staggerList} initial="hidden" animate="show">
         {ACTIVE_MAP_POOL.map((m) => (
           <motion.div className="map-pool-card" key={m.key} variants={cardRise}>

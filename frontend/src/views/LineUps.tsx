@@ -531,14 +531,6 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
       <div className="lineup-page-backdrop lineup-page-backdrop-next" style={nextBackgroundStyle} />
       <div className="lineup-page-content">
         <Topbar onLogout={onLogout} />
-        <div className="section-head">
-          <SectionLabel>Utilidad · Line ups</SectionLabel>
-          <span className="rule" />
-        </div>
-        <div className="section-note" style={{ marginTop: -4 }}>
-          Tu propio banco de humos, flashes y molotovs por mapa — grabalos en el juego y sumalos acá
-          para tenerlos a mano antes de cada partida.
-        </div>
 
         <motion.div className="map-pool-grid" variants={staggerList} initial="hidden" animate="show">
           {MAP_POOL.map((m) => (

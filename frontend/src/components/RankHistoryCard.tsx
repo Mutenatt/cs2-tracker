@@ -1,5 +1,5 @@
+import { Crosshair, Map as MapIcon, TrendingUp } from "lucide-react";
 import { motion } from "motion/react";
-import { RankBadge } from "./RankBadge";
 import type { LifetimeStats, RankPoint, TacticalSnapshot } from "../types";
 
 const W = 320;
@@ -13,9 +13,10 @@ const ROLE_LABEL: Record<string, string> = {
   rifler: "Rifler",
 };
 
-// Tarjeta "Rank Premier": sparkline SVG con la progresión real del CS Rating
-// (extraído de los demos), markers min/max con glow, y chips tácticos.
-// Estados honestos: sin re-ingesta -> aviso; calibrando -> progreso N/10.
+// Tarjeta "Rank Premier": area chart SVG con la progresión real del CS
+// Rating (extraído de los demos), markers min/max con glow + tooltip
+// flotante, y badges tácticos. Estados honestos: sin re-ingesta -> aviso;
+// calibrando -> progreso N/10.
 export function RankHistoryCard({
   rankHistory,
   lifetime,
@@ -33,14 +34,20 @@ export function RankHistoryCard({
   const missing = rankHistory.filter((p) => p.rank === null).length;
   const calibrating = rankHistory.filter((p) => p.rank === 0);
   const latestWins = calibrating.length ? calibrating[calibrating.length - 1].comp_wins : null;
+  const currentElo = rated.length > 0 ? rated[rated.length - 1].rank : null;
 
-  const chips = [
-    snapshot.best_map && { label: "Mejor mapa", value: snapshot.best_map },
-    snapshot.dominant_role && {
-      label: "Rol dominante",
-      value: ROLE_LABEL[snapshot.dominant_role] ?? snapshot.dominant_role,
+  const badges = [
+    snapshot.best_map && {
+      key: "map",
+      icon: <MapIcon size={13} />,
+      value: snapshot.best_map.replace(/^de_/i, "").toUpperCase(),
     },
-  ].filter(Boolean) as { label: string; value: string }[];
+    snapshot.dominant_role && {
+      key: "role",
+      icon: <Crosshair size={13} className="rh-badge-icon-role" />,
+      value: (ROLE_LABEL[snapshot.dominant_role] ?? snapshot.dominant_role).toUpperCase(),
+    },
+  ].filter(Boolean) as { key: string; icon: JSX.Element; value: string }[];
 
   return (
     <>
@@ -49,16 +56,21 @@ export function RankHistoryCard({
         <span className="rule" />
       </div>
       <div className="rh-card">
-        <div className="rh-meta mono">
-          {lifetime.matches_played} partida{lifetime.matches_played === 1 ? "" : "s"} ·{" "}
-          {lifetime.win_rate.toFixed(0)}% win rate
+        <div className="rh-header">
+          <div className="rh-meta mono">
+            {lifetime.matches_played} partida{lifetime.matches_played === 1 ? "" : "s"}
+            <span className="rh-winrate-badge">{lifetime.win_rate.toFixed(0)}% WR</span>
+          </div>
+          {currentElo !== null && (
+            <div className="rh-elo-now mono">{currentElo.toLocaleString("es")}</div>
+          )}
         </div>
 
         {rated.length >= 2 ? (
-          <Sparkline points={rated} />
+          <AreaSparkline points={rated} />
         ) : rated.length === 1 ? (
           <div className="rh-single">
-            <RankBadge rank={rated[0].rank} rankType={rated[0].rank_type} />
+            <span className="rh-elo-now mono">{rated[0].rank!.toLocaleString("es")}</span>
             <span className="rh-note">
               Una sola partida con CS Rating — el gráfico aparece con la segunda.
             </span>
@@ -84,11 +96,12 @@ export function RankHistoryCard({
           </p>
         )}
 
-        {chips.length > 0 && (
-          <div className="rh-chips">
-            {chips.map((c) => (
-              <span className="rh-chip" key={c.label}>
-                {c.label} · <b>{c.value}</b>
+        {badges.length > 0 && (
+          <div className="rh-badges">
+            {badges.map((b) => (
+              <span className="rh-badge" key={b.key}>
+                {b.icon}
+                <span className="rh-badge-value">{b.value}</span>
               </span>
             ))}
           </div>
@@ -98,32 +111,31 @@ export function RankHistoryCard({
   );
 }
 
-function Sparkline({ points }: { points: RankPoint[] }) {
+function AreaSparkline({ points }: { points: RankPoint[] }) {
   const ranks = points.map((p) => p.rank as number);
   const min = Math.min(...ranks);
   const max = Math.max(...ranks);
   const span = max - min;
+  const eloGain = max - min;
 
   const x = (i: number) => PAD + (i / (points.length - 1)) * (W - 2 * PAD);
   // max === min -> línea plana al medio
   const y = (r: number) => (span === 0 ? H / 2 : PAD + ((max - r) / span) * (H - 2 * PAD));
 
-  const d = ranks
+  const line = ranks
     .map((r, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(r).toFixed(1)}`)
     .join(" ");
+  const baseline = H - PAD;
+  const area = `${line} L ${x(points.length - 1).toFixed(1)} ${baseline} L ${x(0)} ${baseline} Z`;
 
   const iMin = ranks.indexOf(min);
   const iMax = ranks.indexOf(max);
   const minPt = points[iMin];
   const maxPt = points[iMax];
 
-  // Label por encima o debajo del marker según dónde haya lugar.
-  const label = (i: number, r: number, anchorUp: boolean) => ({
-    lx: Math.min(Math.max(x(i), 26), W - 26),
-    ly: anchorUp ? Math.max(y(r) - 8, 10) : Math.min(y(r) + 16, H - 4),
-  });
-  const maxLabel = label(iMax, max, true);
-  const minLabel = label(iMin, min, false);
+  // Tooltip flotante por encima o debajo del marker según dónde haya lugar.
+  const tagY = (r: number, anchorUp: boolean) =>
+    anchorUp ? Math.max(y(r) - 22, 2) : Math.min(y(r) + 8, H - 18);
 
   return (
     <div className="rh-spark">
@@ -140,21 +152,47 @@ function Sparkline({ points }: { points: RankPoint[] }) {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+          <linearGradient id="rh-area-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--recon)" stopOpacity={0.28} />
+            <stop offset="100%" stopColor="var(--recon)" stopOpacity={0} />
+          </linearGradient>
         </defs>
+
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line
+            key={f}
+            x1={0}
+            y1={PAD + f * (H - 2 * PAD)}
+            x2={W}
+            y2={PAD + f * (H - 2 * PAD)}
+            className="rh-grid-line"
+          />
+        ))}
+
         <motion.path
-          d={d}
+          d={area}
+          fill="url(#rh-area-fill)"
+          stroke="none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+        <motion.path
+          d={line}
           fill="none"
-          stroke="var(--signal)"
-          strokeWidth={2}
+          stroke="var(--recon)"
+          strokeWidth={3}
           strokeLinejoin="round"
           strokeLinecap="round"
+          filter="url(#rh-glow)"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         />
+
         {[
-          { i: iMax, r: max, cls: "max", ...maxLabel },
-          { i: iMin, r: min, cls: "min", ...minLabel },
+          { i: iMax, r: max, cls: "max", tagY: tagY(max, true) },
+          { i: iMin, r: min, cls: "min", tagY: tagY(min, false) },
         ].map((m) => (
           <g key={m.cls}>
             <motion.circle
@@ -167,30 +205,57 @@ function Sparkline({ points }: { points: RankPoint[] }) {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.3 }}
             />
-            <motion.text
-              x={m.lx}
-              y={m.ly}
-              textAnchor="middle"
-              className={`rh-label mono ${m.cls}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.9, duration: 0.3 }}
-            >
-              {m.r.toLocaleString("es")}
-            </motion.text>
+            <ChartTag
+              cx={Math.min(Math.max(x(m.i), 24), W - 24)}
+              y={m.tagY}
+              text={m.r.toLocaleString("es")}
+              tone={m.cls as "max" | "min"}
+            />
           </g>
         ))}
       </svg>
-      <div className="rh-minmax">
-        <span className="rh-mm">
-          <span className="label">Mín</span>{" "}
-          <RankBadge rank={minPt.rank} rankType={minPt.rank_type} />
-        </span>
-        <span className="rh-mm">
-          <span className="label">Máx</span>{" "}
-          <RankBadge rank={maxPt.rank} rankType={maxPt.rank_type} />
-        </span>
+      <div className="rh-stats-row">
+        <div className="rh-stat">
+          <span className="rh-stat-label">Mín</span>
+          <b className="rh-stat-value mono min">{minPt.rank!.toLocaleString("es")}</b>
+        </div>
+        <div className="rh-stat">
+          <span className="rh-stat-label">Máx</span>
+          <b className="rh-stat-value mono max">{maxPt.rank!.toLocaleString("es")}</b>
+        </div>
+        <div className="rh-stat">
+          <span className="rh-stat-label">Elo gain</span>
+          <b className="rh-stat-value mono gain">
+            <TrendingUp size={13} /> +{eloGain.toLocaleString("es")}
+          </b>
+        </div>
       </div>
     </div>
+  );
+}
+
+function ChartTag({
+  cx,
+  y,
+  text,
+  tone,
+}: {
+  cx: number;
+  y: number;
+  text: string;
+  tone: "max" | "min";
+}) {
+  const w = text.length * 6.2 + 14;
+  return (
+    <motion.g
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.9, duration: 0.3 }}
+    >
+      <rect x={cx - w / 2} y={y} width={w} height={16} rx={4} className={`rh-tag-bg ${tone}`} />
+      <text x={cx} y={y + 11} textAnchor="middle" className={`rh-tag-text mono ${tone}`}>
+        {text}
+      </text>
+    </motion.g>
   );
 }
