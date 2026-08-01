@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { SectionLabel } from "../components/SectionLabel";
 import { Topbar } from "../components/Topbar";
 import { cardRise, staggerList } from "../components/motion/presets";
+import { SmoothScroll } from "../components/motion/SmoothScroll";
 
 type Side = "T" | "CT";
 type Category = "smoke" | "flash" | "molotov" | "he";
@@ -271,6 +272,16 @@ const LINEUPS: Record<string, LineupItem[]> = {
   ],
 };
 
+// Preferencia de bajo consumo (pensada para RAM limitada): apaga los videos
+// de fondo de las tarjetas de mapa. Se guarda en localStorage porque es una
+// preferencia de la máquina/navegador, no de la cuenta.
+const BG_ANIMATIONS_KEY = "cstats:lineups-bg-animations";
+
+function loadBgAnimationsPref(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.localStorage.getItem(BG_ANIMATIONS_KEY) !== "off";
+}
+
 function itemsFor(mapKey: string, category: Category | "all", side: Side): LineupItem[] {
   return (LINEUPS[mapKey] ?? [])
     .filter((i) => category === "all" || i.category === category)
@@ -471,6 +482,11 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
   const [animatingCategory, setAnimatingCategory] = useState<Category | null>(null);
   const [animationTick, setAnimationTick] = useState(0);
   const [activeSide, setActiveSide] = useState<Side>("T");
+  const [bgAnimationsOn, setBgAnimationsOn] = useState(loadBgAnimationsPref);
+
+  useEffect(() => {
+    window.localStorage.setItem(BG_ANIMATIONS_KEY, bgAnimationsOn ? "on" : "off");
+  }, [bgAnimationsOn]);
 
   useEffect(() => {
     if (activeMap === displayedMap) {
@@ -526,203 +542,254 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
   } as const;
 
   return (
-    <div className={`lineup-page-shell lineup-side-${activeSide.toLowerCase()}`}>
-      <div className="lineup-page-backdrop lineup-page-backdrop-current" style={pageBackgroundStyle} />
-      <div className="lineup-page-backdrop lineup-page-backdrop-next" style={nextBackgroundStyle} />
-      <div className="lineup-page-content">
-        <Topbar onLogout={onLogout} />
+    <SmoothScroll>
+      <div className={`lineup-page-shell lineup-side-${activeSide.toLowerCase()}`}>
+        <div
+          className="lineup-page-backdrop lineup-page-backdrop-current"
+          style={pageBackgroundStyle}
+        />
+        <div
+          className="lineup-page-backdrop lineup-page-backdrop-next"
+          style={nextBackgroundStyle}
+        />
+        <div className="lineup-page-content">
+          <Topbar onLogout={onLogout} />
 
-        <motion.div className="map-pool-grid" variants={staggerList} initial="hidden" animate="show">
-          {MAP_POOL.map((m) => (
-            <motion.button
-              key={m.key}
-              type="button"
-              className={`map-pool-card lineup-map-card map-effect-${m.key}${
-              m.key === activeMap ? " active" : ""
-    }`}
-    variants={cardRise}
-    whileHover={{ y: -3, scale: 1.02 }}
-    whileTap={{ scale: 0.99 }}
-    transition={{ duration: 0.2, ease: "easeOut" }}
-    onClick={() => {
-      setActiveMap(m.key);
-    }}
-  >
-    {/* Efecto atmosférico específico del mapa */}
-    {m.key === "de_ancient" ? (
-      <MapArenaVideo className="map-card-fx" src="/media/ancient-arena.mp4" startAt={2} />
-    ) : m.key === "de_anubis" ? (
-      <MapArenaVideo className="map-card-fx" src="/media/anubis-arena.mp4" startAt={2} />
-    ) : m.key === "de_dust2" ? (
-      <MapArenaVideo className="map-card-fx" src="/media/dust2-arena.mp4" startAt={2} />
-    ) : m.key === "de_inferno" ? (
-      <MapArenaVideo className="map-card-fx" src="/media/inferno-arena.mp4" startAt={2} />
-    ) : m.key === "de_mirage" ? (
-      <MirageArenaVideo />
-    ) : m.key === "de_nuke" ? (
-      <NukeArenaVideo />
-    ) : (
-      <span className="map-card-fx" aria-hidden="true" />
-    )}
-
-    {/* Contenido de la tarjeta */}
-    <span className="map-card-content">
-      <img
-        className="map-pool-icon"
-        src={`/map-icons/${m.key}.png`}
-        alt={m.name}
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-        }}
-      />
-
-      <span className="map-pool-name">{m.name}</span>
-    </span>
-  </motion.button>
-))}
-        </motion.div>
-
-        <div className="section-head">
-          <SectionLabel>{mapName}</SectionLabel>
-          <span className="rule" />
-        </div>
-
-        <div className="lineup-side-toggle-wrap">
-          <div className="lineup-side-slide-slot lineup-side-slide-slot-t">
-            <AnimatePresence>
-              {activeSide === "T" && (
-                <motion.img
-                  key="t"
-                  className="lineup-side-slide-img lineup-side-slide-img-t"
-                  src="/fondo-lineups/c4-tt-v5.png"
-                  alt=""
-                  aria-hidden="true"
-                  initial={{ x: -140, opacity: 0, rotate: -10 }}
-                  animate={{ x: 0, opacity: 1, rotate: 0 }}
-                  exit={{ x: -140, opacity: 0, rotate: -10 }}
-                  transition={{ duration: 0.45, ease: "easeOut" }}
-                />
-              )}
-            </AnimatePresence>
-          </div>
-          <div className="lineup-side-slide-slot lineup-side-slide-slot-ct">
-            <AnimatePresence>
-              {activeSide === "CT" && (
-                <motion.img
-                  key="ct"
-                  className="lineup-side-slide-img lineup-side-slide-img-ct"
-                  src="/fondo-lineups/defuse-ct-v2.png"
-                  alt=""
-                  aria-hidden="true"
-                  initial={{ x: 140, opacity: 0, rotate: 10 }}
-                  animate={{ x: 0, opacity: 1, rotate: 0 }}
-                  exit={{ x: 140, opacity: 0, rotate: 10 }}
-                  transition={{ duration: 0.45, ease: "easeOut" }}
-                />
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="lineup-side-toggle">
-            <button
-              type="button"
-              className={`lineup-side-btn${activeSide === "T" ? " active-t" : ""}`}
-              onClick={() => setActiveSide("T")}
-              aria-label="Granadas TT"
-              aria-pressed={activeSide === "T"}
-            >
-              <img className="lineup-side-btn-logo" src="/fondo-lineups/logo-tt.jpg" alt="Logo TT" />
-            </button>
-            <button
-              type="button"
-              className={`lineup-side-btn${activeSide === "CT" ? " active-ct" : ""}`}
-              onClick={() => setActiveSide("CT")}
-              aria-label="Granadas CT"
-              aria-pressed={activeSide === "CT"}
-            >
-              <img className="lineup-side-btn-logo" src="/fondo-lineups/logo-ct.jpg" alt="Logo CT" />
-            </button>
-          </div>
-        </div>
-
-        <div className="lineup-filters lineup-filters-category">
-          <button
-            type="button"
-            className={`lineup-filter${activeCategory === "all" ? " active" : ""}`}
-            onClick={() => setActiveCategory("all")}
-          >
-            Todas ({total})
-          </button>
-          {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => {
-            const count = (LINEUPS[activeMap] ?? []).filter((i) => i.category === c).length;
-            return (
-              <button
-                key={c}
-                type="button"
-                className={`lineup-filter lineup-filter-utility-${c}${activeCategory === c ? " active" : ""}${animatingCategory === c ? ` lineup-filter-animate-${c}` : ""}`}
-                onClick={() => {
-                  setActiveCategory(c);
-                  setAnimatingCategory(c);
-                  setAnimationTick((value) => value + 1);
-                }}
-              >
-                <UtilityButtonEffect category={c} />
-                <span className="lineup-filter-label">
-                  {CATEGORY_LABEL[c]} ({count})
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {items.length === 0 ? (
-          <div className="lineup-empty">
-            <span className="lineup-empty-title">
-              Todavía no hay line ups guardados para {mapName}.
-            </span>
-            <span className="lineup-empty-sub">
-              Sumá tus grabaciones en <code>frontend/public/lineups/{activeMap}/</code> y agregalas a
-              la lista de este mapa en <code>LineUps.tsx</code>.
-            </span>
-          </div>
-        ) : (
           <motion.div
-            className="lineup-grid"
+            className="map-pool-grid"
             variants={staggerList}
             initial="hidden"
             animate="show"
-            key={`${activeMap}:${activeCategory}:${activeSide}`}
           >
-            {items.map((item) => (
-              <motion.div className="lineup-card" variants={cardRise} key={item.id}>
-                <video
-                  className="lineup-video"
-                  src={item.video}
-                  controls
-                  controlsList="nodownload noremoteplayback"
-                  disablePictureInPicture
-                  preload="metadata"
-                  onContextMenu={(e) => e.preventDefault()}
-                />
-                <div className="lineup-card-body">
-                  <div className="lineup-card-head">
-                    <span className={`side-tag ${item.side === "T" ? "t" : "ct"}`}>{item.side}</span>
-                    <span className={`lineup-tag ${CATEGORY_CLASS[item.category]}`}>
-                      {CATEGORY_LABEL[item.category]}
-                    </span>
-                  </div>
-                  <div className="lineup-card-title">{item.title}</div>
-                  <div className="lineup-card-route">
-                    {item.from && <>{item.from} </>}
-                    <span className="lineup-card-arrow">→</span> {item.to}
-                  </div>
-                  {item.notes && <div className="lineup-card-notes">{item.notes}</div>}
-                </div>
-              </motion.div>
+            {MAP_POOL.map((m) => (
+              <motion.button
+                key={m.key}
+                type="button"
+                className={`map-pool-card lineup-map-card map-effect-${m.key}${
+                  m.key === activeMap ? " active" : ""
+                }`}
+                variants={cardRise}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.99 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                onClick={() => {
+                  setActiveMap(m.key);
+                }}
+              >
+                {/* Efecto atmosférico específico del mapa -- sin renderizar el
+                    <video> cuando bgAnimationsOn está apagado, así el navegador
+                    no llega ni a decodificar el clip (no alcanza con pausarlo). */}
+                {!bgAnimationsOn ? (
+                  <span className="map-card-fx" aria-hidden="true" />
+                ) : m.key === "de_ancient" ? (
+                  <MapArenaVideo
+                    className="map-card-fx"
+                    src="/media/ancient-arena.mp4"
+                    startAt={2}
+                  />
+                ) : m.key === "de_anubis" ? (
+                  <MapArenaVideo
+                    className="map-card-fx"
+                    src="/media/anubis-arena.mp4"
+                    startAt={2}
+                  />
+                ) : m.key === "de_dust2" ? (
+                  <MapArenaVideo className="map-card-fx" src="/media/dust2-arena.mp4" startAt={2} />
+                ) : m.key === "de_inferno" ? (
+                  <MapArenaVideo
+                    className="map-card-fx"
+                    src="/media/inferno-arena.mp4"
+                    startAt={2}
+                  />
+                ) : m.key === "de_mirage" ? (
+                  <MirageArenaVideo />
+                ) : m.key === "de_nuke" ? (
+                  <NukeArenaVideo />
+                ) : (
+                  <span className="map-card-fx" aria-hidden="true" />
+                )}
+
+                {/* Contenido de la tarjeta */}
+                <span className="map-card-content">
+                  <img
+                    className="map-pool-icon"
+                    src={`/map-icons/${m.key}.png`}
+                    alt={m.name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                    }}
+                  />
+
+                  <span className="map-pool-name">{m.name}</span>
+                </span>
+              </motion.button>
             ))}
           </motion.div>
-        )}
+
+          <div className="lineup-perf-switch-row">
+            <span className="lineup-perf-switch-label">Animaciones</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={bgAnimationsOn}
+              className={`lineup-perf-switch${bgAnimationsOn ? " on" : ""}`}
+              onClick={() => setBgAnimationsOn((v) => !v)}
+              title="Apagá los videos de fondo de los mapas si tu PC tiene poca RAM"
+            />
+          </div>
+
+          <div className="section-head">
+            <SectionLabel>{mapName}</SectionLabel>
+            <span className="rule" />
+          </div>
+
+          <div className="lineup-side-toggle-wrap">
+            <div className="lineup-side-slide-slot lineup-side-slide-slot-t">
+              <AnimatePresence>
+                {activeSide === "T" && (
+                  <motion.img
+                    key="t"
+                    className="lineup-side-slide-img lineup-side-slide-img-t"
+                    src="/fondo-lineups/c4-tt-v5.png"
+                    alt=""
+                    aria-hidden="true"
+                    initial={{ x: -140, opacity: 0, rotate: -10 }}
+                    animate={{ x: 0, opacity: 1, rotate: 0 }}
+                    exit={{ x: -140, opacity: 0, rotate: -10 }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="lineup-side-slide-slot lineup-side-slide-slot-ct">
+              <AnimatePresence>
+                {activeSide === "CT" && (
+                  <motion.img
+                    key="ct"
+                    className="lineup-side-slide-img lineup-side-slide-img-ct"
+                    src="/fondo-lineups/defuse-ct-v2.png"
+                    alt=""
+                    aria-hidden="true"
+                    initial={{ x: 140, opacity: 0, rotate: 10 }}
+                    animate={{ x: 0, opacity: 1, rotate: 0 }}
+                    exit={{ x: 140, opacity: 0, rotate: 10 }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="lineup-side-toggle">
+              <button
+                type="button"
+                className={`lineup-side-btn${activeSide === "T" ? " active-t" : ""}`}
+                onClick={() => setActiveSide("T")}
+                aria-label="Granadas TT"
+                aria-pressed={activeSide === "T"}
+              >
+                <img
+                  className="lineup-side-btn-logo"
+                  src="/fondo-lineups/logo-tt.jpg"
+                  alt="Logo TT"
+                />
+              </button>
+              <button
+                type="button"
+                className={`lineup-side-btn${activeSide === "CT" ? " active-ct" : ""}`}
+                onClick={() => setActiveSide("CT")}
+                aria-label="Granadas CT"
+                aria-pressed={activeSide === "CT"}
+              >
+                <img
+                  className="lineup-side-btn-logo"
+                  src="/fondo-lineups/logo-ct.jpg"
+                  alt="Logo CT"
+                />
+              </button>
+            </div>
+          </div>
+
+          <div className="lineup-filters lineup-filters-category">
+            <button
+              type="button"
+              className={`lineup-filter${activeCategory === "all" ? " active" : ""}`}
+              onClick={() => setActiveCategory("all")}
+            >
+              Todas ({total})
+            </button>
+            {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => {
+              const count = (LINEUPS[activeMap] ?? []).filter((i) => i.category === c).length;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  className={`lineup-filter lineup-filter-utility-${c}${activeCategory === c ? " active" : ""}${animatingCategory === c ? ` lineup-filter-animate-${c}` : ""}`}
+                  onClick={() => {
+                    setActiveCategory(c);
+                    setAnimatingCategory(c);
+                    setAnimationTick((value) => value + 1);
+                  }}
+                >
+                  <UtilityButtonEffect category={c} />
+                  <span className="lineup-filter-label">
+                    {CATEGORY_LABEL[c]} ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {items.length === 0 ? (
+            <div className="lineup-empty">
+              <span className="lineup-empty-title">
+                Todavía no hay line ups guardados para {mapName}.
+              </span>
+              <span className="lineup-empty-sub">
+                Sumá tus grabaciones en <code>frontend/public/lineups/{activeMap}/</code> y
+                agregalas a la lista de este mapa en <code>LineUps.tsx</code>.
+              </span>
+            </div>
+          ) : (
+            <motion.div
+              className="lineup-grid"
+              variants={staggerList}
+              initial="hidden"
+              animate="show"
+              key={`${activeMap}:${activeCategory}:${activeSide}`}
+            >
+              {items.map((item) => (
+                <motion.div className="lineup-card" variants={cardRise} key={item.id}>
+                  <video
+                    className="lineup-video"
+                    src={item.video}
+                    controls
+                    controlsList="nodownload noremoteplayback"
+                    disablePictureInPicture
+                    preload="metadata"
+                    onContextMenu={(e) => e.preventDefault()}
+                  />
+                  <div className="lineup-card-body">
+                    <div className="lineup-card-head">
+                      <span className={`side-tag ${item.side === "T" ? "t" : "ct"}`}>
+                        {item.side}
+                      </span>
+                      <span className={`lineup-tag ${CATEGORY_CLASS[item.category]}`}>
+                        {CATEGORY_LABEL[item.category]}
+                      </span>
+                    </div>
+                    <div className="lineup-card-title">{item.title}</div>
+                    <div className="lineup-card-route">
+                      {item.from && <>{item.from} </>}
+                      <span className="lineup-card-arrow">→</span> {item.to}
+                    </div>
+                    {item.notes && <div className="lineup-card-notes">{item.notes}</div>}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </div>
       </div>
-    </div>
+    </SmoothScroll>
   );
 }

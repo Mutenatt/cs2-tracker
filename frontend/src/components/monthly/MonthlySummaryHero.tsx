@@ -44,7 +44,6 @@ export function MonthlySummaryHero() {
 
   return (
     <Card className="monthly-hero">
-      <div className="monthly-hero-diag" aria-hidden="true" />
       <div className="monthly-hero-head">
         <div className="monthly-hero-headline">
           <h2 className="monthly-hero-title">Tu rendimiento este mes</h2>

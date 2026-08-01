@@ -4,6 +4,7 @@ import { getCs2News, getLatamStreams, getTeamRanking } from "../api";
 import { HeroStreamCarousel } from "../components/HeroStreamCarousel";
 import { SectionLabel } from "../components/SectionLabel";
 import { cardRise, staggerList } from "../components/motion/presets";
+import { SmoothScroll } from "../components/motion/SmoothScroll";
 import { MonthlySummaryHero } from "../components/monthly/MonthlySummaryHero";
 import type { NewsItemDto, StreamsResponse, TeamRankingResponse } from "../types";
 
@@ -93,7 +94,7 @@ export function HomeView() {
   const bentoSecondary = news?.slice(1, 3) ?? [];
 
   return (
-    <>
+    <SmoothScroll>
       <MonthlySummaryHero />
 
       <div className="section-head">
@@ -230,6 +231,6 @@ export function HomeView() {
           ))}
         </motion.div>
       )}
-    </>
+    </SmoothScroll>
   );
 }

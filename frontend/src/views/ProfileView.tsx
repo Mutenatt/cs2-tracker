@@ -20,6 +20,7 @@ import { TopWeaponsPanel } from "../components/TopWeaponsPanel";
 import { useUser } from "../context/UserContext";
 import { useSteamBackground } from "../hooks/useSteamBackground";
 import { cardRise, staggerList } from "../components/motion/presets";
+import { SmoothScroll } from "../components/motion/SmoothScroll";
 import type { ProfileResponse } from "../types";
 
 export function ProfileView() {
@@ -85,7 +86,7 @@ export function ProfileView() {
   const topWeapon = top_weapons[0];
 
   return (
-    <>
+    <SmoothScroll>
       <div className={`profile-hero ${currentRank !== null ? tierClass(currentRank) : ""}`}>
         <div className="profile-hero-avatar-col">
           {data.display_name && (
@@ -243,6 +244,6 @@ export function ProfileView() {
           {user.steamid === steamid && steamid && <ClipsPanel steamid={steamid} />}
         </div>
       </div>
-    </>
+    </SmoothScroll>
   );
 }

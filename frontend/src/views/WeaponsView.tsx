@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getWeaponsDetail } from "../api";
 import { LoadoutList } from "../components/weapons/LoadoutList";
 import { SectionLabel } from "../components/SectionLabel";
+import { SmoothScroll } from "../components/motion/SmoothScroll";
 import { WeaponHeroGrid } from "../components/weapons/WeaponHeroGrid";
 import { WeaponTable } from "../components/weapons/WeaponTable";
 import type { WeaponsPageResponse } from "../types";
@@ -31,7 +32,7 @@ export function WeaponsView() {
   if (!data) return <p className="muted">Cargando…</p>;
 
   return (
-    <>
+    <SmoothScroll>
       <div className="section-head">
         <SectionLabel>Perfil · Armas</SectionLabel>
         <span className="rule" />
@@ -50,6 +51,6 @@ export function WeaponsView() {
 
       <WeaponHeroGrid weapons={data.weapons} />
       <WeaponTable weapons={data.weapons} />
-    </>
+    </SmoothScroll>
   );
 }

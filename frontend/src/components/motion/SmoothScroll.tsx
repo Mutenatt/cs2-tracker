@@ -9,10 +9,12 @@ const LENIS_OPTIONS = {
   touchMultiplier: 1.2,
 };
 
-// Scroll con inercia (rueda del ratón) solo para las vistas públicas tipo
-// landing -- se monta/desmonta junto con la vista que lo envuelve, así que
-// no toca el scroll nativo del dashboard ni de las rutas con Canvas 3D a
-// pantalla completa (LineUps, PrefireView, RegisterView).
+// Scroll con inercia (rueda del ratón) para las vistas de contenido largo
+// (LandingView, HomeView, ProfileView, MatchDetailView, WeaponsView,
+// SettingsView, LineUps) -- se monta/desmonta junto con la vista que lo
+// envuelve, así que no toca el scroll nativo de PrefireView (landing "en
+// desarrollo" liviana) ni de los formularios cortos del flujo pre-login
+// (Login, Register, ForgotPassword, ResetPassword).
 export function SmoothScroll({ children }: { children: ReactNode }) {
   return (
     <ReactLenis root options={LENIS_OPTIONS}>
