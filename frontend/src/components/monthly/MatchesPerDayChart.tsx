@@ -8,7 +8,10 @@ export function MatchesPerDayChart({ data }: { data: MatchesPerDayEntry[] }) {
         const pct = d.count === 0 ? 6 : Math.round((d.count / max) * 100);
         const intensity = d.count === 0 ? 0 : 35 + Math.round((d.count / max) * 65);
         return (
-          <div className="monthly-day-col" key={d.day}>
+          <div className="monthly-day-col" key={d.day} tabIndex={0}>
+            <span className="monthly-day-tooltip" role="tooltip">
+              {d.count} {d.count === 1 ? "partida" : "partidas"}
+            </span>
             <div
               className={`monthly-day-bar${d.count === 0 ? " zero" : ""}`}
               style={

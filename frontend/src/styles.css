@@ -133,16 +133,6 @@ h3 {
   color: var(--muted);
 }
 
-.grid2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-@media (max-width: 760px) {
-  .grid2 {
-    grid-template-columns: 1fr;
-  }
-}
 .muted {
   color: var(--muted);
   font-size: 12px;
@@ -269,6 +259,80 @@ body {
   position: relative;
   z-index: 1;
 }
+
+/* ---------- app: atmósfera de fondo global (glow + dot grid, estilo CS2/FACEIT) ----------
+   Vive por fuera del árbol de rutas (ver main.tsx), envolviendo <App/> entero:
+   así el fondo no se remonta ni "corta" entre vistas durante la navegación.
+   Las luces usan position:fixed para acompañar el scroll sin despegarse. */
+.app-atmosphere {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  background: #030712;
+  color: #f1f5f9;
+}
+.app-atmosphere-glow {
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 9999px;
+}
+.app-atmosphere-glow-cyan {
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1200px;
+  height: 600px;
+  max-width: 200%;
+  background: rgba(6, 182, 212, 0.1);
+  filter: blur(150px);
+}
+.app-atmosphere-glow-blue {
+  bottom: -160px;
+  right: -10%;
+  width: 900px;
+  height: 500px;
+  max-width: 160%;
+  background: rgba(37, 99, 235, 0.1);
+  filter: blur(160px);
+}
+.app-atmosphere-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.6;
+  background-image: radial-gradient(#1e293b 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+  mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+}
+.app-atmosphere-content {
+  position: relative;
+  z-index: 10;
+}
+/* En tema claro el glow/dot-grid cinemático no encaja -- se apagan y el
+   fondo vuelve al token normal de la app. */
+@media (prefers-color-scheme: light) {
+  .app-atmosphere {
+    background: var(--ink);
+    color: var(--text);
+  }
+  .app-atmosphere-glow,
+  .app-atmosphere-grid {
+    display: none;
+  }
+}
+:root[data-theme="light"] .app-atmosphere {
+  background: var(--ink);
+  color: var(--text);
+}
+:root[data-theme="light"] .app-atmosphere-glow,
+:root[data-theme="light"] .app-atmosphere-grid {
+  display: none;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -474,62 +538,6 @@ html {
   top: 0;
   margin: 8px 0;
 }
-/* Barras de proporción de rondas ganadas por mitad (reemplaza el texto). */
-.halves {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 320px;
-}
-.halves-head {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  color: var(--text-faint);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-.half-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.half-tag {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  color: var(--text-faint);
-  width: 16px;
-  flex: none;
-  letter-spacing: 0.05em;
-}
-.half-bar {
-  flex: 1;
-  display: flex;
-  height: 16px;
-  border-radius: 3px;
-  overflow: hidden;
-  background: var(--line);
-}
-.half-bar .seg {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 15px;
-}
-.half-bar .seg.ct {
-  background: color-mix(in srgb, var(--recon) 60%, var(--panel));
-}
-.half-bar .seg.t {
-  background: color-mix(in srgb, var(--signal) 60%, var(--panel));
-}
-.half-bar .seg b {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #0a0e15;
-}
-
 .mc-rating {
   font-family: "IBM Plex Mono", monospace;
   font-size: 34px;
@@ -800,42 +808,6 @@ html {
 .legend-card .label {
   margin-bottom: 10px;
 }
-.legend-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-  color: var(--text-dim);
-  margin-top: 7px;
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 3px 0;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  opacity: 1;
-  transition: opacity 0.15s ease;
-}
-.legend-toggle:first-of-type {
-  margin-top: 0;
-}
-.legend-toggle.off {
-  opacity: 0.35;
-}
-.legend-toggle .swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex: none;
-}
-.legend-toggle .ck {
-  margin-left: auto;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
-  color: var(--text-faint);
-}
-
 .illus-tag {
   display: inline-block;
   font-family: "IBM Plex Mono", monospace;
@@ -967,13 +939,27 @@ footer {
    es opaco y cubre su propia columna por completo: no se toca su CSS, su
    z-index ni la lógica de MapWallpaperCarousel. Sin tier (calibrando /
    sin partidas) el fondo sigue siendo el panel plano de siempre. */
-.profile-hero.t1 { --tier-accent: #b0c3d9; }
-.profile-hero.t2 { --tier-accent: #5e98d9; }
-.profile-hero.t3 { --tier-accent: #6a8bff; }
-.profile-hero.t4 { --tier-accent: #a86aff; }
-.profile-hero.t5 { --tier-accent: #d32ce6; }
-.profile-hero.t6 { --tier-accent: #eb4b4b; }
-.profile-hero.t7 { --tier-accent: #e4ae39; }
+.profile-hero.t1 {
+  --tier-accent: #b0c3d9;
+}
+.profile-hero.t2 {
+  --tier-accent: #5e98d9;
+}
+.profile-hero.t3 {
+  --tier-accent: #6a8bff;
+}
+.profile-hero.t4 {
+  --tier-accent: #a86aff;
+}
+.profile-hero.t5 {
+  --tier-accent: #d32ce6;
+}
+.profile-hero.t6 {
+  --tier-accent: #eb4b4b;
+}
+.profile-hero.t7 {
+  --tier-accent: #e4ae39;
+}
 
 .profile-hero::before {
   content: "";
@@ -1059,15 +1045,6 @@ footer {
 .profile-hero .pname {
   font-size: 26px;
 }
-.profile-hero .prank {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  color: var(--text-faint);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 2px 7px;
-  letter-spacing: 0.05em;
-}
 /* Fila que agrupa el rectángulo del rating con su label "CS RATING", que
    ahora queda afuera de la caja. Position:absolute (no en flujo normal) --
    así se puede mover sin arrastrar a ProfileTagChips/.phs-inline hacia
@@ -1108,7 +1085,14 @@ footer {
   gap: 8px;
   height: 34px;
   padding: 0 14px;
-  background: color-mix(in srgb, var(--tier-accent, transparent) 16%, var(--panel));
+  /* Mismo degradé (90deg, tier-accent 32% -> panel) que .csgo-equiv-chip:
+     antes este quedaba casi transparente (16% de mezcla) mientras el chip de
+     equivalencia de al lado sí se veía sólido -- se notaba la diferencia. */
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tier-accent, transparent) 32%, var(--panel)),
+    var(--panel)
+  );
   border: 1px solid transparent;
   border-radius: 6px;
   box-shadow:
@@ -1387,7 +1371,9 @@ footer {
   object-fit: contain;
   opacity: 0.6;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 .map-stats-popover:hover .map-stats-popover-icon,
 .map-stats-popover:focus-visible .map-stats-popover-icon {
@@ -1411,7 +1397,10 @@ footer {
   opacity: 0;
   visibility: hidden;
   transform: translateY(4px);
-  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
   pointer-events: none;
 }
 .map-stats-popover-bubble b {
@@ -1545,6 +1534,61 @@ footer {
   font-size: 24px;
   font-weight: 700;
 }
+/* ---------- historial de partidas (barra de filtros + tarjetas) ---------- */
+.mh-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.mh-filterbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+.mh-tabs {
+  display: flex;
+  gap: 6px;
+}
+.mh-tab {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.mh-tab:hover {
+  color: var(--text);
+}
+.mh-tab.active {
+  background: color-mix(in srgb, var(--recon) 12%, transparent);
+  border-color: color-mix(in srgb, var(--recon) 55%, transparent);
+  color: var(--recon);
+}
+.mh-secondary-select {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  cursor: pointer;
+}
+.mh-secondary-select:hover {
+  color: var(--text);
+  border-color: var(--recon);
+}
 .mh-list {
   display: flex;
   flex-direction: column;
@@ -1552,31 +1596,39 @@ footer {
 }
 .mh-card {
   display: grid;
-  grid-template-columns: 4px 46px 1fr auto;
+  grid-template-columns: 3px 42px 1fr auto 16px;
   align-items: center;
-  gap: 12px;
-  background: var(--panel);
+  gap: 14px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 14px 10px 0;
+  border-radius: 12px;
+  padding: 12px 14px 12px 0;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
   width: 100%;
   color: inherit;
   text-decoration: none;
+  transition: border-color 0.2s ease;
 }
 .mh-card:hover {
   border-color: var(--text-faint);
 }
-.mh-card .stripe {
+.mh-card:hover .mh-chevron {
+  transform: translateX(2px);
+  color: var(--text-dim);
+}
+.mh-card .mh-stripe {
   align-self: stretch;
   border-radius: 2px;
+  background: var(--line);
 }
-.mh-card .stripe.w {
+.mh-card .mh-stripe.w {
   background: var(--go);
 }
-.mh-card .stripe.l {
+.mh-card .mh-stripe.l {
   background: var(--alert);
 }
 .mh-card .mh-emblem {
@@ -1595,53 +1647,141 @@ footer {
   object-fit: cover;
   opacity: 0.85;
 }
-.mh-card .mh-mid .mh-top {
+.mh-card .mh-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.mh-card .mh-heading {
   display: flex;
   align-items: baseline;
   gap: 8px;
 }
 .mh-card .mh-map {
-  font-family: "Oswald";
-  text-transform: uppercase;
-  font-weight: 600;
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  text-transform: capitalize;
   font-size: 14px;
 }
-.mh-card .mh-result {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.mh-card .mh-result.w {
-  color: var(--go);
-}
-.mh-card .mh-result.l {
-  color: var(--alert);
-}
-.mh-card .mh-sub {
-  margin-top: 3px;
+.mh-card .mh-date {
   font-family: "IBM Plex Mono", monospace;
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.mh-card .mh-score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mh-card .mh-score {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.mh-card .mh-score.w {
+  color: var(--go);
+}
+.mh-card .mh-score.l {
+  color: var(--alert);
+}
+.mh-card .mh-side-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.mh-card .mh-side-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  flex: none;
+  filter: brightness(1.35) saturate(1.2);
+  transition:
+    filter 0.15s ease,
+    transform 0.15s ease;
+}
+.mh-card .mh-side-wrap:hover .mh-side-logo {
+  filter: brightness(1.6) saturate(1.3);
+  transform: scale(1.1);
+}
+.mh-card .mh-side-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translate(-50%, 4px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  white-space: nowrap;
+  color: var(--text);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  pointer-events: none;
+  z-index: 2;
+}
+.mh-card .mh-side-wrap:hover .mh-side-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
 .mh-card .mh-stats {
   display: flex;
-  gap: 14px;
+  gap: 16px;
+}
+.mh-card .mh-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 40px;
+}
+.mh-card .mh-stat-label {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px;
-  color: var(--text-dim);
-  text-align: right;
-}
-.mh-card .mh-stats b {
-  color: var(--text);
-  display: block;
-  font-size: 12.5px;
-}
-.mh-card .mh-stats span {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-faint);
+}
+.mh-card .mh-stat-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.mh-card .mh-stat-value.hot {
+  color: var(--recon);
+}
+.mh-card .mh-kd-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.mh-card .mh-kd-dot.up {
+  background: var(--go);
+}
+.mh-card .mh-kd-dot.down {
+  background: var(--alert);
+}
+.mh-card .mh-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
 }
 .mh-note {
   margin-top: 10px;
@@ -1697,90 +1837,54 @@ a.panel-cta:hover {
   color: var(--recon);
 }
 
-/* ---------- filtro de tipo de partida (historial) ---------- */
-.mtf {
-  position: relative;
-  display: inline-block;
-}
-.mtf-trigger {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  color: var(--text-dim);
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  cursor: pointer;
-}
-.mtf-trigger:hover {
-  color: var(--text);
-  border-color: var(--recon);
-}
-.mtf-caret {
-  font-size: 9px;
-}
-.mtf-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 20;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 150px;
-}
-.mtf-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  color: var(--text-dim);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.mtf-option:hover {
-  color: var(--text);
-}
-
 /* Precisión */
 .accuracy-body {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   align-items: center;
   margin-bottom: 16px;
 }
 .accuracy-zones {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   flex: 1 1 0%;
 }
 .accuracy-zone {
   display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.accuracy-zone .az-top {
+  display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11.5px;
 }
 .accuracy-zone .az-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
   color: var(--panel-accent);
 }
-.accuracy-zone .az-values {
-  display: flex;
-  gap: 12px;
+.accuracy-zone .az-pct {
+  font-size: 15px;
+  font-weight: 700;
 }
 .accuracy-zone .az-hits {
-  width: 52px;
-  text-align: right;
-  display: inline-block;
-  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+.accuracy-zone .az-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-faint) 30%, transparent);
+  overflow: hidden;
+}
+.accuracy-zone .az-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
 }
 .accuracy-spark-label {
   font-family: "IBM Plex Mono", monospace;
@@ -2452,35 +2556,63 @@ a.panel-cta:hover {
 /* El paralelogramo en sí era gris fijo (rgba(10,14,21,.72)) sin relación
    con el rango -- ahora el fondo también se tiñe según el tier. */
 .rank-badge.t1 {
-  background: linear-gradient(90deg, color-mix(in srgb, #b0c3d9 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #b0c3d9 38%, rgba(10, 14, 21, 0.72)),
+    rgba(10, 14, 21, 0.72)
+  );
   border-color: color-mix(in srgb, #b0c3d9 45%, rgba(255, 255, 255, 0.09));
 }
 .rank-badge.t2 {
-  background: linear-gradient(90deg, color-mix(in srgb, #5e98d9 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #5e98d9 38%, rgba(10, 14, 21, 0.72)),
+    rgba(10, 14, 21, 0.72)
+  );
   border-color: color-mix(in srgb, #5e98d9 45%, rgba(255, 255, 255, 0.09));
 }
 .rank-badge.t3 {
-  background: linear-gradient(90deg, color-mix(in srgb, #6a8bff 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #6a8bff 38%, rgba(10, 14, 21, 0.72)),
+    rgba(10, 14, 21, 0.72)
+  );
   border-color: color-mix(in srgb, #6a8bff 45%, rgba(255, 255, 255, 0.09));
 }
 .rank-badge.t4 {
-  background: linear-gradient(90deg, color-mix(in srgb, #a86aff 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #a86aff 38%, rgba(10, 14, 21, 0.72)),
+    rgba(10, 14, 21, 0.72)
+  );
   border-color: color-mix(in srgb, #a86aff 45%, rgba(255, 255, 255, 0.09));
 }
 .rank-badge.t5 {
-  background: linear-gradient(90deg, color-mix(in srgb, #d32ce6 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #d32ce6 38%, rgba(10, 14, 21, 0.72)),
+    rgba(10, 14, 21, 0.72)
+  );
   border-color: color-mix(in srgb, #d32ce6 45%, rgba(255, 255, 255, 0.09));
 }
 .rank-badge.t6 {
-  background: linear-gradient(90deg, color-mix(in srgb, #eb4b4b 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #eb4b4b 38%, rgba(10, 14, 21, 0.72)),
+    rgba(10, 14, 21, 0.72)
+  );
   border-color: color-mix(in srgb, #eb4b4b 45%, rgba(255, 255, 255, 0.09));
 }
 .rank-badge.t7 {
-  background: linear-gradient(90deg, color-mix(in srgb, #e4ae39 38%, rgba(10, 14, 21, 0.72)), rgba(10, 14, 21, 0.72));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #e4ae39 38%, rgba(10, 14, 21, 0.72)),
+    rgba(10, 14, 21, 0.72)
+  );
   border-color: color-mix(in srgb, #e4ae39 45%, rgba(255, 255, 255, 0.09));
 }
 
-/* Rank Premier: tarjeta con sparkline */
+/* Rank Premier: tarjeta con area chart */
 .rh-card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -2488,16 +2620,46 @@ a.panel-cta:hover {
   padding: 14px;
   margin-bottom: 14px;
 }
+.rh-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
 .rh-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 10px;
+}
+.rh-winrate-badge {
+  background: color-mix(in srgb, var(--go) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--go) 40%, transparent);
+  color: var(--go);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.rh-elo-now {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
 }
 .rh-spark svg {
   width: 100%;
   display: block;
+}
+.rh-grid-line {
+  stroke: var(--line);
+  stroke-opacity: 0.6;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
 }
 .rh-node.max {
   fill: var(--go);
@@ -2505,24 +2667,59 @@ a.panel-cta:hover {
 .rh-node.min {
   fill: var(--alert);
 }
-.rh-label {
-  font-size: 10px;
-  fill: var(--text-dim);
+.rh-tag-bg {
+  fill: var(--panel);
+  stroke-width: 1;
 }
-.rh-label.max {
+.rh-tag-bg.max {
+  stroke: color-mix(in srgb, var(--go) 50%, transparent);
+}
+.rh-tag-bg.min {
+  stroke: color-mix(in srgb, var(--alert) 50%, transparent);
+}
+.rh-tag-text {
+  font-size: 9.5px;
+}
+.rh-tag-text.max {
   fill: var(--go);
 }
-.rh-label.min {
+.rh-tag-text.min {
   fill: var(--alert);
 }
-.rh-minmax {
+.rh-stats-row {
   display: flex;
   gap: 18px;
-  margin-top: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
 }
-.rh-mm {
-  display: inline-flex;
+.rh-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rh-stat-label {
+  font-size: 9.5px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rh-stat-value {
+  display: flex;
   align-items: center;
+  gap: 3px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.rh-stat-value.min {
+  color: var(--alert);
+}
+.rh-stat-value.max {
+  color: var(--go);
+}
+.rh-stat-value.gain {
+  color: var(--recon);
 }
 .rh-single {
   display: flex;
@@ -2542,24 +2739,31 @@ a.panel-cta:hover {
   border-radius: 3px;
   padding: 1px 4px;
 }
-.rh-chips {
+.rh-badges {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-top: 12px;
 }
-.rh-chip {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.rh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
   border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 3px 8px;
-  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--text-faint);
 }
-.rh-chip b {
+.rh-badge-icon-role {
+  color: var(--recon);
+}
+.rh-badge-value {
   color: var(--text);
+  font-weight: 700;
 }
 
 /* ---------- home: mapas activos ---------- */
@@ -2618,7 +2822,9 @@ a.panel-cta:hover {
   background-attachment: fixed;
   background-color: var(--ink);
   opacity: 1;
-  transition: opacity 320ms ease, filter 320ms ease;
+  transition:
+    opacity 320ms ease,
+    filter 320ms ease;
   will-change: opacity, filter;
   filter: saturate(0.95) contrast(1.05);
   pointer-events: none;
@@ -2636,6 +2842,56 @@ a.panel-cta:hover {
   margin: 0 auto;
   min-height: 100vh;
   padding: 0 20px 24px;
+}
+
+.lineup-perf-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 10px 0 0;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+.lineup-perf-switch-row:hover {
+  opacity: 1;
+}
+.lineup-perf-switch-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.lineup-perf-switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.lineup-perf-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+}
+.lineup-perf-switch.on {
+  background: var(--accent-cyan);
+}
+.lineup-perf-switch.on::after {
+  transform: translateX(12px);
 }
 
 .lineup-page-content .map-pool-grid {
@@ -2696,7 +2952,9 @@ button.map-pool-card.lineup-map-card {
 }
 .lineup-filter.active.lineup-filter-utility-molotov .lineup-filter-label {
   color: #fff8db;
-  text-shadow: 0 1px 2px #190b04, 0 0 5px rgba(42, 12, 2, 0.95);
+  text-shadow:
+    0 1px 2px #190b04,
+    0 0 5px rgba(42, 12, 2, 0.95);
 }
 .lineup-filter-effect {
   position: absolute;
@@ -2777,15 +3035,11 @@ button.map-pool-card.lineup-map-card {
 /* Contornos neón calcados a la silueta del PNG (drop-shadow sigue el
    canal alpha), a tono con el glow de cada botón de bando activo. */
 .lineup-side-slide-img-t {
-  filter:
-    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6))
-    drop-shadow(0 0 1px var(--signal))
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 1px var(--signal))
     drop-shadow(0 0 3px var(--signal));
 }
 .lineup-side-slide-img-ct {
-  filter:
-    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6))
-    drop-shadow(0 0 1px var(--recon))
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 1px var(--recon))
     drop-shadow(0 0 3px var(--recon));
 }
 .lineup-side-btn {
@@ -2810,6 +3064,7 @@ button.map-pool-card.lineup-map-card {
   object-fit: contain;
   border-radius: 50%;
   flex-shrink: 0;
+  transition: filter 0.2s ease;
 }
 .lineup-side-btn.active-t {
   border-color: var(--signal);
@@ -2818,6 +3073,12 @@ button.map-pool-card.lineup-map-card {
 .lineup-side-btn.active-ct {
   border-color: var(--recon);
   box-shadow: 0 0 12px 1px rgba(63, 214, 255, 0.55);
+}
+.lineup-side-btn.active-t .lineup-side-btn-logo {
+  filter: brightness(1.35) saturate(1.2) drop-shadow(0 0 6px rgba(255, 138, 61, 0.65));
+}
+.lineup-side-btn.active-ct .lineup-side-btn-logo {
+  filter: brightness(1.35) saturate(1.2) drop-shadow(0 0 6px rgba(63, 214, 255, 0.65));
 }
 
 .lineup-filters-category {
@@ -3194,55 +3455,187 @@ button.map-pool-card.lineup-map-card {
   font-size: 11.5px;
 }
 
-/* ---------- landing de armas (Loadouts + Weapons, estilo tracker.gg) ---------- */
-.loadout-table {
+/* ---------- landing de armas: loadouts (tarjetas por economía de ronda) ---------- */
+.loadout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   overflow-x: auto;
   margin-bottom: 8px;
 }
-.loadout-row {
-  display: grid;
-  grid-template-columns: 1.7fr repeat(8, 0.85fr);
+.loadout-card {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  min-width: 620px;
-  padding: 12px 10px;
-  border-bottom: 1px solid var(--line);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12.5px;
-  text-align: center;
+  gap: 20px;
+  min-width: 640px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  transition: border-color 0.2s ease;
 }
-.loadout-row:last-child {
-  border-bottom: none;
+.loadout-card:hover {
+  border-color: var(--text-faint);
 }
-.loadout-head {
-  color: var(--text-faint);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--line);
+.loadout-card.empty {
+  opacity: 0.6;
 }
-.loadout-name {
+.loadout-card-tier {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  text-align: left;
+  gap: 6px;
+  min-width: 150px;
+  flex: none;
 }
-.loadout-name-label {
+.loadout-badge {
   font-family: "Oswald", sans-serif;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--gold);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
 }
-.loadout-name-sub {
+.loadout-badge.tone-go {
+  color: var(--go);
+  border-color: color-mix(in srgb, var(--go) 55%, transparent);
+  background: color-mix(in srgb, var(--go) 12%, transparent);
+}
+.loadout-badge.tone-recon {
+  color: var(--recon);
+  border-color: color-mix(in srgb, var(--recon) 55%, transparent);
+  background: color-mix(in srgb, var(--recon) 12%, transparent);
+}
+.loadout-badge.tone-gold {
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+.loadout-badge.tone-alert {
+  color: var(--alert);
+  border-color: color-mix(in srgb, var(--alert) 55%, transparent);
+  background: color-mix(in srgb, var(--alert) 12%, transparent);
+}
+.loadout-badge-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.loadout-range {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 2;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
   font-size: 10.5px;
+  white-space: nowrap;
+  color: var(--text-faint);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  pointer-events: none;
+}
+.loadout-badge-wrap:hover .loadout-range {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.loadout-badge-wrap.tone-go .loadout-range {
+  color: var(--go);
+  border-color: color-mix(in srgb, var(--go) 55%, transparent);
+}
+.loadout-badge-wrap.tone-recon .loadout-range {
+  color: var(--recon);
+  border-color: color-mix(in srgb, var(--recon) 55%, transparent);
+}
+.loadout-badge-wrap.tone-gold .loadout-range {
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+.loadout-badge-wrap.tone-alert .loadout-range {
+  color: var(--alert);
+  border-color: color-mix(in srgb, var(--alert) 55%, transparent);
+}
+.loadout-metrics {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+.loadout-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.loadout-metric-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-faint);
 }
-.loadout-dd-pos {
+.loadout-metric-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.loadout-metric-value.hot {
   color: var(--go);
 }
-.loadout-dd-neg {
+.loadout-metric-value.cold {
   color: var(--alert);
+}
+.loadout-kd-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 90px;
+  flex: none;
+}
+.loadout-kd-numbers {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.loadout-kd-kills {
+  color: var(--go);
+}
+.loadout-kd-sep {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.loadout-kd-deaths {
+  color: var(--alert);
+}
+.loadout-kd-bar {
+  width: 90px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--alert) 35%, transparent);
+  overflow: hidden;
+}
+.loadout-kd-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--go);
+  border-radius: 999px;
 }
 
 .weapons-hero-grid {
@@ -3253,15 +3646,37 @@ button.map-pool-card.lineup-map-card {
 }
 .weapons-hero-card {
   position: relative;
-  background: var(--panel);
+  z-index: 0;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 18px;
+  border-radius: 12px;
+  padding: 20px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   text-align: center;
+  transition: border-color 0.2s ease;
+}
+.weapons-hero-card:hover {
+  border-color: var(--text-faint);
+}
+.weapons-hero-glow {
+  position: absolute;
+  z-index: -1;
+  top: 34px;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--recon) 28%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
 }
 .weapon-rank-badge {
   position: absolute;
@@ -3285,18 +3700,18 @@ button.map-pool-card.lineup-map-card {
 }
 .weapons-hero-name {
   font-family: "Oswald", sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 15px;
   text-transform: uppercase;
 }
 .weapons-hero-stats {
   display: flex;
-  gap: 22px;
+  gap: 16px;
 }
 .weapons-hero-stats b {
   display: block;
-  font-family: "IBM Plex Mono", monospace;
   font-size: 18px;
+  font-weight: 700;
 }
 .weapons-hero-stats span {
   font-size: 10.5px;
@@ -3305,9 +3720,48 @@ button.map-pool-card.lineup-map-card {
   letter-spacing: 0.05em;
 }
 
+/* ---------- barra de categorías de armas ---------- */
+.weapon-cat-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+.weapon-cat-pill {
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.weapon-cat-pill:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+.weapon-cat-pill.active {
+  background: color-mix(in srgb, var(--recon) 12%, transparent);
+  color: var(--recon);
+  border-color: color-mix(in srgb, var(--recon) 55%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--recon) 35%, transparent);
+}
+
 .weapons-table {
+  overflow: hidden;
   overflow-x: auto;
   margin-top: 4px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 .weapons-table-row {
   display: grid;
@@ -3315,13 +3769,20 @@ button.map-pool-card.lineup-map-card {
   align-items: center;
   gap: 6px;
   min-width: 640px;
-  padding: 10px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   text-align: center;
   font-size: 12.5px;
+  transition: background 0.15s ease;
 }
 .weapons-table-row:last-child {
   border-bottom: none;
+}
+.weapons-table-row:not(.weapons-table-head):nth-child(even) {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.weapons-table-row:not(.weapons-table-head):hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
 }
 .weapons-table-weapon {
   display: flex;
@@ -3329,17 +3790,37 @@ button.map-pool-card.lineup-map-card {
   gap: 10px;
   text-align: left;
 }
+.wr-name {
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.wr-category {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
 .weapons-table-head {
   padding-bottom: 6px;
+}
+.weapons-table-head span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
 }
 .weapons-table-sort {
   background: none;
   border: none;
   color: var(--text-faint);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   cursor: pointer;
   padding: 0;
 }
@@ -3351,6 +3832,33 @@ button.map-pool-card.lineup-map-card {
 }
 .weapons-table-sort-arrow {
   font-size: 9px;
+}
+.wt-value {
+  font-weight: 700;
+  color: var(--text);
+}
+.wt-hs-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.wt-hs-bar {
+  width: 100%;
+  max-width: 60px;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-faint) 40%, transparent);
+  overflow: hidden;
+}
+.wt-hs-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--text-faint);
+  border-radius: 999px;
+}
+.wt-hs-bar-fill.hot {
+  background: var(--recon);
 }
 
 @media (max-width: 760px) {
@@ -3848,29 +4356,52 @@ button.map-pool-card.lineup-map-card {
   color: var(--alert);
 }
 
-/* Onboarding (wizard post-login: encuesta + auto-fetch + bot de Steam) */
+/* Onboarding (wizard post-login: encuesta + auto-fetch + bot de Steam).
+   Consume la 3ra capa de tokens (--bg-surface/--accent-cyan/Chakra Petch),
+   la misma que Login/Home/Topbar -- ver comentario más abajo. Antes usaba
+   la capa legacy CS2OPS (--panel-2/--line/--signal) y quedaba inconsistente
+   con el resto del flujo de auth (Button/Logo/Card ya son de esta capa). */
 .onb-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  justify-content: center;
+  gap: 28px;
   padding: 32px 20px 60px;
 }
 .onb-topbar {
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
 }
 .onb-card {
   width: 100%;
-  max-width: 480px;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 24px;
+  max-width: 440px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 32px 30px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  font-family: var(--font-body);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.65);
+}
+.onb-card h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 23px;
+  color: var(--text-primary);
+}
+.onb-card a {
+  color: var(--accent-cyan);
+  font-weight: 600;
+  text-decoration: none;
+}
+.onb-card a:hover {
+  color: var(--accent-cyan-hover);
+  text-decoration: underline;
 }
 .onb-steps-nav {
   display: flex;
@@ -3878,47 +4409,357 @@ button.map-pool-card.lineup-map-card {
   list-style: none;
   margin: 0 0 6px;
   padding: 0;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 10.5px;
-  letter-spacing: 0.03em;
-  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
   flex-wrap: wrap;
 }
 .onb-steps-nav li.active {
-  color: var(--signal);
+  color: var(--accent-cyan);
 }
 .onb-sub {
   margin: 0;
-  font-size: 12.5px;
-  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
 }
 .onb-bot-benefit {
-  color: var(--text);
+  color: var(--text-primary);
 }
 .onb-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 .onb-field label {
-  font-size: 11.5px;
-  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 .onb-select {
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: var(--text);
-  font-size: 12.5px;
-  padding: 8px 10px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  padding: 10px 12px;
+  transition: border-color 0.15s ease;
 }
 .onb-select:focus-visible {
-  outline: 2px solid var(--signal);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-cyan) 25%, transparent);
 }
 .onb-actions {
   display: flex;
   margin-top: 4px;
+}
+.onb-actions .cs-btn {
+  width: 100%;
+}
+
+/* Registro: tarjeta HUD táctico (reemplaza .onb-card en RegisterView).
+   Mismos tokens --accent-cyan/--bg-surface que el resto de la 3ra capa,
+   nada nuevo -- solo glassmorphism + adornos de esquina. */
+.hud-card-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+}
+.hud-glow {
+  position: absolute;
+  inset: -50px;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at 50% 35%,
+    color-mix(in srgb, var(--accent-cyan) 30%, transparent),
+    transparent 70%
+  );
+  filter: blur(12px);
+  pointer-events: none;
+}
+.hud-card {
+  position: relative;
+  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--accent-cyan) 30%, transparent);
+  border-radius: 18px;
+  padding: 30px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--font-body);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.65);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.hud-card:hover {
+  border-color: color-mix(in srgb, var(--accent-cyan) 55%, transparent);
+  box-shadow:
+    0 24px 60px -24px rgba(0, 0, 0, 0.65),
+    0 0 40px -8px color-mix(in srgb, var(--accent-cyan) 35%, transparent);
+}
+.hud-card h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 23px;
+  color: var(--text-primary);
+}
+.hud-card a {
+  color: var(--accent-cyan);
+  font-weight: 600;
+  text-decoration: none;
+}
+.hud-card a:hover {
+  color: var(--accent-cyan-hover);
+  text-decoration: underline;
+}
+.hud-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+.hud-corner-tl {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+  border-top-left-radius: 6px;
+}
+.hud-corner-tr {
+  top: -1px;
+  right: -1px;
+  border-top: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+  border-top-right-radius: 6px;
+}
+.hud-corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+  border-bottom-left-radius: 6px;
+}
+.hud-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+  border-bottom-right-radius: 6px;
+}
+.hud-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.hud-led {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--good);
+  animation: hud-led-pulse 1.6s ease-in-out infinite;
+}
+@keyframes hud-led-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 1px color-mix(in srgb, var(--good) 70%, transparent);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 2px 0 color-mix(in srgb, var(--good) 40%, transparent);
+    opacity: 0.55;
+  }
+}
+.hud-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.hud-input-icon {
+  position: absolute;
+  left: 11px;
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+.hud-input-group:focus-within .hud-input-icon {
+  color: var(--accent-cyan);
+}
+.hud-field-input {
+  width: 100%;
+  padding-left: 36px !important;
+}
+.hud-field-input:focus-visible {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent-cyan) 30%, transparent);
+}
+.hud-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+.hud-strength-bar {
+  display: flex;
+  gap: 4px;
+}
+.hud-strength-seg {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.hud-strength-seg.filled.tier-weak {
+  background: var(--bad);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--bad) 60%, transparent);
+}
+.hud-strength-seg.filled.tier-secure {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-cyan) 60%, transparent);
+}
+.hud-strength-seg.filled.tier-military {
+  background: var(--good);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--good) 60%, transparent);
+}
+.hud-strength-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.hud-strength-label.tier-weak {
+  color: var(--bad);
+}
+.hud-strength-label.tier-secure {
+  color: var(--accent-cyan);
+}
+.hud-strength-label.tier-military {
+  color: var(--good);
+}
+.hud-cta {
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 14px;
+  background: var(--accent-cyan);
+  color: var(--accent-cyan-fg);
+  border: none;
+  border-radius: 12px;
+  padding: 13px 20px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.hud-cta:hover:not(:disabled) {
+  background: var(--accent-cyan-hover);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--accent-cyan) 55%, transparent);
+}
+.hud-cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Login: variante cian del LED de hud-status-bar (Register usa --good para
+   "ENCRYPTED_CONNECTION"; Login lo usa para el badge "AUTH_GATEWAY", que es
+   cian para matchear el resto del HUD táctico). */
+.hud-led-cyan {
+  background: var(--accent-cyan);
+  animation-name: hud-led-pulse-cyan;
+}
+@keyframes hud-led-pulse-cyan {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 1px color-mix(in srgb, var(--accent-cyan) 70%, transparent);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 2px 0 color-mix(in srgb, var(--accent-cyan) 40%, transparent);
+    opacity: 0.55;
+  }
+}
+/* Login: acceso rápido con Steam, arriba del form de email+contraseña.
+   Deshabilitado -- ver comentario en LoginView.tsx: /auth/steam/link exige
+   una sesión de signup pendiente con email verificado, no sirve como login
+   directo de una cuenta ya creada. */
+.hud-steam-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13.5px;
+  background: color-mix(in srgb, var(--bg-surface-2) 90%, transparent);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 11px 20px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.hud-steam-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent-cyan) 60%, transparent);
+  box-shadow: 0 0 20px -4px color-mix(in srgb, var(--accent-cyan) 45%, transparent);
+}
+.hud-steam-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.hud-steam-btn-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.hud-steam-btn-soon {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.hud-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0;
+}
+.hud-divider::before,
+.hud-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-strong);
+}
+.hud-divider-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* =====================================================================
@@ -4045,7 +4886,7 @@ button.map-pool-card.lineup-map-card {
   content: "";
   position: fixed;
   inset: 0;
-  background: url("/fondo/landing-bg.jpg") center / cover no-repeat;
+  background: url("/landings/landing-bg.jpg") center / cover no-repeat;
   filter: blur(6px) brightness(0.35);
   transform: scale(1.1); /* tapa el borde nítido que deja el blur */
   z-index: -1;
@@ -4087,6 +4928,12 @@ button.map-pool-card.lineup-map-card {
 }
 .landing-view .cs-btn.landing-topbar-cta:hover {
   background: color-mix(in srgb, var(--recon) 82%, white);
+}
+
+/* Evita repaint del layout completo en cada frame del scroll-reveal --
+   solo composita la capa animada (Lenis + whileInView en LandingView). */
+.will-change-transform {
+  will-change: transform;
 }
 
 /* ---------- landing: hero ---------- */
@@ -4208,10 +5055,19 @@ button.map-pool-card.lineup-map-card {
 }
 .landing-view .cs-card.landing-feature-card {
   position: relative;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
   border-radius: 8px;
   padding: 24px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.landing-view .cs-card.landing-feature-card:hover {
+  border-color: color-mix(in srgb, var(--recon) 45%, transparent);
+  box-shadow: 0 12px 40px -16px rgba(0, 0, 0, 0.55);
 }
 .landing-feature-pro-badge {
   position: absolute;
@@ -4282,10 +5138,14 @@ button.map-pool-card.lineup-map-card {
 
 /* ---------- landing: stats strip ---------- */
 .landing-stats-strip {
-  background: var(--panel);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  max-width: 1180px;
+  margin: 0 auto 90px;
   padding: 40px 24px;
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 12px;
 }
 .landing-stats-grid {
   max-width: 1180px;
@@ -4407,13 +5267,6 @@ button.map-pool-card.lineup-map-card {
 .monthly-hero {
   margin-bottom: 24px;
 }
-.monthly-hero-diag {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image: repeating-linear-gradient(45deg, var(--border) 0 1px, transparent 1px 14px);
-}
 .monthly-hero-head {
   position: relative;
   display: flex;
@@ -4497,6 +5350,7 @@ button.map-pool-card.lineup-map-card {
   height: 120px;
 }
 .monthly-day-col {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -4504,6 +5358,7 @@ button.map-pool-card.lineup-map-card {
   justify-content: flex-end;
   height: 100%;
   gap: 8px;
+  cursor: help;
 }
 .monthly-day-bar {
   width: 100%;
@@ -4512,6 +5367,35 @@ button.map-pool-card.lineup-map-card {
 }
 .monthly-day-bar.zero {
   background: var(--bg-surface-2);
+}
+.monthly-day-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, 4px);
+  margin-bottom: 6px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--text-primary);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  pointer-events: none;
+  z-index: 1;
+}
+.monthly-day-col:hover .monthly-day-tooltip,
+.monthly-day-col:focus-visible .monthly-day-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
 .monthly-day-label {
   font-family: var(--font-body);
@@ -4523,6 +5407,18 @@ button.map-pool-card.lineup-map-card {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
+.monthly-mvp-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-left: 32px;
+  border-left: 1px solid var(--border);
+}
+.monthly-topmaps-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .monthly-top-maps {
   list-style: none;
   margin: 10px 0 0;
@@ -4533,10 +5429,14 @@ button.map-pool-card.lineup-map-card {
 }
 .monthly-top-maps li {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 20px;
   font-family: var(--font-body);
   color: var(--text-primary);
   font-size: 13px;
+}
+.monthly-top-maps li span:first-child {
+  min-width: 56px;
 }
 .monthly-mvp-card {
   display: flex;
@@ -4547,10 +5447,9 @@ button.map-pool-card.lineup-map-card {
 .monthly-mvp-thumb {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border);
+  border-radius: 50%;
   flex: none;
+  object-fit: cover;
 }
 .monthly-mvp-title {
   font-family: var(--font-body);
@@ -4578,6 +5477,12 @@ button.map-pool-card.lineup-map-card {
   .monthly-detail-cols {
     grid-template-columns: 1fr;
   }
+  .monthly-mvp-col {
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
 }
 /* ============================================================
    cStats — MAP CARD ATMOSPHERIC EFFECTS
@@ -4585,7 +5490,6 @@ button.map-pool-card.lineup-map-card {
    NUEVO BLOQUE
    No reemplaza ni modifica estilos existentes.
    ============================================================ */
-
 
 /* ============================================================
    SISTEMA BASE
@@ -4607,13 +5511,27 @@ button.map-pool-card.lineup-map-card {
 }
 
 /* Color de acento propio de cada mapa: alimenta el glow de hover/selección. */
-.lineup-map-card.map-effect-de_ancient { --map-accent: #4fd9a3; }
-.lineup-map-card.map-effect-de_anubis  { --map-accent: #d9b876; }
-.lineup-map-card.map-effect-de_cache   { --map-accent: #5cc4ff; }
-.lineup-map-card.map-effect-de_dust2   { --map-accent: #e8a35a; }
-.lineup-map-card.map-effect-de_inferno { --map-accent: #ff7a3d; }
-.lineup-map-card.map-effect-de_mirage  { --map-accent: #f0cf8e; }
-.lineup-map-card.map-effect-de_nuke    { --map-accent: #4dff85; }
+.lineup-map-card.map-effect-de_ancient {
+  --map-accent: #4fd9a3;
+}
+.lineup-map-card.map-effect-de_anubis {
+  --map-accent: #d9b876;
+}
+.lineup-map-card.map-effect-de_cache {
+  --map-accent: #5cc4ff;
+}
+.lineup-map-card.map-effect-de_dust2 {
+  --map-accent: #e8a35a;
+}
+.lineup-map-card.map-effect-de_inferno {
+  --map-accent: #ff7a3d;
+}
+.lineup-map-card.map-effect-de_mirage {
+  --map-accent: #f0cf8e;
+}
+.lineup-map-card.map-effect-de_nuke {
+  --map-accent: #4dff85;
+}
 
 .lineup-map-card:hover {
   border-color: color-mix(in srgb, var(--map-accent) 60%, var(--line));
@@ -4621,7 +5539,6 @@ button.map-pool-card.lineup-map-card {
     0 14px 28px -14px rgba(0, 0, 0, 0.7),
     0 0 22px -6px var(--map-accent);
 }
-
 
 /* Capa atmosférica */
 .lineup-map-card .map-card-fx {
@@ -4644,7 +5561,6 @@ button.map-pool-card.lineup-map-card {
     filter 250ms ease;
 }
 
-
 /* Contenido original */
 .lineup-map-card .map-card-content {
   position: relative;
@@ -4659,7 +5575,6 @@ button.map-pool-card.lineup-map-card {
   height: 100%;
 }
 
-
 /*
  * Icono y nombre siempre encima del efecto.
  */
@@ -4669,13 +5584,11 @@ button.map-pool-card.lineup-map-card {
   z-index: 6;
 }
 
-
 /*
  * Legibilidad del contenido.
  */
 .lineup-map-card .map-pool-icon {
-  filter:
-    drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85));
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85));
 }
 
 .lineup-map-card .map-pool-name {
@@ -4683,7 +5596,6 @@ button.map-pool-card.lineup-map-card {
     0 2px 6px rgba(0, 0, 0, 1),
     0 0 12px rgba(0, 0, 0, 0.9);
 }
-
 
 /* ============================================================
    HOVER
@@ -4694,11 +5606,8 @@ button.map-pool-card.lineup-map-card {
 }
 
 .lineup-map-card:hover .map-pool-icon {
-  filter:
-    drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85))
-    drop-shadow(0 0 10px rgba(76, 205, 255, 0.2));
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 10px rgba(76, 205, 255, 0.2));
 }
-
 
 /* ============================================================
    ANCIENT
@@ -4716,7 +5625,6 @@ button.map-pool-card.lineup-map-card {
   object-fit: cover;
 }
 
-
 /* ============================================================
    ANUBIS
    El fondo es un video real (public/media/anubis-arena.mp4, arranca
@@ -4733,7 +5641,6 @@ button.map-pool-card.lineup-map-card {
   object-fit: cover;
 }
 
-
 /* ============================================================
    CACHE
    Óxido industrial + niebla verde radiactiva a la deriva
@@ -4742,29 +5649,23 @@ button.map-pool-card.lineup-map-card {
 .map-effect-de_cache .map-card-fx {
   background-image:
     url("/logo/ussr-emblem.png"),
-    radial-gradient(
-      circle at 20% 30%,
-      rgba(120, 70, 30, 0.35),
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 75% 70%,
-      rgba(90, 50, 20, 0.3),
-      transparent 60%
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(57, 255, 20, 0.05) 0 1px,
-      transparent 1px 10px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(57, 255, 20, 0.05) 0 1px,
-      transparent 1px 10px
-    );
-  background-position: bottom 4px right 4px, 0 0, 0 0, 0 0, 0 0;
+    radial-gradient(circle at 20% 30%, rgba(120, 70, 30, 0.35), transparent 55%),
+    radial-gradient(circle at 75% 70%, rgba(90, 50, 20, 0.3), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(57, 255, 20, 0.05) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(90deg, rgba(57, 255, 20, 0.05) 0 1px, transparent 1px 10px);
+  background-position:
+    bottom 4px right 4px,
+    0 0,
+    0 0,
+    0 0,
+    0 0;
   background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat;
-  background-size: 26% auto, 100% 100%, 100% 100%, auto, auto;
+  background-size:
+    26% auto,
+    100% 100%,
+    100% 100%,
+    auto,
+    auto;
 
   animation: cstats-cache-pulse 6s ease-in-out infinite;
 }
@@ -4801,18 +5702,12 @@ button.map-pool-card.lineup-map-card {
   mix-blend-mode: screen;
 
   background-image:
-    radial-gradient(
-      circle,
-      rgba(57, 255, 20, 0.35) 0%,
-      transparent 70%
-    ),
-    radial-gradient(
-      circle,
-      rgba(120, 255, 90, 0.28) 0%,
-      transparent 65%
-    );
+    radial-gradient(circle, rgba(57, 255, 20, 0.35) 0%, transparent 70%),
+    radial-gradient(circle, rgba(120, 255, 90, 0.28) 0%, transparent 65%);
   background-repeat: no-repeat, no-repeat;
-  background-size: 70% 70%, 85% 85%;
+  background-size:
+    70% 70%,
+    85% 85%;
   filter: blur(14px);
 
   animation: cstats-cache-fog 26s ease-in-out infinite;
@@ -4832,14 +5727,17 @@ button.map-pool-card.lineup-map-card {
 @keyframes cstats-cache-fog {
   0%,
   100% {
-    background-position: 10% 20%, 80% 70%;
+    background-position:
+      10% 20%,
+      80% 70%;
   }
 
   50% {
-    background-position: 65% 60%, 25% 30%;
+    background-position:
+      65% 60%,
+      25% 30%;
   }
 }
-
 
 /* ============================================================
    DUST II
@@ -4857,7 +5755,6 @@ button.map-pool-card.lineup-map-card {
   object-fit: cover;
 }
 
-
 /* ============================================================
    INFERNO
    Ascuas / fuego
@@ -4869,21 +5766,9 @@ button.map-pool-card.lineup-map-card {
   object-fit: cover;
 
   background:
-    radial-gradient(
-      circle at 20% 100%,
-      rgba(255, 86, 24, 0.55) 0 2px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 70% 110%,
-      rgba(255, 172, 52, 0.65) 0 2px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 50% 90%,
-      rgba(255, 71, 20, 0.3),
-      transparent 55%
-    );
+    radial-gradient(circle at 20% 100%, rgba(255, 86, 24, 0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 70% 110%, rgba(255, 172, 52, 0.65) 0 2px, transparent 3px),
+    radial-gradient(circle at 50% 90%, rgba(255, 71, 20, 0.3), transparent 55%);
 
   background-size:
     45px 45px,
@@ -4900,21 +5785,9 @@ button.map-pool-card.lineup-map-card {
   inset: 0;
 
   background:
-    radial-gradient(
-      circle at 30% 80%,
-      rgba(255, 106, 25, 0.55) 0 1px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 65% 65%,
-      rgba(255, 191, 75, 0.6) 0 1px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 85% 90%,
-      rgba(255, 81, 20, 0.5) 0 2px,
-      transparent 3px
-    );
+    radial-gradient(circle at 30% 80%, rgba(255, 106, 25, 0.55) 0 1px, transparent 3px),
+    radial-gradient(circle at 65% 65%, rgba(255, 191, 75, 0.6) 0 1px, transparent 3px),
+    radial-gradient(circle at 85% 90%, rgba(255, 81, 20, 0.5) 0 2px, transparent 3px);
 
   animation: cstats-inferno-particles 2.2s ease-in-out infinite;
 }
@@ -4925,12 +5798,7 @@ button.map-pool-card.lineup-map-card {
   position: absolute;
   inset: 0;
 
-  background:
-    radial-gradient(
-      ellipse at 50% 100%,
-      rgba(255, 74, 18, 0.32),
-      transparent 65%
-    );
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 74, 18, 0.32), transparent 65%);
 
   animation: cstats-inferno-glow 1.5s ease-in-out infinite alternate;
 }
@@ -4978,7 +5846,6 @@ button.map-pool-card.lineup-map-card {
   }
 }
 
-
 /* ============================================================
    MIRAGE
    El fondo es un video real (public/media/mirage-arena.mp4), montado
@@ -4998,7 +5865,6 @@ button.map-pool-card.lineup-map-card {
   object-fit: cover;
 }
 
-
 /* ============================================================
    NUKE
    El fondo es un video real (public/media/nuke-arena.mp4), montado en
@@ -5017,7 +5883,6 @@ button.map-pool-card.lineup-map-card {
   transform: scale(1.32) translate(-2%, 9%);
   transform-origin: center;
 }
-
 
 /* ============================================================
    EFECTOS ESPECÍFICOS AL HACER HOVER
@@ -5043,7 +5908,6 @@ button.map-pool-card.lineup-map-card {
   filter: saturate(1.25) brightness(1.08);
 }
 
-
 /* ============================================================
    ACCESIBILIDAD
    ============================================================ */
@@ -5059,5 +5923,587 @@ button.map-pool-card.lineup-map-card {
   .lineup-map-card:hover {
     transform: none !important;
     transition: border-color 150ms ease !important;
+  }
+}
+
+/* ============================================================
+   PREFIRE 3D -- nav badge + aim trainer (AimTrainer3D)
+   ============================================================ */
+
+.cs-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-nav-beta-badge {
+  position: relative;
+  z-index: 1;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 65%, transparent);
+  animation: prefire-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes prefire-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  50% {
+    opacity: 0.85;
+    box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 85%, transparent);
+  }
+}
+
+.prefire-route-shell {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #05070a;
+}
+
+.prefire-route-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  pointer-events: none;
+}
+
+.prefire-route-topbar > * {
+  pointer-events: auto;
+}
+
+.prefire-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary, var(--txt));
+  text-decoration: none;
+  background: color-mix(in srgb, #000 55%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 14px;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.prefire-back-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.prefire-map-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  background: color-mix(in srgb, #000 55%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 14px;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.prefire-map-switch-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+
+.prefire-map-switch-value {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.prefire-trainer {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.prefire-trainer canvas {
+  display: block;
+  outline: none;
+}
+
+.prefire-loading {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  color: var(--txt);
+  background: color-mix(in srgb, #000 60%, transparent);
+  padding: 10px 16px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* ---------- crosshair ---------- */
+.prefire-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.prefire-crosshair-line {
+  position: absolute;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--accent-cyan) 80%, transparent);
+}
+
+.prefire-crosshair-h {
+  width: 16px;
+  height: 2px;
+  top: -1px;
+  left: -8px;
+}
+
+.prefire-crosshair-v {
+  width: 2px;
+  height: 16px;
+  top: -8px;
+  left: -1px;
+}
+
+.prefire-crosshair-dot {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  top: -1.5px;
+  left: -1.5px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* ---------- bot callout tag ---------- */
+.prefire-bot-tag {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: color-mix(in srgb, #000 60%, transparent);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 6px;
+  padding: 3px 9px;
+  white-space: nowrap;
+  transform: translateY(-6px);
+}
+
+/* ---------- HUD ---------- */
+.prefire-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  padding: 76px 20px 20px;
+}
+
+.prefire-hud-top {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: auto;
+}
+
+.prefire-routine-select {
+  display: flex;
+  gap: 6px;
+  background: color-mix(in srgb, #000 55%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.prefire-routine-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.prefire-routine-btn:hover {
+  color: var(--txt);
+}
+
+.prefire-routine-btn.active {
+  color: var(--accent-cyan-fg);
+  background: var(--accent-cyan);
+}
+
+.prefire-routine-key {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.65;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 4px;
+  line-height: 1.4;
+}
+
+.prefire-score-panel {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: color-mix(in srgb, #000 55%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 18px;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.prefire-score-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.prefire-score-value {
+  font-family: "Oswald", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.prefire-target-callout {
+  margin-top: 14px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--txt);
+  background: color-mix(in srgb, #000 55%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 16px;
+  pointer-events: auto;
+}
+
+.prefire-weapon-select {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 21;
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.prefire-weapon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--muted);
+  background: color-mix(in srgb, #000 55%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.prefire-weapon-btn:hover {
+  color: var(--txt);
+  border-color: color-mix(in srgb, var(--accent-cyan) 50%, var(--line));
+}
+
+.prefire-weapon-btn.active {
+  color: var(--accent-cyan-fg);
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.prefire-weapon-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.prefire-weapon-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.prefire-weapon-key {
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+.prefire-lock-hint {
+  margin-top: auto;
+  margin-bottom: 12px;
+  text-align: center;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--txt);
+  background: color-mix(in srgb, #000 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 22px;
+  pointer-events: auto;
+}
+
+.prefire-lock-hint p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.prefire-lock-hint-sub {
+  margin-top: 6px !important;
+  font-size: 11px !important;
+  color: var(--muted);
+}
+
+/* ============================================================
+   PREFIRE 3D -- landing "en desarrollo" (módulo 3D desactivado,
+   ver PrefireView.tsx: no importa three.js/@react-three/* acá)
+   ============================================================ */
+
+.prefire-devmode {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #05070a;
+}
+
+.prefire-devmode-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--accent-cyan) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent-cyan) 9%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 42px 42px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse at center, #000 0%, transparent 72%);
+}
+
+.prefire-devmode-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 460px;
+  padding: 32px 24px;
+}
+
+.prefire-devmode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  color: var(--accent-cyan);
+  background: color-mix(in srgb, var(--accent-cyan) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-cyan) 40%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--accent-cyan) 35%, transparent);
+  margin-bottom: 22px;
+}
+
+.prefire-devmode-title {
+  font-family: "Oswald", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #f4f7fb;
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent-cyan) 45%, transparent);
+  margin: 0 0 12px;
+}
+
+.prefire-devmode-subtitle {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 28px;
+}
+
+.prefire-devmode-card {
+  width: 100%;
+  text-align: left;
+  background: color-mix(in srgb, #000 55%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.prefire-devmode-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.prefire-devmode-feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prefire-devmode-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--txt);
+}
+
+.prefire-devmode-feature-icon {
+  flex: none;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.prefire-devmode-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-cyan);
+  margin-bottom: 22px;
+}
+
+.prefire-devmode-spinner {
+  animation: prefire-devmode-spin 1s linear infinite;
+}
+
+@keyframes prefire-devmode-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.prefire-devmode-cta {
+  margin-top: 4px;
+}
+
+/* ---------- logo intro transition (cortina de la medalla 3D entre landings) ---------- */
+.logo-intro-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  /* el gradiente vive acá (a pantalla completa) en vez de en el stage --
+     así no se ve un cuadrado más claro recortado contra el fondo negro. */
+  background: radial-gradient(ellipse 70% 70% at 50% 45%, #1a1a1e 0%, #0a0a0c 70%);
+  opacity: 1;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+.logo-intro-transition-out {
+  opacity: 0;
+}
+.logo-intro-transition-stage {
+  width: min(48vw, 380px);
+  aspect-ratio: 1 / 1;
+}
+.logo-intro-transition-word {
+  display: flex;
+  align-items: baseline;
+  gap: 0.02em;
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: 28px;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-shadow:
+    0 0 18px rgba(34, 230, 255, 0.55),
+    0 0 46px rgba(34, 230, 255, 0.25);
+  opacity: 0;
+  animation: logo-intro-transition-word-in 420ms ease 150ms forwards;
+}
+.logo-intro-transition-word-c {
+  color: #22e6ff;
+}
+.logo-intro-transition-word-stats {
+  color: #fff;
+}
+@keyframes logo-intro-transition-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tactical Badge — Hero</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/loaders/SVGLoader.js": "https://unpkg.com/three@0.184.0/examples/jsm/loaders/SVGLoader.js",
+    "three/addons/environments/RoomEnvironment.js": "https://unpkg.com/three@0.184.0/examples/jsm/environments/RoomEnvironment.js",
+    "three/addons/postprocessing/EffectComposer.js": "https://unpkg.com/three@0.184.0/examples/jsm/postprocessing/EffectComposer.js",
+    "three/addons/postprocessing/RenderPass.js": "https://unpkg.com/three@0.184.0/examples/jsm/postprocessing/RenderPass.js",
+    "three/addons/postprocessing/UnrealBloomPass.js": "https://unpkg.com/three@0.184.0/examples/jsm/postprocessing/UnrealBloomPass.js",
+    "three/addons/postprocessing/ShaderPass.js": "https://unpkg.com/three@0.184.0/examples/jsm/postprocessing/ShaderPass.js",
+    "three/addons/postprocessing/OutputPass.js": "https://unpkg.com/three@0.184.0/examples/jsm/postprocessing/OutputPass.js",
+    "three/addons/postprocessing/Pass.js": "https://unpkg.com/three@0.184.0/examples/jsm/postprocessing/Pass.js",
+    "three/addons/shaders/CopyShader.js": "https://unpkg.com/three@0.184.0/examples/jsm/shaders/CopyShader.js",
+    "three/addons/shaders/LuminosityHighPassShader.js": "https://unpkg.com/three@0.184.0/examples/jsm/shaders/LuminosityHighPassShader.js",
+    "three/addons/shaders/OutputShader.js": "https://unpkg.com/three@0.184.0/examples/jsm/shaders/OutputShader.js"
+  }
+}
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Figtree:wght@400;500&display=swap');
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #08080a; }
+  body { font-family: 'Figtree', system-ui, sans-serif; color: #e7e9ec; }
+  .hero {
+    position: relative; min-height: 100svh; display: grid; place-items: center;
+    background: radial-gradient(ellipse 70% 70% at 50% 45%, #1a1a1e 0%, #0a0a0c 70%);
+    overflow: hidden;
+  }
+  #stage { position: absolute; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  .copy {
+    position: relative; z-index: 2; text-align: center; pointer-events: none;
+    transform: translateY(min(34vh, 300px));
+  }
+  .copy h1 {
+    font-family: 'Barlow+Condensed', 'Barlow Condensed', system-ui, sans-serif;
+    font-weight: 700; letter-spacing: .10em;
+    font-size: clamp(28px, 6vw, 56px); margin: 0 0 10px;
+    color: #f2f4f7; text-shadow: 0 2px 30px rgba(0,0,0,.6);
+  }
+  .copy p { margin: 0; font-size: clamp(13px, 1.6vw, 16px); color: #8b929c; letter-spacing: .04em; }
+  a, a:link { color: #d7473f; text-decoration: none; }
+  a:hover { color: #ef6a5f; }
+</style>
+</head>
+<body>
+<section class="hero">
+  <div id="stage"></div>
+  <div class="copy">
+    <h1>cStats</h1>
+    <p>Seguí cada ronda. Medí cada disparo.</p>
+  </div>
+</section>
+
+<script type="module">
+import * as THREE from 'three';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const ACCENT = 0x2f8fd8;          // azul táctico
+const ACCENT_HOT = 0x6fd0ff;      // acento emisivo que recibe el bloom
+const BLOOM_LAYER = 1;
+const bloomLayer = new THREE.Layers();
+bloomLayer.set(BLOOM_LAYER);
+
+const host = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+camera.position.set(0, 0, 4.9);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+scene.environment = envRT.texture;
+scene.environmentIntensity = 0.5;
+
+// ─ luces ─────────────────────────────────────────────
+const rim = new THREE.DirectionalLight(0x5ec8ff, 4.2);
+rim.position.set(-2.2, 1.6, -3.6);
+const key = new THREE.DirectionalLight(0xffd7ac, 1.5);
+key.position.set(3, 3, 3);
+const fill = new THREE.DirectionalLight(0x9fb2c8, 0.35);
+fill.position.set(-1.5, -2, 2);
+scene.add(rim, key, fill, new THREE.AmbientLight(0x30363d, 0.6));
+
+// ─ materiales ────────────────────────────────────────
+const disposables = [];
+const track = (o) => { disposables.push(o); return o; };
+
+const matGunmetal = track(new THREE.MeshPhysicalMaterial({
+  name: 'gunmetal', color: 0x2a2d31, metalness: 1, roughness: 0.25,
+  clearcoat: 0.6, clearcoatRoughness: 0.1
+}));
+const matPlate = track(new THREE.MeshPhysicalMaterial({
+  name: 'plate', color: 0x1b1e22, metalness: 0.95, roughness: 0.42,
+  clearcoat: 0.35, clearcoatRoughness: 0.2
+}));
+const matSteel = track(new THREE.MeshPhysicalMaterial({
+  name: 'steel', color: 0xc3c9d2, metalness: 1, roughness: 0.18,
+  clearcoat: 0.6, clearcoatRoughness: 0.08
+}));
+const matAccent = track(new THREE.MeshPhysicalMaterial({
+  name: 'accent', color: ACCENT, metalness: 0.9, roughness: 0.28,
+  clearcoat: 0.6, clearcoatRoughness: 0.1,
+  emissive: ACCENT_HOT, emissiveIntensity: 0.16
+}));
+const matAccentHot = track(new THREE.MeshPhysicalMaterial({
+  name: 'accentHot', color: 0x8fdcff, metalness: 0.6, roughness: 0.25,
+  clearcoat: 0.6, clearcoatRoughness: 0.1,
+  emissive: ACCENT_HOT, emissiveIntensity: 0.55
+}));
+
+// ─ cuerpo del badge ──────────────────────────────────
+const float = new THREE.Group();
+const badge = new THREE.Group();
+float.add(badge);
+scene.add(float);
+
+const discShape = new THREE.Shape();
+discShape.absarc(0, 0, 1, 0, Math.PI * 2, false);
+const discGeo = track(new THREE.ExtrudeGeometry(discShape, {
+  depth: 0.11, bevelEnabled: true, bevelThickness: 0.045, bevelSize: 0.055,
+  bevelSegments: 8, curveSegments: 128
+}));
+discGeo.center();
+const disc = new THREE.Mesh(discGeo, matGunmetal);
+disc.name = 'disc';
+badge.add(disc);
+
+const FRONT = 0.10; // cara plana frontal
+
+const plateGeo = track(new THREE.CylinderGeometry(0.80, 0.80, 0.03, 96));
+const bezelGeo = track(new THREE.TorusGeometry(0.815, 0.026, 16, 128));
+const accentRingGeo = track(new THREE.TorusGeometry(0.905, 0.017, 16, 128));
+
+// ─ emblema extruido desde SVG (SVGLoader) ────────────
+const SVG_HEAD = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">';
+const SVG_RETICLE = SVG_HEAD +
+  '<path d="M 16.75 50 A 33.25 33.25 0 1 0 83.25 50 A 33.25 33.25 0 1 0 16.75 50 Z' +
+  ' M 19.25 50 A 30.75 30.75 0 1 1 80.75 50 A 30.75 30.75 0 1 1 19.25 50 Z"/>' +
+  '<rect x="47.6" y="4" width="4.8" height="12" rx="2.4"/>' +
+  '<rect x="47.6" y="84" width="4.8" height="12" rx="2.4"/>' +
+  '<rect x="4" y="47.6" width="12" height="4.8" rx="2.4"/>' +
+  '<rect x="84" y="47.6" width="12" height="4.8" rx="2.4"/></svg>';
+const SVG_BARS = SVG_HEAD +
+  '<rect x="30.5" y="42" width="5" height="16" rx="2.5"/>' +
+  '<rect x="39" y="37" width="5" height="26" rx="2.5"/>' +
+  '<rect x="56" y="37" width="5" height="26" rx="2.5"/>' +
+  '<rect x="64.5" y="42" width="5" height="16" rx="2.5"/></svg>';
+const SVG_BAR_CORE = SVG_HEAD + '<rect x="47.5" y="33" width="5" height="34" rx="2.5"/></svg>';
+
+const loader = new SVGLoader();
+const S = 0.0156; // unidades SVG → unidades de escena
+
+function emblemMesh(svg, depth, material, name) {
+  const shapes = [];
+  for (const path of loader.parse(svg).paths) {
+    for (const s of SVGLoader.createShapes(path)) shapes.push(s);
+  }
+  const geo = new THREE.ExtrudeGeometry(shapes, {
+    depth, bevelEnabled: true, bevelThickness: 0.7, bevelSize: 0.7,
+    bevelSegments: 3, curveSegments: 24
+  });
+  geo.translate(-50, -50, 0);
+  geo.scale(S, S, S);
+  track(geo);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.name = name;
+  return mesh;
+}
+
+// ambas caras llevan el mismo relieve — la trasera es un espejo en Y
+function buildFace(side) {
+  const face = new THREE.Group();
+  face.name = 'face_' + side;
+
+  const plate = new THREE.Mesh(plateGeo, matPlate);
+  plate.name = 'innerPlate';
+  plate.rotation.x = Math.PI / 2;
+  plate.position.z = FRONT + 0.014;
+  face.add(plate);
+
+  const bezel = new THREE.Mesh(bezelGeo, matSteel);
+  bezel.name = 'bezel';
+  bezel.position.z = FRONT + 0.016;
+  face.add(bezel);
+
+  const accentRing = new THREE.Mesh(accentRingGeo, matAccent);
+  accentRing.name = 'accentRing';
+  accentRing.position.z = FRONT - 0.006;
+  accentRing.layers.enable(BLOOM_LAYER);
+  face.add(accentRing);
+
+  const reticle = emblemMesh(SVG_RETICLE, 3.2, matAccent, 'reticle');
+  reticle.position.z = FRONT + 0.026;
+  reticle.layers.enable(BLOOM_LAYER);
+  face.add(reticle);
+
+  const bars = emblemMesh(SVG_BARS, 4.5, matSteel, 'bars');
+  bars.position.z = FRONT + 0.026;
+  face.add(bars);
+
+  const barCore = emblemMesh(SVG_BAR_CORE, 5.2, matAccentHot, 'barCore');
+  barCore.position.z = FRONT + 0.026;
+  barCore.layers.enable(BLOOM_LAYER);
+  face.add(barCore);
+
+  if (side === 'back') face.rotation.y = Math.PI;
+  return face;
+}
+badge.add(buildFace('front'), buildFace('back'));
+
+// muescas del canto
+const notchGeo = track(new THREE.BoxGeometry(0.05, 0.075, 0.20));
+for (let i = 0; i < 48; i++) {
+  const a = (i / 48) * Math.PI * 2;
+  const n = new THREE.Mesh(notchGeo, matGunmetal);
+  n.name = 'knurl_' + i;
+  n.position.set(Math.cos(a) * 0.985, Math.sin(a) * 0.985, 0);
+  n.rotation.z = a;
+  badge.add(n);
+}
+
+// ─ post-proceso: selective bloom + viñeta ────────────
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.32, 0.22, 0.28);
+const bloomComposer = new EffectComposer(renderer);
+bloomComposer.renderToScreen = false;
+bloomComposer.addPass(new RenderPass(scene, camera));
+bloomComposer.addPass(bloomPass);
+
+const mixPass = new ShaderPass(new THREE.ShaderMaterial({
+  uniforms: {
+    baseTexture: { value: null },
+    bloomTexture: { value: bloomComposer.renderTarget2.texture },
+    bloomStrength: { value: 0.55 },
+    vignette: { value: 0.45 }
+  },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: [
+    'uniform sampler2D baseTexture;',
+    'uniform sampler2D bloomTexture;',
+    'uniform float bloomStrength;',
+    'uniform float vignette;',
+    'varying vec2 vUv;',
+    'void main(){',
+    '  vec4 base = texture2D(baseTexture, vUv);',
+    '  vec4 bloom = texture2D(bloomTexture, vUv);',
+    '  vec3 col = base.rgb + bloom.rgb * bloomStrength;',
+    '  float glow = clamp((bloom.r + bloom.g + bloom.b) * 0.8, 0.0, 1.0);',
+    '  float a = clamp(base.a + glow, 0.0, 1.0);',
+    '  float d = distance(vUv, vec2(0.5));',
+    '  float v = mix(1.0, smoothstep(0.86, 0.30, d), vignette);',
+    '  gl_FragColor = vec4(col * v, a * v);',
+    '}'
+  ].join('\n')
+}), 'baseTexture');
+mixPass.needsSwap = true;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(mixPass);
+composer.addPass(new OutputPass());
+
+const darkMaterial = track(new THREE.MeshBasicMaterial({ color: 0x000000 }));
+const stash = new Map();
+const darken = (obj) => {
+  if (obj.isMesh && !bloomLayer.test(obj.layers)) {
+    stash.set(obj.uuid, obj.material);
+    obj.material = darkMaterial;
+  }
+};
+const restore = (obj) => {
+  if (stash.has(obj.uuid)) { obj.material = stash.get(obj.uuid); stash.delete(obj.uuid); }
+};
+
+// ─ resize responsive (sin recorte del badge) ─────────
+const FIT_RADIUS = 2.25;
+function resize() {
+  const w = host.clientWidth || 1, h = host.clientHeight || 1;
+  const aspect = w / h;
+  const baseFov = w < 640 ? 42 : 35;
+  const fov = aspect < 1
+    ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(baseFov) / 2) / aspect))
+    : baseFov;
+  camera.fov = fov;
+  camera.aspect = aspect;
+  camera.position.z = FIT_RADIUS / Math.tan(THREE.MathUtils.degToRad(fov) / 2);
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  bloomComposer.setSize(w, h);
+}
+const ro = new ResizeObserver(resize);
+ro.observe(host);
+resize();
+
+// ─ loop ──────────────────────────────────────────────
+const clock = new THREE.Clock();
+let raf = 0;
+function frame() {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+  badge.rotation.y += 0.15 * dt;                 // rotación continua
+  float.rotation.x = Math.sin(t * 0.9) * 0.13;   // oscilación yoyo (sine.inOut)
+  float.position.y = 0.42 + Math.sin(t * 0.7) * 0.045;
+
+  renderer.setClearColor(0x000000, 1);
+  scene.traverse(darken);
+  bloomComposer.render();
+  scene.traverse(restore);
+
+  renderer.setClearColor(0x000000, 0);
+  composer.render();
+}
+frame();
+
+// ─ dispose ───────────────────────────────────────────
+window.addEventListener('pagehide', () => {
+  cancelAnimationFrame(raf);
+  ro.disconnect();
+  disposables.forEach((d) => d.dispose());
+  bloomComposer.dispose();
+  composer.dispose();
+  envRT.dispose();
+  pmrem.dispose();
+  renderer.dispose();
+}, { once: true });
+</script>
+</body>
+</html>

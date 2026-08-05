@@ -88,6 +88,21 @@ export function Topbar({ onLogout }: { onLogout: () => void }) {
         <NavPill to="/" end label="Inicio" />
         <NavPill to={`/profile/${user.steamid}`} label="Perfil" />
         <NavPill to="/lineups" label="Line ups" />
+        <NavLink to="/prefire" className={({ isActive }) => `cs-nav-tab${isActive ? " active" : ""}`}>
+          {({ isActive }) => (
+            <>
+              {isActive && (
+                <motion.span
+                  className="cs-nav-active-bg"
+                  layoutId="nav-active-bg"
+                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                />
+              )}
+              <span className="cs-nav-tab-label">Prefire 3D</span>
+              <span className="cs-nav-beta-badge">BETA / EN DESARROLLO</span>
+            </>
+          )}
+        </NavLink>
       </div>
     </>
   );

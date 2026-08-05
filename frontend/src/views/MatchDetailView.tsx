@@ -9,6 +9,7 @@ import { DuelMatrix } from "../components/DuelMatrix";
 import { EconomyTimeline } from "../components/EconomyTimeline";
 import { Heatmap } from "../components/Heatmap";
 import { ROUTE_FADE } from "../components/motion/presets";
+import { SmoothScroll } from "../components/motion/SmoothScroll";
 import { Weapons } from "../components/Weapons";
 import { ratingColor, Scoreboard } from "../components/Scoreboard";
 import type { MatchDetail, PlayerRow, TeamScore } from "../types";
@@ -132,7 +133,7 @@ export function MatchDetailView() {
   const byTeam = (tn: number): PlayerRow[] => scoreboard.filter((p) => p.team_num === tn);
 
   return (
-    <>
+    <SmoothScroll>
       <Link className="back-link" to={`/profile/${user.steamid}`}>
         ← Volver a tu perfil
       </Link>
@@ -181,6 +182,6 @@ export function MatchDetailView() {
           <footer>cStats://SISTEMA</footer>
         </div>
       </div>
-    </>
+    </SmoothScroll>
   );
 }

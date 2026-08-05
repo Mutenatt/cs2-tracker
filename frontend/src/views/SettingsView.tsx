@@ -2,6 +2,7 @@ import { useState } from "react";
 import { forgotPassword } from "../api";
 import { AutoFetchSettings } from "../components/AutoFetchSettings";
 import { Button } from "../components/Button";
+import { SmoothScroll } from "../components/motion/SmoothScroll";
 import { useUser } from "../context/UserContext";
 
 export function SettingsView() {
@@ -21,7 +22,7 @@ export function SettingsView() {
   };
 
   return (
-    <>
+    <SmoothScroll>
       <div className="section-head">
         <span className="display">Configuración</span>
         <span className="rule" />
@@ -57,6 +58,6 @@ export function SettingsView() {
       </div>
 
       <AutoFetchSettings />
-    </>
+    </SmoothScroll>
   );
 }

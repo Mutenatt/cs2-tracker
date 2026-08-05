@@ -4,7 +4,7 @@ import { useEffect } from "react";
 // vez de una imagen estática -- ver auth.py::_ProfileBackgroundParser.
 const VIDEO_URL_RE = /\.(webm|mp4)(\?.*)?$/i;
 
-const OVERLAY_GRADIENT = "linear-gradient(120deg, rgba(6, 12, 20, 0.9) 0%, rgba(6, 12, 20, 0.72) 100%)";
+const OVERLAY_GRADIENT = "linear-gradient(120deg, rgba(6, 12, 20, 0.78) 0%, rgba(6, 12, 20, 0.58) 100%)";
 
 /**
  * Aplica el background de perfil de Steam del usuario logueado al <body>

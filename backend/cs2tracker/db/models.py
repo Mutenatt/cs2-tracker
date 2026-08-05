@@ -73,11 +73,11 @@ class User(Base):
     display_name: Mapped[str | None] = mapped_column(String)
     avatar_url: Mapped[str | None] = mapped_column(String)
     steam_background_url: Mapped[str | None] = mapped_column(String)
-    # Fondo elegido a mano por el usuario (URL de imagen propia). Tiene
-    # prioridad sobre steam_background_url -- existe porque el scraping del
-    # perfil de Steam puede fallar (rate-limit 429) o simplemente porque el
-    # usuario prefiere elegir su propia imagen.
-    custom_background_url: Mapped[str | None] = mapped_column(String)
+    # Último re-scrapeo del perfil público de Steam (ver auth.refresh_steam_profile)
+    # -- throttlea el refresco automático de display_name/avatar_url/
+    # steam_background_url en /auth/me para no pegarle a steamcommunity.com en
+    # cada carga de página.
+    steam_profile_synced_at: Mapped[str | None] = mapped_column(String)
     last_login_at: Mapped[str | None] = mapped_column(String)
 
     # Login por email+contraseña (obligatorio, alta previa a vincular

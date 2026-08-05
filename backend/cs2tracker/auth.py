@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 import secrets
+from datetime import UTC, datetime, timedelta
 from html.parser import HTMLParser
 from urllib.parse import urlencode
 
@@ -29,6 +30,25 @@ _CLAIMED_ID_RE = re.compile(r"^https://steamcommunity\.com/openid/id/(\d+)$")
 
 COOKIE_NAME = "cs2_session"
 SESSION_MAX_AGE = 30 * 24 * 3600  # 30 días
+
+# Cada cuánto se re-scrapea el perfil público en /auth/me para detectar un
+# display_name/avatar/background cambiado del lado de Steam (ver
+# account.py::_maybe_refresh_steam_profile). Suficientemente seguido para
+# que se sienta "automático" tras un reload, sin pegarle a
+# steamcommunity.com en cada carga de página (eso sí dispara el 429 del
+# scraping de perfil).
+STEAM_PROFILE_REFRESH_INTERVAL = timedelta(minutes=15)
+
+
+def steam_profile_is_stale(synced_at: str | None) -> bool:
+    if synced_at is None:
+        return True
+    try:
+        last = datetime.fromisoformat(synced_at)
+    except ValueError:
+        return True
+    return datetime.now(UTC) - last >= STEAM_PROFILE_REFRESH_INTERVAL
+
 
 # Algunos CDNs sirven contenido reducido a clientes sin User-Agent de
 # navegador; sin esto, GetPlayerSummaries igual funciona (es la Web API

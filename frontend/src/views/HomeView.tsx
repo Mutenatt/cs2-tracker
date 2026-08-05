@@ -4,6 +4,7 @@ import { getCs2News, getLatamStreams, getTeamRanking } from "../api";
 import { HeroStreamCarousel } from "../components/HeroStreamCarousel";
 import { SectionLabel } from "../components/SectionLabel";
 import { cardRise, staggerList } from "../components/motion/presets";
+import { SmoothScroll } from "../components/motion/SmoothScroll";
 import { MonthlySummaryHero } from "../components/monthly/MonthlySummaryHero";
 import type { NewsItemDto, StreamsResponse, TeamRankingResponse } from "../types";
 
@@ -93,15 +94,12 @@ export function HomeView() {
   const bentoSecondary = news?.slice(1, 3) ?? [];
 
   return (
-    <>
+    <SmoothScroll>
       <MonthlySummaryHero />
 
       <div className="section-head">
         <SectionLabel>Mapas activos · Premier</SectionLabel>
         <span className="rule" />
-      </div>
-      <div className="section-note" style={{ marginTop: -4 }}>
-        Pool vigente desde la Season 5 (julio 2026) — se actualiza a mano si Valve vuelve a rotarlo.
       </div>
       <motion.div className="map-pool-grid" variants={staggerList} initial="hidden" animate="show">
         {ACTIVE_MAP_POOL.map((m) => (
@@ -233,6 +231,6 @@ export function HomeView() {
           ))}
         </motion.div>
       )}
-    </>
+    </SmoothScroll>
   );
 }

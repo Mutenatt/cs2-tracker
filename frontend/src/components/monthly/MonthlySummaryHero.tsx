@@ -11,6 +11,10 @@ import { MatchesPerDayChart } from "./MatchesPerDayChart";
 import { StatCard } from "./StatCard";
 import type { MonthlySummaryResponse } from "../../types";
 
+function mapIconUrl(mapId: string): string {
+  return `https://raw.githubusercontent.com/MurkyYT/cs2-map-icons/main/images/${mapId}.png`;
+}
+
 export function MonthlySummaryHero() {
   const user = useUser();
   const [data, setData] = useState<MonthlySummaryResponse | null>(null);
@@ -40,7 +44,6 @@ export function MonthlySummaryHero() {
 
   return (
     <Card className="monthly-hero">
-      <div className="monthly-hero-diag" aria-hidden="true" />
       <div className="monthly-hero-head">
         <div className="monthly-hero-headline">
           <h2 className="monthly-hero-title">Tu rendimiento este mes</h2>
@@ -92,12 +95,12 @@ export function MonthlySummaryHero() {
             <MatchesPerDayChart data={data.detail.matches_per_day} />
 
             <div className="monthly-detail-cols">
-              <div>
+              <div className="monthly-topmaps-col">
                 <SectionLabel>Top 3 mapas</SectionLabel>
                 <ul className="monthly-top-maps">
                   {data.detail.top_maps.map((m) => (
                     <li key={m.map_id}>
-                      <span>{m.map_id}</span>
+                      <span>{m.map_id.replace(/^de_/, "")}</span>
                       <span>
                         {m.wins}W-{m.losses}D
                       </span>
@@ -106,13 +109,20 @@ export function MonthlySummaryHero() {
                 </ul>
               </div>
               {data.detail.mvp && (
-                <div>
+                <div className="monthly-mvp-col">
                   <SectionLabel>MVP del mes</SectionLabel>
                   <div className="monthly-mvp-card">
-                    <div className="monthly-mvp-thumb" aria-hidden="true" />
+                    <img
+                      className="monthly-mvp-thumb"
+                      src={mapIconUrl(data.detail.mvp.map_id)}
+                      alt={data.detail.mvp.map_id.replace(/^de_/, "")}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                      }}
+                    />
                     <div>
                       <div className="monthly-mvp-title">
-                        {data.detail.mvp.map_id} · Ronda {data.detail.mvp.round}
+                        {data.detail.mvp.map_id.replace(/^de_/, "")} · Ronda {data.detail.mvp.round}
                       </div>
                       <div className="monthly-mvp-sub">
                         Clutch 1v{data.detail.mvp.clutch_size} · {data.detail.mvp.kills_in_round}{" "}

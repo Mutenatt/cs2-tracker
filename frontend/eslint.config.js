@@ -3,7 +3,16 @@ import globals from "globals";
 import typescript from "typescript-eslint";
 
 export default [
-  { ignores: ["dist", "node_modules", "vite.config.ts"] },
+  {
+    ignores: [
+      "dist",
+      "node_modules",
+      "vite.config.ts",
+      // Handoff crudo del design tool (preview runtime generado, no código
+      // de la app) -- support.js se declara "GENERATED ... do not edit".
+      "public/media/animaci-n-de-logo-three-js/**",
+    ],
+  },
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     languageOptions: {

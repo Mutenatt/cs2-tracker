@@ -10,14 +10,3 @@ export function useUser(): User {
   if (!user) throw new Error("useUser() usado fuera de un usuario autenticado");
   return user;
 }
-
-// Setter directo (no un refetch): lo usan los settings que ya reciben el
-// User actualizado como respuesta del PATCH/DELETE (ver setCustomBackground),
-// para no tener que pegarle de nuevo a /auth/me.
-export const UserUpdateContext = createContext<((user: User) => void) | null>(null);
-
-export function useUpdateUser(): (user: User) => void {
-  const update = useContext(UserUpdateContext);
-  if (!update) throw new Error("useUpdateUser() usado fuera de un usuario autenticado");
-  return update;
-}
