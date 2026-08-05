@@ -1,5 +1,6 @@
 """Capa de dominio: lógica de negocio pura, sin DB ni framework web."""
 
+from cs2tracker.domain.clip_utility import estimate_throw_tick
 from cs2tracker.domain.coach import (
     describe_early_round_deaths,
     early_round_death_pattern,
@@ -36,6 +37,7 @@ from cs2tracker.domain.utility import (
 )
 
 __all__ = [
+    "estimate_throw_tick",
     "DuelData",
     "compute_duels",
     "PlayerStat",

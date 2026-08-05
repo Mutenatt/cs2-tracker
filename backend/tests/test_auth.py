@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from cs2tracker.api.main import app
+from cs2tracker.api.ratelimit import _limiter as _rate_limiter
 from cs2tracker.auth import (
     COOKIE_NAME,
     build_login_url,
@@ -20,7 +21,7 @@ from cs2tracker.auth import (
     read_session_cookie,
     verify_callback,
 )
-from cs2tracker.auth_password import PENDING_COOKIE_NAME, create_pending_cookie
+from cs2tracker.auth_password import PENDING_COOKIE_NAME, create_pending_cookie, hash_password
 from cs2tracker.db import AccountSignup, User
 from cs2tracker.db.session import init_db
 
@@ -161,6 +162,43 @@ def test_auth_me_con_sesion(client):
     assert r.status_code == 200
     assert r.json()["steamid"] == "76561198000000000"
     assert r.json()["display_name"] == "Ana"
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    # Estado global in-memory (ver api/ratelimit.py) -- sin este reset, tests
+    # que pegan varias veces a /auth/login se contaminan entre sí (mismo IP
+    # de TestClient para todos).
+    _rate_limiter._hits.clear()
+    yield
+    _rate_limiter._hits.clear()
+
+
+def test_login_rate_limit_devuelve_429_tras_exceder_el_limite(client):
+    body = {"email": "nadie@test.local", "password": "cualquiera123"}
+    for _ in range(10):
+        assert client.post("/auth/login", json=body).status_code == 401
+    assert client.post("/auth/login", json=body).status_code == 429
+
+
+def test_login_cookie_es_secure_cuando_la_api_es_https(monkeypatch, client, tmp_path):
+    monkeypatch.setattr("cs2tracker.api.account._COOKIE_SECURE", True)
+    engine = init_db(f"sqlite:///{tmp_path}/t.sqlite")
+    with Session(engine) as s:
+        s.add(
+            User(
+                steamid="76561198000000001",
+                display_name="Bea",
+                avatar_url=None,
+                email="bea@test.local",
+                password_hash=hash_password("password123"),
+                email_verified_at="2026-01-01T00:00:00",
+            )
+        )
+        s.commit()
+    r = client.post("/auth/login", json={"email": "bea@test.local", "password": "password123"})
+    assert r.status_code == 200
+    assert "secure" in r.headers.get("set-cookie", "").lower()
 
 
 def test_auth_logout_borra_la_sesion(client):

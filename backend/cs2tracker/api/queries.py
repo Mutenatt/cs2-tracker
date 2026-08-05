@@ -16,6 +16,7 @@ from cs2tracker.db import (
     Blind,
     Damage,
     GlobalMetricStats,
+    Grenade,
     Kill,
     Match,
     MatchPlayer,
@@ -56,6 +57,18 @@ def zones_by_event_type(
                 PlayerMapZone.map == map_name,
                 PlayerMapZone.event_type == event_type,
             )
+        )
+        .scalars()
+        .all()
+    )
+
+
+def grenades_for_round(s: Session, match_id: str, round_num: int) -> list[Grenade]:
+    """Granadas detonadas en una ronda específica (posición de EFECTO, no de
+    origen del tiro) -- usado por el render de clips (infra/clips.py)."""
+    return list(
+        s.execute(
+            select(Grenade).where(Grenade.match_id == match_id, Grenade.round_num == round_num)
         )
         .scalars()
         .all()

@@ -440,6 +440,20 @@ html {
   color: var(--recon);
   background: color-mix(in srgb, var(--recon) 15%, transparent);
 }
+/* Line ups que sirven en los dos bandos: mitad y mitad, para que se lea a
+   simple vista que no son ni T ni CT. */
+.side-tag.both {
+  color: var(--recon);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--signal) 18%, transparent) 0 50%,
+    color-mix(in srgb, var(--recon) 18%, transparent) 50% 100%
+  );
+}
+.side-tag.retake {
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--text-dim) 15%, transparent);
+}
 .score-num {
   font-family: "IBM Plex Mono", monospace;
   font-size: 30px;

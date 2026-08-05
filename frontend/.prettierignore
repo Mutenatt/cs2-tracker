@@ -2,3 +2,8 @@ dist/
 node_modules/
 .git/
 package-lock.json
+# Videos de line ups: decenas de GB de .mp4 que prettier no tiene por que
+# recorrer (hacia que `npm run lint` tardara minutos).
+public/lineups/
+# Generado por backend/scripts/upload_lineups.py -- lo formatea json.dump
+src/data/lineups.json

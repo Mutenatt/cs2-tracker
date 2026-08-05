@@ -1,0 +1,1290 @@
+{
+  "de_cache": [
+    {
+      "id": "de_cache-deto-tt-backsideb",
+      "title": "Granada Explosiva — Backside B",
+      "side": "T",
+      "category": "he",
+      "to": "Backside B",
+      "video": "/lineups/de_cache/deto-tt-backsideB.mp4"
+    },
+    {
+      "id": "de_cache-flash-tt-garage",
+      "title": "Cegadora — Garage",
+      "side": "T",
+      "category": "flash",
+      "to": "Garage",
+      "video": "/lineups/de_cache/flash-tt-garage.mp4"
+    },
+    {
+      "id": "de_cache-moli-ct-lona",
+      "title": "Molotov — Lona (Versión 1)",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Lona",
+      "video": "/lineups/de_cache/moli-ct-lona.mp4"
+    },
+    {
+      "id": "de_cache-moli-ct-lona2",
+      "title": "Molotov — Lona (Versión 2)",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Lona",
+      "video": "/lineups/de_cache/moli-ct-lona2.mp4"
+    },
+    {
+      "id": "de_cache-moli-tt-backsideb",
+      "title": "Molotov — Backside B",
+      "side": "T",
+      "category": "molotov",
+      "to": "Backside B",
+      "video": "/lineups/de_cache/moli-tt-backsideB.mp4"
+    },
+    {
+      "id": "de_cache-moli-tt-default-headshotb",
+      "title": "Molotov — Headshot B",
+      "side": "T",
+      "category": "molotov",
+      "to": "Headshot B",
+      "video": "/lineups/de_cache/moli-tt-default-headshotB.mp4",
+      "notes": "Lanzamiento default."
+    },
+    {
+      "id": "de_cache-moli-tt-mediocemento",
+      "title": "Molotov — Medio Cemento",
+      "side": "T",
+      "category": "molotov",
+      "to": "Medio Cemento",
+      "video": "/lineups/de_cache/moli-tt-mediocemento.mp4"
+    },
+    {
+      "id": "de_cache-moli-tt-mulita",
+      "title": "Molotov — Mulita",
+      "side": "T",
+      "category": "molotov",
+      "to": "Mulita",
+      "video": "/lineups/de_cache/moli-tt-mulita.mp4"
+    },
+    {
+      "id": "de_cache-moli-tt-sitebtoxico",
+      "title": "Molotov — Site B (Tóxico)",
+      "side": "T",
+      "category": "molotov",
+      "to": "Site B (Tóxico)",
+      "video": "/lineups/de_cache/moli-tt-siteBToxico.mp4"
+    },
+    {
+      "id": "de_cache-moli-tt-sunroomheadshoot",
+      "title": "Molotov — Sunroom (Headshot)",
+      "side": "T",
+      "category": "molotov",
+      "to": "Sunroom (Headshot)",
+      "video": "/lineups/de_cache/moli-tt-sunroomHeadshoot.mp4"
+    },
+    {
+      "id": "de_cache-smoke-ct-basura-conector",
+      "title": "Humo — Basura -> Conector",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Basura -> Conector",
+      "video": "/lineups/de_cache/smoke-ct-basura-conector.mp4"
+    },
+    {
+      "id": "de_cache-smoke-ct-garage-basect",
+      "title": "Humo — Garage (base CT)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Garage (base CT)",
+      "video": "/lineups/de_cache/smoke-ct-garage-basect.mp4"
+    },
+    {
+      "id": "de_cache-smoke-ct-garage-toyota",
+      "title": "Humo — Garage -> Toyota",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Garage -> Toyota",
+      "video": "/lineups/de_cache/smoke-ct-garage-toyota.mp4"
+    },
+    {
+      "id": "de_cache-smoke-ct-garagea",
+      "title": "Humo — Garage A",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Garage A",
+      "video": "/lineups/de_cache/smoke-ct-garageA.mp4"
+    },
+    {
+      "id": "de_cache-smoke-ct-mainb",
+      "title": "Humo — Main B",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Main B",
+      "video": "/lineups/de_cache/smoke-ct-mainB.mp4"
+    },
+    {
+      "id": "de_cache-smoke-ct-mid-spawn1",
+      "title": "Humo — Mid (Versión 1)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_cache/smoke-ct-mid-spawn1.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_cache-smoke-ct-mid-spawn2",
+      "title": "Humo — Mid (Versión 2)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_cache/smoke-ct-mid-spawn2.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_cache-smoke-ct-mid-spawn3",
+      "title": "Humo — Mid (Versión 3)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_cache/smoke-ct-mid-spawn3.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_cache-smoke-ct-mid-spawn4",
+      "title": "Humo — Mid (Versión 4)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_cache/smoke-ct-mid-spawn4.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_cache-smoke-tt-afu-azul",
+      "title": "Humo — Afuera Azul",
+      "side": "T",
+      "category": "smoke",
+      "to": "Afuera Azul",
+      "video": "/lineups/de_cache/smoke-tt-afu-azul.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-calle",
+      "title": "Humo — Calle",
+      "side": "T",
+      "category": "smoke",
+      "to": "Calle",
+      "video": "/lineups/de_cache/smoke-tt-calle.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-ct",
+      "title": "Humo — Spawn CT",
+      "side": "T",
+      "category": "smoke",
+      "to": "Spawn CT",
+      "video": "/lineups/de_cache/smoke-tt-ct.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-defaulta",
+      "title": "Humo — Default A",
+      "side": "T",
+      "category": "smoke",
+      "to": "Default A",
+      "video": "/lineups/de_cache/smoke-tt-defaultA.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-heaveneasy",
+      "title": "Humo — Heaven (Fácil)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Heaven",
+      "video": "/lineups/de_cache/smoke-tt-heavenEasy.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-heavenhard",
+      "title": "Humo — Heaven (Difícil)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Heaven",
+      "video": "/lineups/de_cache/smoke-tt-heavenHard.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-leftmid",
+      "title": "Humo — Left Mid",
+      "side": "T",
+      "category": "smoke",
+      "to": "Left Mid",
+      "video": "/lineups/de_cache/smoke-tt-leftMid.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-mainb",
+      "title": "Humo — Main B",
+      "side": "T",
+      "category": "smoke",
+      "to": "Main B",
+      "video": "/lineups/de_cache/smoke-tt-mainB.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-mid",
+      "title": "Humo — Mid",
+      "side": "T",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_cache/smoke-tt-mid.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-rightmid",
+      "title": "Humo — Right Mid",
+      "side": "T",
+      "category": "smoke",
+      "to": "Right Mid",
+      "video": "/lineups/de_cache/smoke-tt-rightMid.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-roja",
+      "title": "Humo — Roja",
+      "side": "T",
+      "category": "smoke",
+      "to": "Roja",
+      "video": "/lineups/de_cache/smoke-tt-roja.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-siteb",
+      "title": "Humo — Site B",
+      "side": "T",
+      "category": "smoke",
+      "to": "Site B",
+      "video": "/lineups/de_cache/smoke-tt-siteB.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-sitecaja",
+      "title": "Humo — Site Caja",
+      "side": "T",
+      "category": "smoke",
+      "to": "Site Caja",
+      "video": "/lineups/de_cache/smoke-tt-siteCaja.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-sitecajaa",
+      "title": "Humo — Site Caja A",
+      "side": "T",
+      "category": "smoke",
+      "to": "Site Caja A",
+      "video": "/lineups/de_cache/smoke-tt-siteCajaA.mp4"
+    },
+    {
+      "id": "de_cache-smoke-tt-solocombination",
+      "title": "Humo — Combinación en solitario",
+      "side": "T",
+      "category": "smoke",
+      "to": "Combinación en solitario",
+      "video": "/lineups/de_cache/smoke-tt-soloCombination.mp4"
+    }
+  ],
+  "de_dust2": [
+    {
+      "id": "de_dust2-flash-tt-baranda",
+      "title": "Cegadora — Baranda",
+      "side": "T",
+      "category": "flash",
+      "to": "Baranda",
+      "video": "/lineups/de_dust2/flash-tt-baranda.mp4"
+    },
+    {
+      "id": "de_dust2-flash-tt-barandaoscuro",
+      "title": "Cegadora — Baranda Oscuro",
+      "side": "T",
+      "category": "flash",
+      "to": "Baranda Oscuro",
+      "video": "/lineups/de_dust2/flash-tt-barandaOscuro.mp4"
+    },
+    {
+      "id": "de_dust2-flash-tt-fondo",
+      "title": "Cegadora — Fondo",
+      "side": "T",
+      "category": "flash",
+      "to": "Fondo",
+      "video": "/lineups/de_dust2/flash-tt-fondo.mp4"
+    },
+    {
+      "id": "de_dust2-flash-tt-larga",
+      "title": "Cegadora — Larga",
+      "side": "T",
+      "category": "flash",
+      "to": "Larga",
+      "video": "/lineups/de_dust2/flash-tt-larga.mp4"
+    },
+    {
+      "id": "de_dust2-flash-tt-puertafondo",
+      "title": "Cegadora — Puerta Fondo",
+      "side": "T",
+      "category": "flash",
+      "to": "Puerta Fondo",
+      "video": "/lineups/de_dust2/flash-tt-puertaFondo.mp4"
+    },
+    {
+      "id": "de_dust2-flash-tt-sitea",
+      "title": "Cegadora — Site A",
+      "side": "T",
+      "category": "flash",
+      "to": "Site A",
+      "video": "/lineups/de_dust2/flash-tt-siteA.mp4"
+    },
+    {
+      "id": "de_dust2-moli-ct-baranda",
+      "title": "Molotov — Baranda",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Baranda",
+      "video": "/lineups/de_dust2/moli-ct-baranda.mp4"
+    },
+    {
+      "id": "de_dust2-moli-cttt-sitea-desderampa",
+      "title": "Molotov — Site A",
+      "side": "BOTH",
+      "category": "molotov",
+      "to": "Site A",
+      "video": "/lineups/de_dust2/moli-cttt-siteA-desdeRampa.mp4",
+      "from": "Rampa",
+      "notes": "Sirve en T y en CT."
+    },
+    {
+      "id": "de_dust2-moli-cttt-sitea",
+      "title": "Molotov — Site A",
+      "side": "BOTH",
+      "category": "molotov",
+      "to": "Site A",
+      "video": "/lineups/de_dust2/moli-cttt-siteA.mp4",
+      "notes": "Sirve en T y en CT."
+    },
+    {
+      "id": "de_dust2-moli-retake-arenaninja",
+      "title": "Molotov — Arena Ninja",
+      "side": "RETAKE",
+      "category": "molotov",
+      "to": "Arena Ninja",
+      "video": "/lineups/de_dust2/moli-retake-arenaNinja.mp4"
+    },
+    {
+      "id": "de_dust2-moli-retake-cajab",
+      "title": "Molotov — Caja B",
+      "side": "RETAKE",
+      "category": "molotov",
+      "to": "Caja B",
+      "video": "/lineups/de_dust2/moli-retake-cajaB.mp4"
+    },
+    {
+      "id": "de_dust2-moli-retake-cat",
+      "title": "Molotov — Catwalk",
+      "side": "RETAKE",
+      "category": "molotov",
+      "to": "Catwalk",
+      "video": "/lineups/de_dust2/moli-retake-cat.mp4"
+    },
+    {
+      "id": "de_dust2-moli-retake-siteb",
+      "title": "Molotov — Site B",
+      "side": "RETAKE",
+      "category": "molotov",
+      "to": "Site B",
+      "video": "/lineups/de_dust2/moli-retake-siteB.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-fondo",
+      "title": "Humo — Fondo (Versión 1)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Fondo",
+      "video": "/lineups/de_dust2/smoke-ct-fondo.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-fondo2",
+      "title": "Humo — Fondo (Versión 2)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Fondo",
+      "video": "/lineups/de_dust2/smoke-ct-fondo2.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-mediospawn",
+      "title": "Humo — Medio (desde spawn)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Medio (desde spawn)",
+      "video": "/lineups/de_dust2/smoke-ct-mediospawn.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-mid",
+      "title": "Humo — Mid",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_dust2/smoke-ct-mid.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-oscuro",
+      "title": "Humo — Oscuro",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Oscuro",
+      "video": "/lineups/de_dust2/smoke-ct-oscuro.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-previaoscuro",
+      "title": "Humo — Previa Oscuro",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Previa Oscuro",
+      "video": "/lineups/de_dust2/smoke-ct-previaoscuro.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-puertaavanzado",
+      "title": "Humo — Puerta (avanzado)",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Puerta (avanzado)",
+      "video": "/lineups/de_dust2/smoke-ct-puertaavanzado.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-ct-suicida",
+      "title": "Humo — Suicida",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Suicida",
+      "video": "/lineups/de_dust2/smoke-ct-suicida.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-cajamid",
+      "title": "Humo — Caja Mid",
+      "side": "T",
+      "category": "smoke",
+      "to": "Caja Mid",
+      "video": "/lineups/de_dust2/smoke-tt-CajaMid.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-auto",
+      "title": "Humo — Auto",
+      "side": "T",
+      "category": "smoke",
+      "to": "Auto",
+      "video": "/lineups/de_dust2/smoke-tt-auto.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-baranda",
+      "title": "Humo — Baranda",
+      "side": "T",
+      "category": "smoke",
+      "to": "Baranda",
+      "video": "/lineups/de_dust2/smoke-tt-baranda.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-ct-mid",
+      "title": "Humo — CT Mid",
+      "side": "T",
+      "category": "smoke",
+      "to": "CT Mid",
+      "video": "/lineups/de_dust2/smoke-tt-ct-mid.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-entryoscuro",
+      "title": "Humo — Entry Oscuro",
+      "side": "T",
+      "category": "smoke",
+      "to": "Entry Oscuro",
+      "video": "/lineups/de_dust2/smoke-tt-entryOscuro.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-long",
+      "title": "Humo — Long",
+      "side": "T",
+      "category": "smoke",
+      "to": "Long",
+      "video": "/lineups/de_dust2/smoke-tt-long.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-puerta-baranda",
+      "title": "Humo — Puerta -> Baranda",
+      "side": "T",
+      "category": "smoke",
+      "to": "Puerta -> Baranda",
+      "video": "/lineups/de_dust2/smoke-tt-puerta-baranda.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-puerta-previaoscuro",
+      "title": "Humo — Puerta (previa Oscuro)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Puerta (previa Oscuro)",
+      "video": "/lineups/de_dust2/smoke-tt-puerta-previaOscuro.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-puertaoscuro",
+      "title": "Humo — Puerta Oscuro (Versión 1)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Puerta Oscuro",
+      "video": "/lineups/de_dust2/smoke-tt-puertaOscuro.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-puertaoscuro2",
+      "title": "Humo — Puerta Oscuro (Versión 2)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Puerta Oscuro",
+      "video": "/lineups/de_dust2/smoke-tt-puertaOscuro2.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-puertalong",
+      "title": "Humo — Puerta Long",
+      "side": "T",
+      "category": "smoke",
+      "to": "Puerta Long",
+      "video": "/lineups/de_dust2/smoke-tt-puertalong.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-rampact",
+      "title": "Humo — Rampa CT",
+      "side": "T",
+      "category": "smoke",
+      "to": "Rampa CT",
+      "video": "/lineups/de_dust2/smoke-tt-rampaCT.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-spawnmid",
+      "title": "Humo — Spawn MID",
+      "side": "T",
+      "category": "smoke",
+      "to": "Spawn MID",
+      "video": "/lineups/de_dust2/smoke-tt-spawnMID.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-uperb",
+      "title": "Humo — Uper B",
+      "side": "T",
+      "category": "smoke",
+      "to": "Uper B",
+      "video": "/lineups/de_dust2/smoke-tt-uperB.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-ventana-previaoscuro",
+      "title": "Humo — Ventana (previa Oscuro)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Ventana (previa Oscuro)",
+      "video": "/lineups/de_dust2/smoke-tt-ventana-previaOscuro.mp4"
+    },
+    {
+      "id": "de_dust2-smoke-tt-ventanab",
+      "title": "Humo — Ventana B",
+      "side": "T",
+      "category": "smoke",
+      "to": "Ventana B",
+      "video": "/lineups/de_dust2/smoke-tt-ventanaB.mp4"
+    }
+  ],
+  "de_inferno": [
+    {
+      "id": "de_inferno-deto-tt-triple",
+      "title": "Granada Explosiva — Triple",
+      "side": "T",
+      "category": "he",
+      "to": "Triple",
+      "video": "/lineups/de_inferno/deto-tt-triple.mp4"
+    },
+    {
+      "id": "de_inferno-flash-ct-arena",
+      "title": "Cegadora — Arena",
+      "side": "CT",
+      "category": "flash",
+      "to": "Arena",
+      "video": "/lineups/de_inferno/flash-ct-arena.mp4"
+    },
+    {
+      "id": "de_inferno-flash-ct-banana",
+      "title": "Cegadora — Banana",
+      "side": "CT",
+      "category": "flash",
+      "to": "Banana",
+      "video": "/lineups/de_inferno/flash-ct-banana.mp4"
+    },
+    {
+      "id": "de_inferno-flash-tt-banana",
+      "title": "Cegadora — Banana",
+      "side": "T",
+      "category": "flash",
+      "to": "Banana",
+      "video": "/lineups/de_inferno/flash-tt-banana.mp4"
+    },
+    {
+      "id": "de_inferno-flash-tt-longa",
+      "title": "Cegadora — Long A",
+      "side": "T",
+      "category": "flash",
+      "to": "Long A",
+      "video": "/lineups/de_inferno/flash-tt-longA.mp4"
+    },
+    {
+      "id": "de_inferno-flash-tt-mid",
+      "title": "Cegadora — Mid",
+      "side": "T",
+      "category": "flash",
+      "to": "Mid",
+      "video": "/lineups/de_inferno/flash-tt-mid.mp4"
+    },
+    {
+      "id": "de_inferno-flash-tt-short",
+      "title": "Cegadora — Short",
+      "side": "T",
+      "category": "flash",
+      "to": "Short",
+      "video": "/lineups/de_inferno/flash-tt-short.mp4"
+    },
+    {
+      "id": "de_inferno-flash-tt-tapete",
+      "title": "Cegadora — Tapete",
+      "side": "T",
+      "category": "flash",
+      "to": "Tapete",
+      "video": "/lineups/de_inferno/flash-tt-tapete.mp4"
+    },
+    {
+      "id": "de_inferno-moli-ct-banana",
+      "title": "Molotov — Banana",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Banana",
+      "video": "/lineups/de_inferno/moli-ct-banana.mp4"
+    },
+    {
+      "id": "de_inferno-moli-ct-default-retake",
+      "title": "Molotov — Default",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Default",
+      "video": "/lineups/de_inferno/moli-ct-default-retake.mp4",
+      "notes": "Para retake."
+    },
+    {
+      "id": "de_inferno-moli-tt-ataud",
+      "title": "Molotov — Ataúd",
+      "side": "T",
+      "category": "molotov",
+      "to": "Ataúd",
+      "video": "/lineups/de_inferno/moli-tt-ataud.mp4"
+    },
+    {
+      "id": "de_inferno-moli-tt-default",
+      "title": "Molotov — Default",
+      "side": "T",
+      "category": "molotov",
+      "to": "Default",
+      "video": "/lineups/de_inferno/moli-tt-default.mp4"
+    },
+    {
+      "id": "de_inferno-moli-tt-oscurob",
+      "title": "Molotov — Oscuro B",
+      "side": "T",
+      "category": "molotov",
+      "to": "Oscuro B",
+      "video": "/lineups/de_inferno/moli-tt-oscuroB.mp4"
+    },
+    {
+      "id": "de_inferno-moli-tt-tripleeasy",
+      "title": "Molotov — Triple (Fácil)",
+      "side": "T",
+      "category": "molotov",
+      "to": "Triple",
+      "video": "/lineups/de_inferno/moli-tt-tripleeasy.mp4"
+    },
+    {
+      "id": "de_inferno-moli-tt-triplepro",
+      "title": "Molotov — Triple (Pro)",
+      "side": "T",
+      "category": "molotov",
+      "to": "Triple",
+      "video": "/lineups/de_inferno/moli-tt-triplepro.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-ct-arena-retake",
+      "title": "Humo — Arena",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Arena",
+      "video": "/lineups/de_inferno/smoke-ct-arena-retake.mp4",
+      "notes": "Para retake."
+    },
+    {
+      "id": "de_inferno-smoke-ct-banana-spawn",
+      "title": "Humo — Banana",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Banana",
+      "video": "/lineups/de_inferno/smoke-ct-banana-spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_inferno-smoke-ct-banana--retake",
+      "title": "Humo — Banana",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Banana",
+      "video": "/lineups/de_inferno/smoke-ct-banana.-retake.mp4",
+      "notes": "Para retake."
+    },
+    {
+      "id": "de_inferno-smoke-ct-medio-spawn",
+      "title": "Humo — Medio",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Medio",
+      "video": "/lineups/de_inferno/smoke-ct-medio.spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_inferno-smoke-ct-mid-spawn",
+      "title": "Humo — Mid",
+      "side": "CT",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_inferno/smoke-ct-mid-spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_inferno-smoke-tt-a-oneguy",
+      "title": "Humo — Site A",
+      "side": "T",
+      "category": "smoke",
+      "to": "Site A",
+      "video": "/lineups/de_inferno/smoke-tt-A-oneguy.mp4",
+      "notes": "Un solo jugador."
+    },
+    {
+      "id": "de_inferno-smoke-tt-arcovino-oneguy",
+      "title": "Humo — Arco del Vino",
+      "side": "T",
+      "category": "smoke",
+      "to": "Arco del Vino",
+      "video": "/lineups/de_inferno/smoke-tt-arcoVino-oneguy.mp4",
+      "notes": "Un solo jugador."
+    },
+    {
+      "id": "de_inferno-smoke-tt-arena",
+      "title": "Humo — Arena",
+      "side": "T",
+      "category": "smoke",
+      "to": "Arena",
+      "video": "/lineups/de_inferno/smoke-tt-arena.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-tt-ataud",
+      "title": "Humo — Ataúd",
+      "side": "T",
+      "category": "smoke",
+      "to": "Ataúd",
+      "video": "/lineups/de_inferno/smoke-tt-ataud.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-tt-camioneta",
+      "title": "Humo — Camioneta",
+      "side": "T",
+      "category": "smoke",
+      "to": "Camioneta",
+      "video": "/lineups/de_inferno/smoke-tt-camioneta.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-tt-ct",
+      "title": "Humo — Spawn CT",
+      "side": "T",
+      "category": "smoke",
+      "to": "Spawn CT",
+      "video": "/lineups/de_inferno/smoke-tt-ct.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-tt-long-spawn",
+      "title": "Humo — Long",
+      "side": "T",
+      "category": "smoke",
+      "to": "Long",
+      "video": "/lineups/de_inferno/smoke-tt-long-spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_inferno-smoke-tt-long",
+      "title": "Humo — Long",
+      "side": "T",
+      "category": "smoke",
+      "to": "Long",
+      "video": "/lineups/de_inferno/smoke-tt-long.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-tt-mid-spawn",
+      "title": "Humo — Mid",
+      "side": "T",
+      "category": "smoke",
+      "to": "Mid",
+      "video": "/lineups/de_inferno/smoke-tt-mid-spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_inferno-smoke-tt-oneguyb",
+      "title": "Humo — Site B (un jugador)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Site B (un jugador)",
+      "video": "/lineups/de_inferno/smoke-tt-oneguyB.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-tt-sitea-long",
+      "title": "Humo — Site A (desde Long)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Site A (desde Long)",
+      "video": "/lineups/de_inferno/smoke-tt-siteA-Long.mp4"
+    },
+    {
+      "id": "de_inferno-smoke-tt-sitea-pasarela",
+      "title": "Humo — Site A Pasarela",
+      "side": "T",
+      "category": "smoke",
+      "to": "Site A Pasarela",
+      "video": "/lineups/de_inferno/smoke-tt-siteA-pasarela.mp4"
+    }
+  ],
+  "de_nuke": [
+    {
+      "id": "de_nuke-deto-ct-radio",
+      "title": "Granada Explosiva — Radio (Versión 1)",
+      "side": "CT",
+      "category": "he",
+      "to": "Radio",
+      "video": "/lineups/de_nuke/deto-ct-radio.mp4"
+    },
+    {
+      "id": "de_nuke-deto-ct-radio2",
+      "title": "Granada Explosiva — Radio (Versión 2)",
+      "side": "CT",
+      "category": "he",
+      "to": "Radio",
+      "video": "/lineups/de_nuke/deto-ct-radio2.mp4"
+    },
+    {
+      "id": "de_nuke-deto-tt-metal",
+      "title": "Granada Explosiva — Metal",
+      "side": "T",
+      "category": "he",
+      "to": "Metal",
+      "video": "/lineups/de_nuke/deto-tt-metal.mp4"
+    },
+    {
+      "id": "de_nuke-deto-tt-roja",
+      "title": "Granada Explosiva — Roja",
+      "side": "T",
+      "category": "he",
+      "to": "Roja",
+      "video": "/lineups/de_nuke/deto-tt-roja.mp4"
+    },
+    {
+      "id": "de_nuke-flash-ct-ducto",
+      "title": "Cegadora — Ducto",
+      "side": "CT",
+      "category": "flash",
+      "to": "Ducto",
+      "video": "/lineups/de_nuke/flash-ct-ducto.mp4"
+    },
+    {
+      "id": "de_nuke-flash-ct-heaven1",
+      "title": "Cegadora — Heaven (Versión 1)",
+      "side": "CT",
+      "category": "flash",
+      "to": "Heaven",
+      "video": "/lineups/de_nuke/flash-ct-heaven1.mp4"
+    },
+    {
+      "id": "de_nuke-flash-ct-heaven2",
+      "title": "Cegadora — Heaven (Versión 2)",
+      "side": "CT",
+      "category": "flash",
+      "to": "Heaven",
+      "video": "/lineups/de_nuke/flash-ct-heaven2.mp4"
+    },
+    {
+      "id": "de_nuke-flash-ct-heaven3",
+      "title": "Cegadora — Heaven (Versión 3)",
+      "side": "CT",
+      "category": "flash",
+      "to": "Heaven",
+      "video": "/lineups/de_nuke/flash-ct-heaven3.mp4"
+    },
+    {
+      "id": "de_nuke-flash-tt-rampa",
+      "title": "Cegadora — Rampa",
+      "side": "T",
+      "category": "flash",
+      "to": "Rampa",
+      "video": "/lineups/de_nuke/flash-tt-rampa.mp4"
+    },
+    {
+      "id": "de_nuke-flash-tt-site3",
+      "title": "Cegadora — Site 3",
+      "side": "T",
+      "category": "flash",
+      "to": "Site 3",
+      "video": "/lineups/de_nuke/flash-tt-site3.mp4"
+    },
+    {
+      "id": "de_nuke-flash-tt-sitea",
+      "title": "Cegadora — Site A",
+      "side": "T",
+      "category": "flash",
+      "to": "Site A",
+      "video": "/lineups/de_nuke/flash-tt-siteA.mp4"
+    },
+    {
+      "id": "de_nuke-moli-ct-defaulta",
+      "title": "Molotov — Default A",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Default A",
+      "video": "/lineups/de_nuke/moli-ct-defaultA.mp4"
+    },
+    {
+      "id": "de_nuke-moli-ct-ducto",
+      "title": "Molotov — Ducto",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Ducto",
+      "video": "/lineups/de_nuke/moli-ct-ducto.mp4"
+    },
+    {
+      "id": "de_nuke-moli-ct-kz",
+      "title": "Molotov — KZ",
+      "side": "CT",
+      "category": "molotov",
+      "to": "KZ",
+      "video": "/lineups/de_nuke/moli-ct-kz.mp4"
+    },
+    {
+      "id": "de_nuke-moli-ct-medio",
+      "title": "Molotov — Medio",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Medio",
+      "video": "/lineups/de_nuke/moli-ct-medio.mp4"
+    },
+    {
+      "id": "de_nuke-moli-ct-silo",
+      "title": "Molotov — Silo",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Silo",
+      "video": "/lineups/de_nuke/moli-ct-silo.mp4"
+    },
+    {
+      "id": "de_nuke-moli-ct-taxi",
+      "title": "Molotov — Taxi",
+      "side": "CT",
+      "category": "molotov",
+      "to": "Taxi",
+      "video": "/lineups/de_nuke/moli-ct-taxi.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-cielo",
+      "title": "Molotov — Cielo",
+      "side": "T",
+      "category": "molotov",
+      "to": "Cielo",
+      "video": "/lineups/de_nuke/moli-tt-cielo.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-falsoducto",
+      "title": "Molotov — Falso Ducto",
+      "side": "T",
+      "category": "molotov",
+      "to": "Falso Ducto",
+      "video": "/lineups/de_nuke/moli-tt-falsoducto.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-kz1",
+      "title": "Molotov — KZ (Versión 1)",
+      "side": "T",
+      "category": "molotov",
+      "to": "KZ",
+      "video": "/lineups/de_nuke/moli-tt-kz1.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-kz2",
+      "title": "Molotov — KZ (Versión 2)",
+      "side": "T",
+      "category": "molotov",
+      "to": "KZ",
+      "video": "/lineups/de_nuke/moli-tt-kz2.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-kz3",
+      "title": "Molotov — KZ (Versión 3)",
+      "side": "T",
+      "category": "molotov",
+      "to": "KZ",
+      "video": "/lineups/de_nuke/moli-tt-kz3.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-rafters",
+      "title": "Molotov — Rafters",
+      "side": "T",
+      "category": "molotov",
+      "to": "Rafters",
+      "video": "/lineups/de_nuke/moli-tt-rafters.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-roja",
+      "title": "Molotov — Roja",
+      "side": "T",
+      "category": "molotov",
+      "to": "Roja",
+      "video": "/lineups/de_nuke/moli-tt-roja.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-secret",
+      "title": "Molotov — Secret",
+      "side": "T",
+      "category": "molotov",
+      "to": "Secret",
+      "video": "/lineups/de_nuke/moli-tt-secret.mp4"
+    },
+    {
+      "id": "de_nuke-moli-tt-sitea-default",
+      "title": "Molotov — Site A (Versión 1)",
+      "side": "T",
+      "category": "molotov",
+      "to": "Site A",
+      "video": "/lineups/de_nuke/moli-tt-siteA-default.mp4",
+      "notes": "Lanzamiento default."
+    },
+    {
+      "id": "de_nuke-moli-tt-sitea-default2",
+      "title": "Molotov — Site A (Versión 2)",
+      "side": "T",
+      "category": "molotov",
+      "to": "Site A",
+      "video": "/lineups/de_nuke/moli-tt-siteA-default2.mp4",
+      "notes": "Lanzamiento default."
+    },
+    {
+      "id": "de_nuke-smoke-tt-afue1",
+      "title": "Humo — Afuera (Versión 1)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Afuera",
+      "video": "/lineups/de_nuke/smoke-tt-afue1.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-afue2",
+      "title": "Humo — Afuera (Versión 2)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Afuera",
+      "video": "/lineups/de_nuke/smoke-tt-afue2.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-cieloa",
+      "title": "Humo — Cielo A",
+      "side": "T",
+      "category": "smoke",
+      "to": "Cielo A",
+      "video": "/lineups/de_nuke/smoke-tt-cieloA.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-ducto-spawn",
+      "title": "Humo — Ducto (Versión 1)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Ducto",
+      "video": "/lineups/de_nuke/smoke-tt-ducto-spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_nuke-smoke-tt-ductos-spawn2",
+      "title": "Humo — Ducto (Versión 2)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Ducto",
+      "video": "/lineups/de_nuke/smoke-tt-ductos-spawn2.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_nuke-smoke-tt-garage-spawn",
+      "title": "Humo — Garage",
+      "side": "T",
+      "category": "smoke",
+      "to": "Garage",
+      "video": "/lineups/de_nuke/smoke-tt-garage-spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_nuke-smoke-tt-garage2",
+      "title": "Humo — Garage 2",
+      "side": "T",
+      "category": "smoke",
+      "to": "Garage 2",
+      "video": "/lineups/de_nuke/smoke-tt-garage2.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-garageafue",
+      "title": "Humo — Garage Afuera",
+      "side": "T",
+      "category": "smoke",
+      "to": "Garage Afuera",
+      "video": "/lineups/de_nuke/smoke-tt-garageAfue.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-lockers",
+      "title": "Humo — Lockers (Versión 1)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Lockers",
+      "video": "/lineups/de_nuke/smoke-tt-lockers.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-lockers2",
+      "title": "Humo — Lockers (Versión 2)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Lockers",
+      "video": "/lineups/de_nuke/smoke-tt-lockers2.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-lockers3",
+      "title": "Humo — Lockers (Versión 3)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Lockers",
+      "video": "/lineups/de_nuke/smoke-tt-lockers3.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-pasajelockers",
+      "title": "Humo — Pasaje Lockers",
+      "side": "T",
+      "category": "smoke",
+      "to": "Pasaje Lockers",
+      "video": "/lineups/de_nuke/smoke-tt-pasajeLockers.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-rampa",
+      "title": "Humo — Rampa",
+      "side": "T",
+      "category": "smoke",
+      "to": "Rampa",
+      "video": "/lineups/de_nuke/smoke-tt-rampa.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-rampaprofunda",
+      "title": "Humo — Rampa Profunda",
+      "side": "T",
+      "category": "smoke",
+      "to": "Rampa Profunda",
+      "video": "/lineups/de_nuke/smoke-tt-rampaprofunda.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-roja",
+      "title": "Humo — Roja",
+      "side": "T",
+      "category": "smoke",
+      "to": "Roja",
+      "video": "/lineups/de_nuke/smoke-tt-roja.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-rojasecret",
+      "title": "Humo — Roja -> Secret (Versión 1)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Roja -> Secret",
+      "video": "/lineups/de_nuke/smoke-tt-rojaSecret.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-rojasecret2",
+      "title": "Humo — Roja -> Secret (Versión 2)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Roja -> Secret",
+      "video": "/lineups/de_nuke/smoke-tt-rojaSecret2.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-rojasecret3",
+      "title": "Humo — Roja -> Secret (Versión 3)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Roja -> Secret",
+      "video": "/lineups/de_nuke/smoke-tt-rojaSecret3.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-secretroja1",
+      "title": "Humo — Secret -> Roja (Versión 1)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Secret -> Roja",
+      "video": "/lineups/de_nuke/smoke-tt-secretRoja1.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-secretroja2",
+      "title": "Humo — Secret -> Roja (Versión 2)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Secret -> Roja",
+      "video": "/lineups/de_nuke/smoke-tt-secretRoja2.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-secretroja3",
+      "title": "Humo — Secret -> Roja (Versión 3)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Secret -> Roja",
+      "video": "/lineups/de_nuke/smoke-tt-secretRoja3.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-secretroja4",
+      "title": "Humo — Secret -> Roja (Versión 4)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Secret -> Roja",
+      "video": "/lineups/de_nuke/smoke-tt-secretRoja4.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-taxi-afu",
+      "title": "Humo — Taxi Afuera",
+      "side": "T",
+      "category": "smoke",
+      "to": "Taxi Afuera",
+      "video": "/lineups/de_nuke/smoke-tt-taxi-afu.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-taxi1",
+      "title": "Humo — Taxi (Versión 1)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Taxi",
+      "video": "/lineups/de_nuke/smoke-tt-taxi1.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-taxi2",
+      "title": "Humo — Taxi (Versión 2)",
+      "side": "T",
+      "category": "smoke",
+      "to": "Taxi",
+      "video": "/lineups/de_nuke/smoke-tt-taxi2.mp4"
+    },
+    {
+      "id": "de_nuke-smoke-tt-taxirooft-spawn",
+      "title": "Humo — Taxi Rooftop",
+      "side": "T",
+      "category": "smoke",
+      "to": "Taxi Rooftop",
+      "video": "/lineups/de_nuke/smoke-tt-taxiRooft-spawn.mp4",
+      "notes": "Desde el spawn."
+    },
+    {
+      "id": "de_nuke-smoke-tt-taxirooft",
+      "title": "Humo — Taxi Rooftop",
+      "side": "T",
+      "category": "smoke",
+      "to": "Taxi Rooftop",
+      "video": "/lineups/de_nuke/smoke-tt-taxiRooft.mp4"
+    }
+  ]
+}

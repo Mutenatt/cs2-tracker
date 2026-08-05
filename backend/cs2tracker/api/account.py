@@ -22,6 +22,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from cs2tracker.api.ratelimit import rate_limit
 from cs2tracker.api.schemas import (
     CustomBackgroundIn,
     ForgotPasswordIn,
@@ -77,6 +78,11 @@ _BACKGROUND_URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 # deliberadamente costoso -- eso filtra qué emails están registrados).
 _DUMMY_HASH = hash_password(secrets.token_hex(16))
 
+# Cookies con Secure solo si la API se sirve por https -- en dev
+# (http://localhost) forzarlo rompería la sesión, porque el navegador
+# descarta cookies Secure en respuestas http.
+_COOKIE_SECURE = settings.api_public_url.startswith("https://")
+
 
 def _me_out_for_user(user: User) -> MeOut:
     return MeOut(
@@ -111,10 +117,16 @@ def _set_pending_cookie(resp: RedirectResponse, pending_id: int) -> None:
         max_age=PENDING_SESSION_MAX_AGE,
         httponly=True,
         samesite="lax",
+        secure=_COOKIE_SECURE,
     )
 
 
-@router.post("/register", status_code=201, response_model=MeOut)
+@router.post(
+    "/register",
+    status_code=201,
+    response_model=MeOut,
+    dependencies=[Depends(rate_limit(5, 60, "register"))],
+)
 def auth_register(body: RegisterIn):
     email = normalize_email(body.email)
     if not is_valid_email(email):
@@ -178,7 +190,10 @@ def auth_verify_email(token: str):
     return resp
 
 
-@router.post("/resend-verification")
+@router.post(
+    "/resend-verification",
+    dependencies=[Depends(rate_limit(5, 60, "resend-verification"))],
+)
 def auth_resend_verification(request: Request):
     pending_id = get_current_pending_id(request)
     with Session(get_engine()) as s:
@@ -258,12 +273,17 @@ async def auth_callback(request: Request):
         max_age=REAL_SESSION_MAX_AGE,
         httponly=True,
         samesite="lax",
+        secure=_COOKIE_SECURE,
     )
     resp.delete_cookie(PENDING_COOKIE_NAME)
     return resp
 
 
-@router.post("/login", response_model=MeOut)
+@router.post(
+    "/login",
+    response_model=MeOut,
+    dependencies=[Depends(rate_limit(10, 60, "login"))],
+)
 def auth_login(body: LoginIn):
     email = normalize_email(body.email)
 
@@ -282,6 +302,7 @@ def auth_login(body: LoginIn):
                 max_age=REAL_SESSION_MAX_AGE,
                 httponly=True,
                 samesite="lax",
+                secure=_COOKIE_SECURE,
             )
             return resp
 
@@ -303,7 +324,10 @@ def auth_login(body: LoginIn):
         raise HTTPException(401, "credenciales inválidas")
 
 
-@router.post("/forgot-password")
+@router.post(
+    "/forgot-password",
+    dependencies=[Depends(rate_limit(5, 60, "forgot-password"))],
+)
 def auth_forgot_password(body: ForgotPasswordIn):
     email = normalize_email(body.email)
     with Session(get_engine()) as s:
@@ -326,7 +350,10 @@ def auth_forgot_password(body: ForgotPasswordIn):
     return {"ok": True}
 
 
-@router.post("/reset-password")
+@router.post(
+    "/reset-password",
+    dependencies=[Depends(rate_limit(10, 60, "reset-password"))],
+)
 def auth_reset_password(body: ResetPasswordIn):
     decoded = read_password_reset_token(body.token)
     if decoded is None:

@@ -128,6 +128,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    # HSTS solo tiene sentido si la API efectivamente se sirve por https --
+    # emitirlo en dev (http://localhost) no hace nada (el navegador lo
+    # ignora sobre http) pero puede confundir, así que se condiciona.
+    if settings.api_public_url.startswith("https://"):
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    return response
+
+
 app.include_router(account_router)
 app.include_router(autofetch_router)
 app.include_router(onboarding_router)
@@ -845,6 +862,21 @@ def _render_clip_job(job_id: int) -> None:
         s.commit()
         settings.clips_dir.mkdir(parents=True, exist_ok=True)
         out = settings.clips_dir / f"clip_{job.id}_{job.match_id}_r{job.round_num}.mp4"
+
+        match_players = (
+            s.execute(select(MatchPlayer).where(MatchPlayer.match_id == job.match_id))
+            .scalars()
+            .all()
+        )
+        names = dict(
+            s.execute(
+                select(Player.steamid, Player.name).where(
+                    Player.steamid.in_([mp.steamid for mp in match_players])
+                )
+            ).all()
+        )
+        roster = {mp.steamid: (names.get(mp.steamid) or mp.steamid) for mp in match_players}
+
         try:
             clips_infra.render_clip(
                 dem_path=dem,
@@ -854,6 +886,7 @@ def _render_clip_job(job_id: int) -> None:
                 label=job.label,
                 player_name=(player.name if player else None) or job.steamid,
                 out_path=out,
+                roster=roster,
             )
         except Exception as exc:  # noqa: BLE001 -- el error se persiste, no se pierde
             job.status, job.error = "error", str(exc)
