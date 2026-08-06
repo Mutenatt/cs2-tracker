@@ -63,9 +63,23 @@ def _async_const(value):
 def client(tmp_path, monkeypatch):
     # DB limpia por si el import de main la necesita; el cache singleton se
     # limpia para que un test no vea el ranking cacheado por otro.
+    from sqlalchemy.orm import Session
+
+    from cs2tracker.db import Player, User
     from cs2tracker.db.session import init_db
 
-    init_db(f"sqlite:///{tmp_path}/t.sqlite")
+    engine = init_db(f"sqlite:///{tmp_path}/t.sqlite")
+    with Session(engine) as s:
+        s.add(Player(steamid=STEAMID, name="Ana"))
+        s.add(
+            User(
+                steamid=STEAMID,
+                email="ana@test.local",
+                password_hash="x",
+                email_verified_at="2026-01-01T00:00:00",
+            )
+        )
+        s.commit()
     cache.clear()
     c = TestClient(app)
     c.cookies.set(COOKIE_NAME, create_session_cookie(STEAMID))

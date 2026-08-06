@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from cs2tracker.api.main import app
 from cs2tracker.auth import COOKIE_NAME, create_session_cookie
-from cs2tracker.db import Damage, Kill, Match, MatchPlayer, Player, init_db
+from cs2tracker.db import Damage, Kill, Match, MatchPlayer, Player, User, init_db
 
 
 @pytest.fixture()
@@ -23,6 +23,14 @@ def client(tmp_path):
             )
         )
         s.add(Player(steamid="A", name="Ana"))
+        s.add(
+            User(
+                steamid="A",
+                email="a@test.local",
+                password_hash="x",
+                email_verified_at="2026-01-01T00:00:00",
+            )
+        )
         s.add(MatchPlayer(match_id="m1", steamid="A", team_num=2))
         s.add(Kill(match_id="m1", victim="Z", attacker="A", weapon="ak47"))
         s.add(

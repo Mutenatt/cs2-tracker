@@ -6,8 +6,22 @@ from sqlalchemy.orm import Session
 
 from cs2tracker.api.main import app
 from cs2tracker.auth import COOKIE_NAME, create_session_cookie
-from cs2tracker.db import Match, MatchPlayer, Player, PlayerMatchStats, Round
+from cs2tracker.db import Match, MatchPlayer, Player, PlayerMatchStats, Round, User
 from cs2tracker.db.session import init_db
+
+
+def _add_user(session, steamid):
+    """get_current_steamid ahora valida el steamid de la cookie contra una
+    fila User real (ver auth.py::_steamid_if_epoch_matches) -- un cookie de
+    test necesita una fila User de respaldo, no solo Player."""
+    session.add(
+        User(
+            steamid=steamid,
+            email=f"{steamid}@test.local",
+            password_hash="x",
+            email_verified_at="2026-01-01T00:00:00",
+        )
+    )
 
 
 @pytest.fixture()
@@ -25,6 +39,7 @@ def client(tmp_path):
         )
         s.add(Player(steamid="A", name="Ana"))
         s.add(Player(steamid="B", name="Beto"))
+        _add_user(s, "A")
         s.add(MatchPlayer(match_id="m1", steamid="A", team_num=2))
         s.add(MatchPlayer(match_id="m1", steamid="B", team_num=3))
         s.add(
@@ -85,6 +100,12 @@ def test_match_detail_ordenado(client):
 
 
 def test_match_detail_403_si_no_participo(client):
+    from cs2tracker.db.session import get_engine
+
+    with Session(get_engine()) as s:
+        s.add(Player(steamid="outsider", name="Outsider"))
+        _add_user(s, "outsider")
+        s.commit()
     client.cookies.set(COOKIE_NAME, create_session_cookie("outsider"))
     assert client.get("/matches/m1").status_code == 403
 

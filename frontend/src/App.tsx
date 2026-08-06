@@ -11,6 +11,7 @@ import { ForgotPasswordView } from "./views/ForgotPasswordView";
 import { HomeView } from "./views/HomeView";
 import { LandingView } from "./views/LandingView";
 import { LineUps } from "./views/LineUps";
+import { LineupMapExplorer } from "./components/lineups/LineupMapExplorer";
 import { LoginView } from "./views/LoginView";
 import { MatchDetailView } from "./views/MatchDetailView";
 import { OnboardingView } from "./views/OnboardingView";
@@ -25,12 +26,15 @@ import type { MeOut, User } from "./types";
 // PrefireView es una landing "en desarrollo" liviana (sin three.js/rapier,
 // ver PrefireView.tsx), pero mantenerla separada evita tener que tocar este
 // archivo cuando el módulo 3D vuelva a activarse.
-const PrefireView = lazy(() => import("./views/PrefireView").then((m) => ({ default: m.PrefireView })));
+const PrefireView = lazy(() =>
+  import("./views/PrefireView").then((m) => ({ default: m.PrefireView }))
+);
 
 export function App() {
+  const location = useLocation();
+
   const [me, setMe] = useState<MeOut | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
-  const location = useLocation();
 
   // Cortina de la medalla 3D entre las landings de pre-login (Landing/
   // Register/Login/etc.) -- solo se dispara en navegaciones posteriores al
@@ -78,7 +82,7 @@ export function App() {
   }
   if (me === undefined) return <div className="wrap center">Cargando…</div>;
 
-  if (me === null) {
+  if (me === null || authError) {
     return (
       <>
         <Routes location={location}>
@@ -118,6 +122,7 @@ export function App() {
     email: me.email,
     email_verified_at: me.email_verified_at,
     onboarding_completed_at: me.onboarding_completed_at,
+    totp_enabled: me.totp_enabled,
   };
 
   if (user.onboarding_completed_at === null) {
@@ -130,7 +135,8 @@ export function App() {
 
   const isLineupsRoute = location.pathname === "/lineups";
   const isPrefireRoute = location.pathname === "/prefire";
-  const isFullscreenRoute = isLineupsRoute || isPrefireRoute;
+  const isLineupExplorerRoute = location.pathname === "/lineup-explorer";
+  const isFullscreenRoute = isLineupsRoute || isPrefireRoute || isLineupExplorerRoute;
 
   return (
     <UserContext.Provider value={user}>
@@ -147,6 +153,7 @@ export function App() {
             <Routes location={location}>
               <Route path="/" element={<HomeView />} />
               <Route path="/lineups" element={<LineUps onLogout={handleLogout} />} />
+              <Route path="/lineup-explorer" element={<LineupMapExplorer />} />
               <Route
                 path="/prefire"
                 element={

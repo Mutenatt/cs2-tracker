@@ -61,6 +61,12 @@ class AccountSignup(Base):
     email_verified_at: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
 
+    # Lockout de brute-force en /auth/login contra una cuenta todavía sin
+    # vincular Steam (ver rate_limit.py) -- mismo par de columnas que User,
+    # porque /auth/login resuelve contra ambas tablas.
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    locked_until: Mapped[str | None] = mapped_column(String)
+
 
 class User(Base):
     """Cuenta con la que un steamid inició sesión. Distinta de Player
@@ -88,6 +94,40 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     email_verified_at: Mapped[str] = mapped_column(String, nullable=False)
+    # Email nuevo pendiente de confirmación (ver api/account.py::
+    # auth_change_email). email NO cambia hasta que se hace click en el
+    # link mandado a esta dirección -- mismo patrón two-phase que el alta
+    # de cuenta (AccountSignup.email_verified_at).
+    pending_email: Mapped[str | None] = mapped_column(String)
+
+    # Contador de "epoch" de sesión: se embebe en la cookie y se compara
+    # contra este valor en cada request autenticado (ver
+    # auth.py::get_current_steamid). Bumpearlo invalida todas las cookies
+    # emitidas antes del bump -- es el mecanismo de "logout en todos los
+    # dispositivos" y de invalidación de sesiones al cambiar password/email/
+    # desactivar 2FA. Arranca en 0 a propósito: una cookie firmada ANTES de
+    # este deploy no trae "epoch" en el payload, se interpreta como 0, y
+    # sigue siendo válida sin forzar un logout masivo.
+    session_epoch: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Lockout de brute-force en /auth/login (ver rate_limit.py). Separado
+    # del lockout de TOTP (más abajo) porque son amenazas distintas: acá el
+    # atacante todavía no tiene la password.
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    locked_until: Mapped[str | None] = mapped_column(String)
+
+    # 2FA/TOTP. Secret en claro -- mismo criterio ya aceptado y documentado
+    # para steam_auth_code más abajo ("cifrado = mejora futura"); regla de
+    # código: nunca debe aparecer en un print()/log. totp_enabled_at queda
+    # None hasta confirmar un código válido (enrollment de 2 fases -- ver
+    # api/account.py::auth_totp_activate), así un enrollment roto nunca
+    # deja a nadie bloqueado. Lockout de TOTP con columnas PROPIAS,
+    # separadas de failed_login_attempts/locked_until de arriba: un fallo
+    # acá significa que el atacante YA tiene la password, amenaza distinta
+    # que merece su propio contador.
+    totp_secret: Mapped[str | None] = mapped_column(String)
+    totp_enabled_at: Mapped[str | None] = mapped_column(String)
+    totp_failed_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    totp_locked_until: Mapped[str | None] = mapped_column(String)
 
     # Auto-fetch estilo Leetify. El auth code SOLO da acceso al historial de
     # partidas del propio usuario (Web API), nunca a su cuenta; se guarda en
@@ -416,3 +456,82 @@ class RoundEconomy(Base):
     cash_spent: Mapped[int] = mapped_column(Integer, nullable=False)
     start_account: Mapped[int] = mapped_column(Integer, nullable=False)
     armas_compradas: Mapped[list | None] = mapped_column(JSON)
+
+
+class RateLimitBucket(Base):
+    """Ventana fija de rate limiting (ver rate_limit.py), en DB en vez de
+    en memoria o Redis -- consistente con el resto del proyecto (sin infra
+    externa nueva). "scope" identifica el endpoint/uso ("login",
+    "register", "forgot_password_email", etc.), "key" es lo que se está
+    limitando dentro de ese scope (IP, email normalizado, id de pending
+    session). window_start es el inicio de la ventana (ISO, floored a
+    window_seconds) -- el conteo es por ventana fija, no sliding/token-
+    bucket, a propósito: más simple, con el trade-off aceptado de poder
+    admitir algo más de tráfico que max_count justo en el borde de una
+    ventana. Se limpia oportunísticamente (ver check_and_increment), sin
+    cron."""
+
+    __tablename__ = "rate_limit_buckets"
+    __table_args__ = (
+        Index("idx_rate_limit_scope_key", "scope", "key"),
+        # Unique en vez de PK compuesta: permite el upsert atómico
+        # (ON CONFLICT DO UPDATE) que hace segura la concurrencia.
+        Index(
+            "uq_rate_limit_scope_key_window",
+            "scope",
+            "key",
+            "window_start",
+            unique=True,
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    scope: Mapped[str] = mapped_column(String, nullable=False)
+    key: Mapped[str] = mapped_column(String, nullable=False)
+    window_start: Mapped[str] = mapped_column(String, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class LoginEvent(Base):
+    """Audit log de intentos de login (exitosos y fallidos) -- ver
+    api/account.py::_log_login_event. FK a players.steamid, NO a
+    users.steamid a propósito: así el historial sobrevive al borrado de la
+    cuenta (útil para investigar un compromiso de seguridad posterior al
+    borrado, ver Etapa 6 del plan). steamid es None cuando el intento no
+    resuelve a ningún steamid conocido (p.ej. email inexistente)."""
+
+    __tablename__ = "login_events"
+    __table_args__ = (
+        Index("idx_login_events_steamid_time", "steamid", "occurred_at"),
+        Index("idx_login_events_ip_time", "ip", "occurred_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    occurred_at: Mapped[str] = mapped_column(String, nullable=False)
+    steamid: Mapped[str | None] = mapped_column(ForeignKey("players.steamid"))
+    email: Mapped[str | None] = mapped_column(String)
+    ip: Mapped[str | None] = mapped_column(String)
+    user_agent: Mapped[str | None] = mapped_column(String)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    reason: Mapped[str | None] = mapped_column(String)
+
+
+class TotpBackupCode(Base):
+    """Código de respaldo de un solo uso para 2FA/TOTP (ver
+    api/account.py::auth_totp_activate). Hasheado con el mismo Argon2 de
+    auth_password.py -- no vale la pena un segundo primitivo de hashing
+    para un puñado de códigos. ondelete=CASCADE documentado pero NO
+    confiado: db/session.py no activa PRAGMA foreign_keys en SQLite, así
+    que el borrado de cuenta (api/account.py::auth_delete_account) borra
+    estas filas explícitamente en código, sin depender del cascade."""
+
+    __tablename__ = "totp_backup_codes"
+    __table_args__ = (Index("idx_totp_backup_steamid", "steamid"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    steamid: Mapped[str] = mapped_column(
+        ForeignKey("users.steamid", ondelete="CASCADE"), nullable=False
+    )
+    code_hash: Mapped[str] = mapped_column(String, nullable=False)
+    used_at: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from cs2tracker.api.main import app
 from cs2tracker.auth import COOKIE_NAME, create_session_cookie
-from cs2tracker.db import Kill, Match, MatchPlayer, Player
+from cs2tracker.db import Kill, Match, MatchPlayer, Player, User
 from cs2tracker.db.session import init_db
 
 
@@ -31,6 +31,14 @@ def client(tmp_path):
         ]:
             s.add(Player(steamid=sid, name=name))
             s.add(MatchPlayer(match_id="m1", steamid=sid, team_num=tn))
+        s.add(
+            User(
+                steamid="A1",
+                email="a1@test.local",
+                password_hash="x",
+                email_verified_at="2026-01-01T00:00:00",
+            )
+        )
         # A1 mata a B1 dos veces (una con posición), B1 mata a A1 una vez.
         s.add(
             Kill(

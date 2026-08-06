@@ -16,6 +16,7 @@ from cs2tracker.db import (
     PlayerClutch,
     PlayerMatchStats,
     Round,
+    User,
 )
 from cs2tracker.db.session import init_db
 
@@ -29,8 +30,16 @@ RECENT = (NOW - timedelta(minutes=5)).isoformat()
 def client(tmp_path):
     engine = init_db(f"sqlite:///{tmp_path}/t.sqlite")
     with Session(engine) as s:
-        for sid in (A, B):
+        for sid in (A, B, "999"):
             s.add(Player(steamid=sid, name=sid))
+            s.add(
+                User(
+                    steamid=sid,
+                    email=f"{sid}@test.local",
+                    password_hash="x",
+                    email_verified_at="2026-01-01T00:00:00",
+                )
+            )
         s.add(
             Match(
                 match_id="m1",

@@ -3455,6 +3455,292 @@ button.map-pool-card.lineup-map-card {
   font-size: 11.5px;
 }
 
+/* ---------- LineupMapExplorer: mapa interactivo con pines + trayectoria SVG ---------- */
+.lme-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--ink);
+  color: var(--text);
+}
+
+.lme-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.lme-sidebar-title {
+  margin: 0;
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 20px;
+  color: var(--text);
+  letter-spacing: 0.05em;
+}
+
+.lme-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lme-category-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.lme-category-row:hover {
+  background: var(--panel-alt);
+  border-color: var(--line);
+}
+
+.lme-category-row.active {
+  border-color: var(--line);
+  color: var(--text);
+  background: var(--panel-alt);
+}
+
+.lme-category-row-smoke.active {
+  color: var(--recon);
+}
+
+.lme-category-row-flash.active {
+  color: var(--gold);
+}
+
+.lme-category-row-molotov.active {
+  color: var(--alert);
+}
+
+.lme-category-row-he.active {
+  color: var(--go);
+}
+
+.lme-category-label {
+  flex: 1;
+}
+
+.lme-category-count {
+  margin-left: auto;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+  background: var(--panel-alt);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.lme-team-pills {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.lme-team-pill {
+  flex: 1;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.lme-team-pill:hover {
+  border-color: var(--text-dim);
+}
+
+.lme-team-pill.active[data-team="CT"] {
+  color: var(--recon);
+  border-color: var(--recon);
+  background: color-mix(in srgb, var(--recon) 15%, transparent);
+}
+
+.lme-team-pill.active[data-team="T"] {
+  color: var(--signal);
+  border-color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 15%, transparent);
+}
+
+.lme-team-pill.active[data-team="ANY"] {
+  color: var(--text);
+  border-color: var(--text-dim);
+  background: var(--panel-alt);
+}
+
+.lme-stage {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+}
+
+.lme-map-frame {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #000;
+}
+
+.lme-map-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.lme-svg-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.lme-trajectory-line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.lme-trajectory-smoke {
+  stroke: var(--recon);
+}
+
+.lme-trajectory-flash {
+  stroke: var(--gold);
+}
+
+.lme-trajectory-molotov {
+  stroke: var(--alert);
+}
+
+.lme-trajectory-he {
+  stroke: var(--go);
+}
+
+.lme-pin {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lme-pin-smoke {
+  background: var(--recon);
+}
+
+.lme-pin-flash {
+  background: var(--gold);
+}
+
+.lme-pin-molotov {
+  background: var(--alert);
+}
+
+.lme-pin-he {
+  background: var(--go);
+}
+
+.lme-pin:hover,
+.lme-pin.hovered {
+  transform: translate(-50%, -50%) scale(1.3);
+  box-shadow: 0 0 0 5px rgba(61, 107, 82, 0.25);
+}
+
+.lme-pin-flash:hover,
+.lme-pin-flash.hovered {
+  box-shadow: 0 0 0 5px rgba(244, 197, 66, 0.25);
+}
+
+.lme-pin-molotov:hover,
+.lme-pin-molotov.hovered {
+  box-shadow: 0 0 0 5px rgba(255, 84, 112, 0.25);
+}
+
+.lme-pin-he:hover,
+.lme-pin-he.hovered {
+  box-shadow: 0 0 0 5px rgba(70, 224, 160, 0.25);
+}
+
+.lme-tooltip {
+  position: absolute;
+  z-index: 3;
+  width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.lme-tooltip-video-wrap {
+  border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: var(--panel-alt);
+}
+
+.lme-tooltip-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lme-tooltip-footer {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lme-tooltip-instructions {
+  margin: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
 /* ---------- landing de armas: loadouts (tarjetas por economía de ronda) ---------- */
 .loadout-list {
   display: flex;

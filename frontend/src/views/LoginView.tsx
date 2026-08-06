@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { Lock, Mail } from "lucide-react";
-import { login } from "../api";
+import { login, loginTotp } from "../api";
 import { Logo } from "../components/Logo";
 
 interface Props {
@@ -28,19 +28,103 @@ export function LoginView({ onLoggedIn }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Paso 2 (2FA): solo se activa si el login inicial devuelve mfa_required.
+  const [needsTotp, setNeedsTotp] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      await login(email.trim(), password);
-      onLoggedIn();
+      const result = await login(email.trim(), password);
+      if (result.mfa_required) {
+        setNeedsTotp(true);
+      } else {
+        onLoggedIn();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión.");
     } finally {
       setBusy(false);
     }
   };
+
+  const handleSubmitTotp = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await loginTotp(totpCode.trim());
+      onLoggedIn();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Código inválido.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (needsTotp) {
+    return (
+      <motion.div
+        className="onb-shell"
+        initial={{ opacity: 0, y: 15, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <div className="onb-topbar">
+          <Logo size={20} />
+        </div>
+        <div className="hud-card-wrap">
+          <div className="hud-glow" aria-hidden="true" />
+          <div className="hud-card">
+            <span className="hud-corner hud-corner-tl" aria-hidden="true" />
+            <span className="hud-corner hud-corner-tr" aria-hidden="true" />
+            <span className="hud-corner hud-corner-bl" aria-hidden="true" />
+            <span className="hud-corner hud-corner-br" aria-hidden="true" />
+
+            <div className="hud-status-bar">
+              <span className="hud-led hud-led-cyan" />[ AUTH_GATEWAY // 2FA_REQUIRED ]
+            </div>
+
+            <h2>Verificación en dos pasos</h2>
+            <p className="onb-sub">Ingresá el código de tu app de autenticación.</p>
+
+            <form onSubmit={handleSubmitTotp}>
+              <div className="onb-field">
+                <label>Código</label>
+                <div className="hud-input-group">
+                  <Lock className="hud-input-icon" />
+                  <input
+                    className="onb-select hud-field-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </div>
+              </div>
+              <div className="onb-actions">
+                <motion.button
+                  type="submit"
+                  className="hud-cta"
+                  disabled={busy}
+                  whileHover={busy ? undefined : { scale: 1.02 }}
+                  whileTap={busy ? undefined : { scale: 0.98 }}
+                >
+                  {busy ? "VERIFICANDO…" : "CONFIRMAR"}
+                </motion.button>
+              </div>
+            </form>
+            {error && <p className="af-error">{error}</p>}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

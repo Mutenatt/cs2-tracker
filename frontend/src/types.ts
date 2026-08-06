@@ -8,6 +8,7 @@ export interface User {
   email: string | null;
   email_verified_at: string | null;
   onboarding_completed_at: string | null;
+  totp_enabled: boolean;
 }
 
 // Shape unificado de GET /auth/me: cubre tanto una cuenta pending (creada
@@ -21,6 +22,36 @@ export interface MeOut {
   email: string | null;
   email_verified_at: string | null;
   onboarding_completed_at: string | null;
+  totp_enabled: boolean;
+}
+
+// POST /auth/login: si la cuenta tiene 2FA activo, mfa_required=true y
+// me=null -- todavía no hay sesión real, hace falta POST /auth/login/totp.
+export interface LoginOut {
+  mfa_required: boolean;
+  me: MeOut | null;
+}
+
+export interface TotpEnrollOut {
+  secret: string;
+  otpauth_uri: string;
+  qr_png_base64: string;
+}
+
+export interface TotpActivateOut {
+  backup_codes: string[];
+}
+
+export interface LoginHistoryEntry {
+  occurred_at: string;
+  ip: string | null;
+  user_agent: string | null;
+  success: boolean;
+  reason: string | null;
+}
+
+export interface LoginHistoryResponse {
+  events: LoginHistoryEntry[];
 }
 
 export interface MatchSummary {

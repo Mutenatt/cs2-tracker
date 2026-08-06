@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
@@ -122,6 +122,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Headers de seguridad estándar. La CSP arranca en modo Report-Only a
+    propósito: auth.py sirve backgrounds de perfil de Steam (imágenes/
+    videos arbitrarios de CDNs de Steam) directo en <img>/<video>, así que
+    antes de pasar a modo enforcing hay que recorrer la app entera con
+    devtools abierto y confirmar que no hay violaciones -- ver Etapa 9 del
+    plan de hardening. HSTS es inofensivo de mandar siempre: los navegadores
+    lo ignoran en respuestas no-HTTPS."""
+    response = await call_next(request)
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy-Report-Only"] = (
+        "default-src 'self'; img-src 'self' https: data:; media-src 'self' https:; "
+        "connect-src 'self'; frame-ancestors 'none'"
+    )
+    return response
+
+
 app.include_router(account_router)
 app.include_router(autofetch_router)
 app.include_router(onboarding_router)

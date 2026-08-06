@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.tsc-out/
+*.tsbuildinfo
+*.log
+e2e/
+.git/
+PROJECT_INDEX.md
