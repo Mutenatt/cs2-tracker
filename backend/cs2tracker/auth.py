@@ -22,8 +22,12 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import HTTPException, Request
 from itsdangerous import BadSignature, URLSafeTimedSerializer
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from cs2tracker.config import settings
+from cs2tracker.db.models import User
+from cs2tracker.db.session import get_engine
 
 STEAM_OPENID_URL = "https://steamcommunity.com/openid/login"
 _CLAIMED_ID_RE = re.compile(r"^https://steamcommunity\.com/openid/id/(\d+)$")
@@ -179,7 +183,19 @@ def parse_profile_background_url(html: str) -> str | None:
 
 def build_login_url() -> str:
     """URL a la que redirigir al usuario para iniciar el login con Steam."""
-    return_to = f"{settings.api_public_url}/auth/callback"
+    return _build_openid_url(f"{settings.api_public_url}/auth/callback")
+
+
+def build_relink_login_url() -> str:
+    """Igual que build_login_url pero vuelve a /auth/steam/relink/callback
+    -- usado por auth_steam_relink_start (ver api/account.py) para
+    autenticar la cuenta de Steam NUEVA que va a reemplazar a la vinculada
+    actualmente (no hay "desvincular": users.steamid es PK NOT NULL, así
+    que la única operación válida es "cambiar a otra cuenta de Steam")."""
+    return _build_openid_url(f"{settings.api_public_url}/auth/steam/relink/callback")
+
+
+def _build_openid_url(return_to: str) -> str:
     params = {
         "openid.ns": "http://specs.openid.net/auth/2.0",
         "openid.mode": "checkid_setup",
@@ -265,27 +281,84 @@ async def fetch_profiles(steamids: list[str]) -> ProfileMap:
         return {}
 
 
-def create_session_cookie(steamid: str) -> str:
-    return _serializer.dumps({"steamid": steamid})
+def create_session_cookie(steamid: str, epoch: int = 0) -> str:
+    return _serializer.dumps({"steamid": steamid, "epoch": epoch})
 
 
-def read_session_cookie(value: str | None) -> str | None:
+def read_session_cookie(value: str | None) -> tuple[str, int] | None:
+    """Devuelve (steamid, epoch). Una cookie firmada ANTES de que existiera
+    el campo "epoch" (users.session_epoch, ver db/models.py) no lo trae en
+    el payload -- se interpreta como epoch=0, que es también el default de
+    la columna nueva, así que ninguna sesión existente se invalida al
+    desplegar este cambio."""
     if not value:
         return None
     try:
         data = _serializer.loads(value, max_age=SESSION_MAX_AGE)
     except BadSignature:
         return None
-    return data.get("steamid")
-
-
-def get_current_steamid(request: Request) -> str:
-    """Dependency de FastAPI: 401 si no hay sesión válida."""
-    steamid = read_session_cookie(request.cookies.get(COOKIE_NAME))
+    steamid = data.get("steamid")
     if steamid is None:
-        raise HTTPException(401, "no autenticado")
+        return None
+    return steamid, data.get("epoch", 0)
+
+
+def _steamid_if_epoch_matches(steamid: str, epoch: int) -> str | None:
+    """Consulta DB: 1 lectura indexada por PK en cada request autenticado.
+    Es el costo de que "logout en todos los dispositivos" (session_epoch)
+    sea revocable de verdad -- antes de esto get_current_steamid no hacía
+    ninguna query."""
+    with Session(get_engine()) as s:
+        db_epoch = s.execute(
+            select(User.session_epoch).where(User.steamid == steamid)
+        ).scalar_one_or_none()
+    if db_epoch is None or db_epoch != epoch:
+        return None
     return steamid
 
 
+def get_current_steamid(request: Request) -> str:
+    """Dependency de FastAPI: 401 si no hay sesión válida o si el epoch de
+    la cookie quedó obsoleto (logout remoto / cambio de password o email /
+    2FA desactivado)."""
+    decoded = read_session_cookie(request.cookies.get(COOKIE_NAME))
+    if decoded is None:
+        raise HTTPException(401, "no autenticado")
+    steamid, epoch = decoded
+    result = _steamid_if_epoch_matches(steamid, epoch)
+    if result is None:
+        raise HTTPException(401, "no autenticado")
+    return result
+
+
 def get_current_steamid_optional(request: Request) -> str | None:
-    return read_session_cookie(request.cookies.get(COOKIE_NAME))
+    decoded = read_session_cookie(request.cookies.get(COOKIE_NAME))
+    if decoded is None:
+        return None
+    steamid, epoch = decoded
+    return _steamid_if_epoch_matches(steamid, epoch)
+
+
+def require_same_origin(request: Request) -> None:
+    """Backstop de CSRF barato para los endpoints más sensibles (cambio de
+    password/email, borrado de cuenta, desactivar 2FA, re-vincular Steam).
+    NO es la defensa principal -- eso es SameSite=Lax en la cookie de
+    sesión, suficiente porque todo endpoint que cambia estado en esta API
+    es POST/DELETE, nunca GET, y los navegadores modernos omiten cookies
+    SameSite=Lax en requests cross-site no-GET. Esto es una capa extra
+    contra configuraciones de browser/proxy no estándar -- compara
+    Origin (o Referer si Origin no vino, algunos navegadores lo omiten en
+    same-origin) contra el frontend configurado.
+
+    Limitación conocida: un cliente que no manda ninguno de los dos
+    headers (algunos clientes no-browser) no es bloqueado acá -- eso es
+    aceptable porque siguen sin traer la cookie de sesión real en un
+    request cross-site de todos modos. Si el frontend alguna vez se
+    despliega en un dominio distinto de la API (no solo otro puerto), esta
+    función hay que revisarla."""
+    origin = request.headers.get("origin")
+    if origin is None:
+        referer = request.headers.get("referer")
+        origin = referer.rstrip("/") if referer else None
+    if origin is not None and not origin.startswith(settings.frontend_url.rstrip("/")):
+        raise HTTPException(403, "origen inválido")

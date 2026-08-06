@@ -9,10 +9,14 @@ import type {
   HighlightsResponse,
   DuelsResponse,
   KillsResponse,
+  LoginHistoryResponse,
+  LoginOut,
   MatchDetail,
   MatchEconomyResponse,
   MatchSummary,
   MeOut,
+  TotpActivateOut,
+  TotpEnrollOut,
   MonthlySummaryResponse,
   NewsResponse,
   OnboardingStatus,
@@ -44,7 +48,18 @@ export async function logout(): Promise<void> {
   if (!r.ok) throw new Error(`POST /auth/logout -> ${r.status}`);
 }
 
-async function _authPost(path: string, body: unknown): Promise<MeOut> {
+export async function logoutAll(): Promise<void> {
+  const r = await fetch(`${BASE}/auth/logout-all`, { method: "POST" });
+  if (!r.ok) throw new Error(`POST /auth/logout-all -> ${r.status}`);
+}
+
+export async function getLoginHistory(): Promise<LoginHistoryResponse> {
+  const r = await fetch(`${BASE}/auth/login-history`);
+  if (!r.ok) throw new Error(`GET /auth/login-history -> ${r.status}`);
+  return r.json();
+}
+
+async function _authPost<T>(path: string, body: unknown): Promise<T> {
   const r = await fetch(`${BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -58,11 +73,27 @@ async function _authPost(path: string, body: unknown): Promise<MeOut> {
 }
 
 export function register(email: string, password: string): Promise<MeOut> {
-  return _authPost("/auth/register", { email, password });
+  return _authPost<MeOut>("/auth/register", { email, password });
 }
 
-export function login(email: string, password: string): Promise<MeOut> {
-  return _authPost("/auth/login", { email, password });
+export function login(email: string, password: string): Promise<LoginOut> {
+  return _authPost<LoginOut>("/auth/login", { email, password });
+}
+
+export function loginTotp(code: string): Promise<MeOut> {
+  return _authPost<MeOut>("/auth/login/totp", { code });
+}
+
+export function totpEnroll(): Promise<TotpEnrollOut> {
+  return _authPost<TotpEnrollOut>("/auth/totp/enroll", undefined);
+}
+
+export function totpActivate(code: string): Promise<TotpActivateOut> {
+  return _authPost<TotpActivateOut>("/auth/totp/activate", { code });
+}
+
+export function totpDisable(password: string): Promise<MeOut> {
+  return _authPost<MeOut>("/auth/totp/disable", { password });
 }
 
 export async function resendVerification(): Promise<void> {
@@ -89,6 +120,56 @@ export async function resetPassword(token: string, newPassword: string): Promise
     const detail = (await r.json().catch(() => null))?.detail;
     throw new Error(typeof detail === "string" ? detail : `POST reset-password -> ${r.status}`);
   }
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<MeOut> {
+  const r = await fetch(`${BASE}/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `POST change-password -> ${r.status}`);
+  }
+  return r.json();
+}
+
+export async function changeEmail(newEmail: string, password: string): Promise<void> {
+  const r = await fetch(`${BASE}/auth/change-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ new_email: newEmail, password }),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `POST change-email -> ${r.status}`);
+  }
+}
+
+export async function deleteAccount(password: string): Promise<void> {
+  const r = await fetch(`${BASE}/auth/delete-account`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `POST delete-account -> ${r.status}`);
+  }
+}
+
+export async function requestSteamRelink(password: string): Promise<{ redirect_url: string }> {
+  const r = await fetch(`${BASE}/auth/steam/relink/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `POST steam/relink/start -> ${r.status}`);
+  }
+  return r.json();
 }
 
 export async function listMatches(): Promise<MatchSummary[]> {

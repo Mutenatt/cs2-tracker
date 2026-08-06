@@ -99,8 +99,21 @@ def test_parse_profile_background_url_acepta_background_shorthand_y_url_relativa
 
 
 def test_session_cookie_roundtrip():
-    cookie = create_session_cookie("76561198000000000")
-    assert read_session_cookie(cookie) == "76561198000000000"
+    cookie = create_session_cookie("76561198000000000", epoch=3)
+    assert read_session_cookie(cookie) == ("76561198000000000", 3)
+
+
+def test_session_cookie_sin_epoch_en_payload_se_interpreta_como_0():
+    """Cookie firmada antes de que existiera el campo "epoch" en el payload
+    (formato pre-deploy de session_epoch) -- no debe romper, se lee como
+    epoch=0, que es también el default de users.session_epoch."""
+    from itsdangerous import URLSafeTimedSerializer
+
+    from cs2tracker.auth import _session_secret
+
+    legacy_serializer = URLSafeTimedSerializer(_session_secret, salt="cs2tracker-session")
+    legacy_cookie = legacy_serializer.dumps({"steamid": "76561198000000000"})
+    assert read_session_cookie(legacy_cookie) == ("76561198000000000", 0)
 
 
 def test_session_cookie_invalida():
@@ -216,6 +229,25 @@ def test_auth_me_no_refresca_si_ya_esta_sincronizado(client, monkeypatch):
     r = client.get("/auth/me")
     assert r.status_code == 200
     assert r.json()["display_name"] == "Ana"
+
+
+def test_auth_me_epoch_obsoleto_401(client, tmp_path):
+    """Una cookie firmada con un epoch viejo (ver users.session_epoch) deja
+    de ser válida en cuanto la DB bumpea el epoch del usuario -- este es el
+    mecanismo de "logout en todos los dispositivos"."""
+    engine = init_db(f"sqlite:///{tmp_path}/t.sqlite")
+    client.cookies.set(COOKIE_NAME, create_session_cookie("76561198000000000", epoch=0))
+    assert client.get("/auth/me").status_code == 200
+
+    with Session(engine) as s:
+        user = s.get(User, "76561198000000000")
+        user.session_epoch = 1
+        s.commit()
+
+    assert client.get("/auth/me").status_code == 401
+
+    client.cookies.set(COOKIE_NAME, create_session_cookie("76561198000000000", epoch=1))
+    assert client.get("/auth/me").status_code == 200
 
 
 def test_auth_logout_borra_la_sesion(client):

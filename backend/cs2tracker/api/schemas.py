@@ -27,6 +27,55 @@ class ResetPasswordIn(BaseModel):
     new_password: str
 
 
+class ChangePasswordIn(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ChangeEmailIn(BaseModel):
+    new_email: str
+    password: str
+
+
+class DeleteAccountIn(BaseModel):
+    password: str
+
+
+class SteamRelinkStartIn(BaseModel):
+    password: str
+
+
+class SteamRelinkStartOut(BaseModel):
+    redirect_url: str
+
+
+class LoginOut(BaseModel):
+    mfa_required: bool
+    me: MeOut | None = None
+
+
+class TotpEnrollOut(BaseModel):
+    secret: str
+    otpauth_uri: str
+    qr_png_base64: str
+
+
+class TotpActivateIn(BaseModel):
+    code: str
+
+
+class TotpActivateOut(BaseModel):
+    backup_codes: list[str]
+
+
+class TotpDisableIn(BaseModel):
+    password: str
+
+
+class LoginTotpIn(BaseModel):
+    code: str
+
+
 class MeOut(BaseModel):
     pending: bool
     steamid: str | None
@@ -36,6 +85,19 @@ class MeOut(BaseModel):
     email: str | None
     email_verified_at: str | None
     onboarding_completed_at: str | None
+    totp_enabled: bool = False
+
+
+class LoginHistoryEntry(BaseModel):
+    occurred_at: str
+    ip: str | None
+    user_agent: str | None
+    success: bool
+    reason: str | None
+
+
+class LoginHistoryResponse(BaseModel):
+    events: list[LoginHistoryEntry]
 
 
 class AutofetchLinkIn(BaseModel):

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from cs2tracker import maps
 from cs2tracker.api.main import app
 from cs2tracker.auth import COOKIE_NAME, create_session_cookie
-from cs2tracker.db import Kill, Match, MatchPlayer, init_db
+from cs2tracker.db import Kill, Match, MatchPlayer, Player, User, init_db
 
 
 def test_transform_en_rango():
@@ -35,6 +35,15 @@ def client(tmp_path):
                 map="de_mirage",
                 n_rounds=1,
                 ingested_at="2026-07-13T00:00:00Z",
+            )
+        )
+        s.add(Player(steamid="B", name="Beto"))
+        s.add(
+            User(
+                steamid="B",
+                email="b@test.local",
+                password_hash="x",
+                email_verified_at="2026-01-01T00:00:00",
             )
         )
         s.add(MatchPlayer(match_id="m1", steamid="B", team_num=2))
