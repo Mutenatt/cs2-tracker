@@ -33,11 +33,6 @@ const PrefireView = lazy(() =>
 export function App() {
   const location = useLocation();
 
-  // Ruta de demostración sin autenticación
-  if (location.pathname === "/lineup-explorer") {
-    return <LineupMapExplorer />;
-  }
-
   const [me, setMe] = useState<MeOut | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
 
