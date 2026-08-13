@@ -49,6 +49,7 @@ from cs2tracker.api.schemas import (
     TotpEnrollOut,
 )
 from cs2tracker.api.tokens import MAX_TOKENS_PER_USER
+from cs2tracker.api_tokens import create_token, revoke_all_tokens
 from cs2tracker.auth import (
     COOKIE_NAME as REAL_COOKIE_NAME,
 )
@@ -90,7 +91,6 @@ from cs2tracker.auth_password import (
     read_relink_cookie,
     verify_password,
 )
-from cs2tracker.api_tokens import create_token, revoke_all_tokens
 from cs2tracker.config import settings
 from cs2tracker.db import AccountSignup, ApiToken, ClipJob, LoginEvent, Player, TotpBackupCode, User
 from cs2tracker.db.session import get_engine
@@ -1119,7 +1119,9 @@ def auth_desktop_login(body: DesktopLoginIn, request: Request) -> DesktopLoginOu
     email = normalize_email(body.email)
 
     with Session(get_engine()) as s:
-        enforce_rate_limit(s, "desktop_login", _client_ip(request), window_seconds=900, max_count=20)
+        enforce_rate_limit(
+            s, "desktop_login", _client_ip(request), window_seconds=900, max_count=20
+        )
 
         user = s.query(User).filter(User.email == email).first()
         if user is None:
@@ -1131,7 +1133,12 @@ def auth_desktop_login(body: DesktopLoginIn, request: Request) -> DesktopLoginOu
 
         if is_locked(user):
             _log_login_event(
-                s, steamid=user.steamid, email=email, request=request, success=False, reason="locked"
+                s,
+                steamid=user.steamid,
+                email=email,
+                request=request,
+                success=False,
+                reason="locked",
             )
             raise HTTPException(423, _ACCOUNT_LOCKED_MSG)
 
