@@ -112,6 +112,21 @@ def test_no_se_puede_revocar_token_ajeno(client):
     assert other.delete(f"/account/tokens/{created['id']}").status_code == 404
 
 
+def test_logout_all_revoca_tokens_de_api(client):
+    """logout-all bumpea session_epoch (invalida cookies) pero un token de
+    API no trae epoch -- sin revocarlo explícitamente seguiría autenticando
+    después de un "cerrar sesión en todos lados"."""
+    token = client.post("/account/tokens", json={"name": "Overlay"}).json()["token"]
+
+    anon = TestClient(app)
+    assert anon.get("/lineups", headers={"Authorization": f"Bearer {token}"}).status_code == 200
+
+    assert client.post("/auth/logout-all").status_code == 200
+
+    r = anon.get("/lineups", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 401
+
+
 def test_crear_token_requiere_cookie_no_alcanza_con_otro_token(client):
     token = client.post("/account/tokens", json={"name": "Overlay"}).json()["token"]
 

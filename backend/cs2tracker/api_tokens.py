@@ -18,7 +18,7 @@ import hashlib
 import secrets
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from cs2tracker.db.models import ApiToken
@@ -52,6 +52,19 @@ def create_token(steamid: str, name: str) -> tuple[ApiToken, str]:
         s.commit()
         s.refresh(row)
     return row, raw
+
+
+def revoke_all_tokens(s: Session, steamid: str) -> None:
+    """Revoca todos los tokens activos de un usuario -- llamar en cualquier
+    evento que ya invalida la sesión de cookie (change-password, logout-all,
+    totp/disable) o borra la cuenta, para que un token filtrado no sobreviva
+    a la señal de "puedo estar comprometido" que esos flujos representan.
+    Recibe la Session del caller para que quede en la misma transacción."""
+    s.execute(
+        update(ApiToken)
+        .where(ApiToken.steamid == steamid, ApiToken.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(UTC).isoformat())
+    )
 
 
 def steamid_for_token(raw_token: str) -> str | None:

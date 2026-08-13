@@ -90,7 +90,7 @@ from cs2tracker.auth_password import (
     read_relink_cookie,
     verify_password,
 )
-from cs2tracker.api_tokens import create_token
+from cs2tracker.api_tokens import create_token, revoke_all_tokens
 from cs2tracker.config import settings
 from cs2tracker.db import AccountSignup, ApiToken, ClipJob, LoginEvent, Player, TotpBackupCode, User
 from cs2tracker.db.session import get_engine
@@ -624,7 +624,9 @@ def auth_change_password(
     password actual y bumpea session_epoch -- invalida todas las demás
     sesiones (ver auth.py::get_current_steamid), y reemite la cookie de
     ESTE request con el epoch nuevo para que el dispositivo que hizo el
-    cambio no se desloguee a sí mismo."""
+    cambio no se desloguee a sí mismo. También revoca los tokens de API
+    (overlay de escritorio, ver api_tokens.py): a diferencia de la cookie,
+    no traen epoch y no se invalidarían solos."""
     if len(body.new_password) < 8:
         raise HTTPException(400, "la contraseña tiene que tener al menos 8 caracteres")
 
@@ -637,6 +639,7 @@ def auth_change_password(
 
         user.password_hash = hash_password(body.new_password)
         user.session_epoch += 1
+        revoke_all_tokens(s, steamid)
         s.commit()
 
         resp = Response(
@@ -741,8 +744,10 @@ def auth_delete_account(
     match_players, no por ownership de la cuenta -- ver CLAUDE.md).
     login_events tampoco se borra (FK a players.steamid): es el audit
     trail de seguridad, tiene que sobrevivir al borrado de la cuenta que
-    audita. totp_backup_codes se borra explícitamente en código, no vía
-    ondelete=CASCADE -- ver TotpBackupCode, SQLite no aplica FK cascades."""
+    audita. totp_backup_codes y api_tokens se borran explícitamente en
+    código, no vía ondelete=CASCADE -- SQLite no aplica FK cascades, así
+    que sin este borrado los tokens quedan huérfanos pero siguen
+    autenticando (ver api_tokens.steamid_for_token)."""
     with Session(get_engine()) as s:
         user = s.get(User, steamid)
         if user is None:
@@ -751,6 +756,7 @@ def auth_delete_account(
             raise HTTPException(401, "contraseña incorrecta")
 
         s.query(TotpBackupCode).filter(TotpBackupCode.steamid == steamid).delete()
+        s.query(ApiToken).filter(ApiToken.steamid == steamid).delete()
 
         clip_jobs = s.query(ClipJob).filter(ClipJob.steamid == steamid).all()
         for job in clip_jobs:
@@ -1005,8 +1011,10 @@ def auth_totp_disable(
         user.totp_failed_attempts = 0
         user.totp_locked_until = None
         # Desactivar 2FA es un downgrade de seguridad -- invalida otras
-        # sesiones igual que change-password/change-email de arriba.
+        # sesiones igual que change-password/change-email de arriba, y
+        # revoca los tokens de API por la misma razón (ver revoke_all_tokens).
         user.session_epoch += 1
+        revoke_all_tokens(s, steamid)
         s.commit()
 
         resp = Response(
@@ -1251,12 +1259,14 @@ def auth_logout_all(steamid: str = Depends(get_current_steamid)):
     """Invalida todas las cookies de sesión emitidas hasta ahora (bumpea
     users.session_epoch) y reemite una cookie nueva para el dispositivo que
     ejecuta la acción -- así ese dispositivo no se desloguea a sí mismo,
-    solo los demás."""
+    solo los demás. También revoca los tokens de API (no traen epoch, ver
+    revoke_all_tokens) -- "cerrar sesión en todos lados" debería incluirlos."""
     with Session(get_engine()) as s:
         user = s.get(User, steamid)
         if user is None:
             raise HTTPException(401, "no autenticado")
         user.session_epoch += 1
+        revoke_all_tokens(s, steamid)
         s.commit()
         new_epoch = user.session_epoch
 
