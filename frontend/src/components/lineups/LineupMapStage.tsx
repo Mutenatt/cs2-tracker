@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Category, MapPin } from "./types";
 
 interface LineupMapStageProps {
@@ -23,6 +23,41 @@ function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
 }
 
+// Muchos lineups todavía comparten la misma coordenada placeholder (0.5,
+// 0.5, sin posicionar aún -- ver LineupCoordEditor) y quedaban literalmente
+// apilados: se veían y se podían clickear como un solo pin. Acá los
+// separamos en un círculo chico SOLO para el render/hit-target -- el x/y
+// real del pin (usado por LineupCoordEditor y por el drag) no cambia hasta
+// que alguien lo arrastra a su lugar de verdad.
+function declumpPins(pins: MapPin[]): (MapPin & { renderX: number; renderY: number })[] {
+  const groups = new Map<string, MapPin[]>();
+  for (const pin of pins) {
+    const key = `${pin.x.toFixed(3)}:${pin.y.toFixed(3)}`;
+    const group = groups.get(key);
+    if (group) group.push(pin);
+    else groups.set(key, [pin]);
+  }
+
+  const result: (MapPin & { renderX: number; renderY: number })[] = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      const pin = group[0];
+      result.push({ ...pin, renderX: pin.x, renderY: pin.y });
+      continue;
+    }
+    const radius = Math.min(0.05, 0.02 + 0.003 * group.length);
+    group.forEach((pin, i) => {
+      const angle = (2 * Math.PI * i) / group.length;
+      result.push({
+        ...pin,
+        renderX: clamp01(pin.x + radius * Math.cos(angle)),
+        renderY: clamp01(pin.y + radius * Math.sin(angle)),
+      });
+    });
+  }
+  return result;
+}
+
 export function LineupMapStage({
   mapKey,
   pins,
@@ -35,6 +70,7 @@ export function LineupMapStage({
 }: LineupMapStageProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const declumpedPins = useMemo(() => declumpPins(pins), [pins]);
 
   const hoveredPin = pins.find((p) => p.id === hoveredId) ?? null;
   const hoveredTrajectory =
@@ -82,14 +118,14 @@ export function LineupMapStage({
           </svg>
         )}
 
-        {pins.map((pin) => (
+        {declumpedPins.map((pin) => (
           <button
             key={pin.id}
             type="button"
             className={`lme-pin lme-pin-${pin.category} ${hoveredId === pin.id ? "hovered" : ""} ${editable ? "editable" : ""} ${draggingId === pin.id ? "dragging" : ""}`}
             style={{
-              left: `${pin.x * 100}%`,
-              top: `${pin.y * 100}%`,
+              left: `${pin.renderX * 100}%`,
+              top: `${pin.renderY * 100}%`,
             }}
             onMouseEnter={() => onPinHoverStart(pin.id)}
             onMouseLeave={onPinHoverEnd}

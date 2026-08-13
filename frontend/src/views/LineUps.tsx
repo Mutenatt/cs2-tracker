@@ -573,26 +573,21 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
             >
               Todas ({total})
             </button>
-            {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => {
-              const count = mapLineups.filter((i) => i.category === c).length;
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  className={`lineup-filter lineup-filter-utility-${c}${activeCategory === c ? " active" : ""}${animatingCategory === c ? ` lineup-filter-animate-${c}` : ""}`}
-                  onClick={() => {
-                    setActiveCategory(c);
-                    setAnimatingCategory(c);
-                    setAnimationTick((value) => value + 1);
-                  }}
-                >
-                  <UtilityButtonEffect category={c} />
-                  <span className="lineup-filter-label">
-                    {CATEGORY_LABEL[c]} ({count})
-                  </span>
-                </button>
-              );
-            })}
+            {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`lineup-filter lineup-filter-utility-${c}${activeCategory === c ? " active" : ""}${animatingCategory === c ? ` lineup-filter-animate-${c}` : ""}`}
+                onClick={() => {
+                  setActiveCategory(c);
+                  setAnimatingCategory(c);
+                  setAnimationTick((value) => value + 1);
+                }}
+              >
+                <UtilityButtonEffect category={c} />
+                <span className="lineup-filter-label">{CATEGORY_LABEL[c]}</span>
+              </button>
+            ))}
           </div>
 
           {lineupsLoading ? null : items.length === 0 ? (
