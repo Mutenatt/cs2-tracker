@@ -31,7 +31,8 @@ export function ForgotPasswordView() {
         <h2>Restablecer contraseña</h2>
         {sent ? (
           <p className="onb-sub">
-            Si ese email existe en cStats, te mandamos un link para elegir una nueva contraseña.
+            Si ese email existe en monkeyStats, te mandamos un link para elegir una nueva
+            contraseña.
           </p>
         ) : (
           <form onSubmit={handleSubmit}>

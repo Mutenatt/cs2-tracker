@@ -1,0 +1,27 @@
+{
+  "name": "cs2tracker-lineup-overlay",
+  "version": "0.1.0",
+  "description": "Overlay de escritorio (Electron) para consultar lineups de granadas de monkeyStats mientras jugás CS2, sobre la misma API/DB que la web.",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.monkeystats.overlay",
+    "productName": "monkeyStats Overlay",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  }
+}

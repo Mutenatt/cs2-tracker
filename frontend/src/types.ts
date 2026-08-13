@@ -54,6 +54,26 @@ export interface LoginHistoryResponse {
   events: LoginHistoryEntry[];
 }
 
+// Token personal para clientes no-navegador (overlay de escritorio, ver
+// app/) -- ApiTokenCreatedOut es la ÚNICA respuesta que trae el secreto en
+// claro, en el momento de creación.
+export interface ApiTokenOut {
+  id: number;
+  name: string;
+  token_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
+export interface ApiTokenCreatedOut extends ApiTokenOut {
+  token: string;
+}
+
+export interface ApiTokensResponse {
+  tokens: ApiTokenOut[];
+}
+
 export interface MatchSummary {
   match_id: string;
   map: string | null;
@@ -422,6 +442,21 @@ export interface ClipJob {
 
 export interface ClipsResponse {
   clips: ClipJob[];
+}
+
+export interface LineupOut {
+  id: number;
+  map: string;
+  category: "smoke" | "flash" | "molotov" | "he";
+  team: "CT" | "T" | null;
+  label: string;
+  x: number;
+  y: number;
+  start_x: number | null;
+  start_y: number | null;
+  video_url: string;
+  instructions: string | null;
+  crosshair_note: string | null;
 }
 
 export interface AutofetchStatus {

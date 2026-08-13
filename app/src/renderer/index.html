@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; media-src *; img-src * data:;"
+    />
+    <title>monkeyStats Overlay</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header id="titlebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">M</div>
+          <div class="brand-text">
+            <span id="title">monkey<span class="accent">Stats</span></span>
+            <span class="brand-sub">
+              <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+              Lineups
+            </span>
+          </div>
+        </div>
+        <div id="titlebar-actions">
+          <button id="clickthrough-btn" class="icon-btn" title="Click-through (Ctrl+Alt+K)" aria-label="Click-through">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <circle cx="10" cy="10" r="2.6" fill="currentColor" stroke="none" />
+              <line x1="10" y1="1.5" x2="10" y2="4.2" />
+              <line x1="10" y1="15.8" x2="10" y2="18.5" />
+              <line x1="1.5" y1="10" x2="4.2" y2="10" />
+              <line x1="15.8" y1="10" x2="18.5" y2="10" />
+            </svg>
+          </button>
+          <button id="settings-btn" class="icon-btn" title="Configuración" aria-label="Configuración">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <line x1="3" y1="6" x2="17" y2="6" />
+              <circle cx="12.5" cy="6" r="1.9" fill="currentColor" stroke="none" />
+              <line x1="3" y1="10" x2="17" y2="10" />
+              <circle cx="7" cy="10" r="1.9" fill="currentColor" stroke="none" />
+              <line x1="3" y1="14" x2="17" y2="14" />
+              <circle cx="14" cy="14" r="1.9" fill="currentColor" stroke="none" />
+            </svg>
+          </button>
+          <button id="minimize-btn" class="icon-btn" title="Minimizar" aria-label="Minimizar">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <line x1="4" y1="14" x2="16" y2="14" />
+            </svg>
+          </button>
+          <button id="hide-btn" class="icon-btn danger" title="Ocultar (Ctrl+Alt+L)" aria-label="Ocultar">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <line x1="5" y1="5" x2="15" y2="15" />
+              <line x1="15" y1="5" x2="5" y2="15" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section id="settings-panel" class="panel hidden">
+        <div id="account-view" class="hidden">
+          <p class="panel-title">
+            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
+            Cuenta
+          </p>
+          <div class="account-card">
+            <div class="account-avatar" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="10" cy="7.5" r="3.2" />
+                <path d="M3.5 17c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="account-meta">
+              <p class="hint">Conectado como</p>
+              <span id="account-email"></span>
+            </div>
+          </div>
+          <div class="row row-spaced">
+            <button id="logout-btn" class="btn btn-danger" type="button">Cerrar sesión</button>
+          </div>
+        </div>
+
+        <form id="login-view">
+          <p class="panel-title">
+            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
+            Iniciar sesión
+          </p>
+          <label>
+            Email
+            <div class="field">
+              <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2.5" y="4.5" width="15" height="11" rx="2" />
+                <path d="M3 5.5 10 11l7-5.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <input id="loginEmail" type="email" autocomplete="username" placeholder="vos@ejemplo.com" />
+            </div>
+          </label>
+          <label>
+            Contraseña
+            <div class="field has-toggle">
+              <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="9" width="12" height="8" rx="1.8" />
+                <path d="M6.5 9V6.5a3.5 3.5 0 0 1 7 0V9" stroke-linecap="round" />
+              </svg>
+              <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" />
+              <button type="button" id="toggle-password-btn" class="field-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 10s2.8-5.5 8-5.5S18 10 18 10s-2.8 5.5-8 5.5S2 10 2 10Z" />
+                  <circle cx="10" cy="10" r="2.3" />
+                </svg>
+              </button>
+            </div>
+          </label>
+          <label id="totp-field" class="hidden">
+            Código 2FA
+            <div class="field">
+              <svg class="field-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="8.5" width="12" height="8" rx="1.8" />
+                <path d="M6.5 8.5V6.2a3.5 3.5 0 0 1 7 0" stroke-linecap="round" />
+              </svg>
+              <input id="loginTotp" type="text" inputmode="numeric" placeholder="123456" />
+            </div>
+          </label>
+          <p class="hint">Iniciá sesión con tu cuenta de monkeyStats para conectar el overlay.</p>
+          <div class="row">
+            <button id="login-btn" class="btn btn-primary" type="submit">Iniciar sesión</button>
+            <span id="login-status" role="status"></span>
+          </div>
+        </form>
+
+        <details id="advanced-settings">
+          <summary>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="5 7.5 10 12.5 15 7.5" />
+            </svg>
+            Avanzado
+          </summary>
+          <p class="hint">Atajos globales (funcionan aunque CS2 tenga el foco).</p>
+          <div class="shortcut-row" data-action="hide">
+            <span class="shortcut-label">Ocultar overlay</span>
+            <kbd class="shortcut-keys" id="shortcut-hide-display"></kbd>
+            <button type="button" class="btn btn-ghost shortcut-edit-btn" data-action="hide">Cambiar</button>
+          </div>
+          <div class="shortcut-row" data-action="clickThrough">
+            <span class="shortcut-label">Click-through</span>
+            <kbd class="shortcut-keys" id="shortcut-clickThrough-display"></kbd>
+            <button type="button" class="btn btn-ghost shortcut-edit-btn" data-action="clickThrough">Cambiar</button>
+          </div>
+          <span id="shortcut-status" role="status"></span>
+        </details>
+      </section>
+
+      <section id="filters" class="panel no-drag">
+        <div class="select-wrap">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 8.5c0 5-7 9.5-7 9.5s-7-4.5-7-9.5a7 7 0 0 1 14 0Z" />
+            <circle cx="10" cy="8.5" r="2.3" />
+          </svg>
+          <select id="map-select" aria-label="Mapa"></select>
+        </div>
+        <div class="segmented" role="group" aria-label="Equipo">
+          <button class="team-btn active" data-team="T">T</button>
+          <button class="team-btn" data-team="CT">CT</button>
+        </div>
+        <div class="segmented" id="category-filters" role="group" aria-label="Categoría">
+          <button class="cat-btn active" data-category="smoke">Humo</button>
+          <button class="cat-btn" data-category="flash">Flash</button>
+          <button class="cat-btn" data-category="molotov">Moli</button>
+          <button class="cat-btn" data-category="he">HE</button>
+        </div>
+      </section>
+
+      <div id="error-banner" class="hidden" role="alert"></div>
+
+      <section id="lineup-list" aria-live="polite"></section>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>

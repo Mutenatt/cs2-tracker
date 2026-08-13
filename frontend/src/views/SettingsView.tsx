@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import {
   changeEmail,
   changePassword,
+  createApiToken,
   deleteAccount,
   forgotPassword,
   getLoginHistory,
+  listApiTokens,
   logoutAll,
   requestSteamRelink,
+  revokeApiToken,
   totpActivate,
   totpDisable,
   totpEnroll,
@@ -15,7 +18,7 @@ import { AutoFetchSettings } from "../components/AutoFetchSettings";
 import { Button } from "../components/Button";
 import { SmoothScroll } from "../components/motion/SmoothScroll";
 import { useUser } from "../context/UserContext";
-import type { LoginHistoryEntry } from "../types";
+import type { ApiTokenOut, LoginHistoryEntry } from "../types";
 
 export function SettingsView() {
   const user = useUser();
@@ -37,6 +40,50 @@ export function SettingsView() {
       .then((r) => setLoginHistory(r.events))
       .catch(() => setLoginHistory([]));
   }, []);
+
+  const [apiTokens, setApiTokens] = useState<ApiTokenOut[]>([]);
+  const [newTokenName, setNewTokenName] = useState("");
+  const [tokenBusy, setTokenBusy] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  // El secreto en claro solo existe en memoria, en el momento de creación
+  // -- el backend nunca lo devuelve de nuevo (ver ApiTokenOut vs
+  // ApiTokenCreatedOut en types.ts).
+  const [justCreatedToken, setJustCreatedToken] = useState<string | null>(null);
+
+  const refreshApiTokens = () => {
+    listApiTokens()
+      .then((r) => setApiTokens(r.tokens))
+      .catch(() => setApiTokens([]));
+  };
+
+  useEffect(refreshApiTokens, []);
+
+  const handleCreateApiToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTokenError(null);
+    setTokenBusy(true);
+    try {
+      const created = await createApiToken(newTokenName.trim() || "Overlay de escritorio");
+      setJustCreatedToken(created.token);
+      setNewTokenName("");
+      refreshApiTokens();
+    } catch (err) {
+      setTokenError(err instanceof Error ? err.message : "no se pudo crear el token");
+    } finally {
+      setTokenBusy(false);
+    }
+  };
+
+  const handleRevokeApiToken = async (id: number) => {
+    if (!window.confirm("¿Revocar este token? La app de escritorio que lo use dejará de acceder."))
+      return;
+    try {
+      const r = await revokeApiToken(id);
+      setApiTokens(r.tokens);
+    } catch {
+      setTokenError("no se pudo revocar el token");
+    }
+  };
 
   const handleSubmitChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -473,6 +520,79 @@ export function SettingsView() {
           </table>
         </div>
       )}
+
+      <div className="section-head">
+        <span className="display">App de escritorio</span>
+        <span className="rule" />
+      </div>
+      <div className="legend-card af-card">
+        <p className="af-meta">
+          Generá un token para conectar el overlay de lineups (app de escritorio) a tu cuenta. El
+          overlay usa este token para leer tus lineups vía la API, en vez de tu sesión del
+          navegador.
+        </p>
+
+        {justCreatedToken ? (
+          <div className="af-row" style={{ flexDirection: "column", gap: "0.5rem" }}>
+            <p className="af-meta">
+              Copiá este token ahora y pegalo en la configuración del overlay. No se vuelve a
+              mostrar.
+            </p>
+            <input type="text" readOnly value={justCreatedToken} className="mono" />
+            <Button
+              onClick={() => {
+                navigator.clipboard?.writeText(justCreatedToken);
+              }}
+            >
+              Copiar
+            </Button>
+            <Button onClick={() => setJustCreatedToken(null)}>Listo</Button>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleCreateApiToken}
+            className="af-row"
+            style={{ flexDirection: "column", gap: "0.5rem" }}
+          >
+            <input
+              type="text"
+              placeholder="Nombre (ej: PC de streaming)"
+              value={newTokenName}
+              onChange={(e) => setNewTokenName(e.target.value)}
+              maxLength={60}
+            />
+            {tokenError && <p className="af-meta error">{tokenError}</p>}
+            <Button type="submit" disabled={tokenBusy}>
+              {tokenBusy ? "Generando…" : "Generar token"}
+            </Button>
+          </form>
+        )}
+
+        {apiTokens.length > 0 && (
+          <table className="mono" style={{ width: "100%", fontSize: "0.85em", marginTop: "1rem" }}>
+            <tbody>
+              {apiTokens.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.name}</td>
+                  <td>{t.token_prefix}…</td>
+                  <td>
+                    {t.revoked_at
+                      ? "revocado"
+                      : t.last_used_at
+                        ? `usado ${new Date(t.last_used_at).toLocaleDateString()}`
+                        : "sin usar"}
+                  </td>
+                  <td>
+                    {!t.revoked_at && (
+                      <Button onClick={() => handleRevokeApiToken(t.id)}>Revocar</Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       <div className="section-head">
         <span className="display">Zona de peligro</span>

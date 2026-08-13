@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { GrenadeIcon } from "./GrenadeIcon";
-import type { Category, LineupPin, TeamFilter } from "./mockLineups";
+import type { Category, MapPin } from "./types";
+import type { TeamFilter } from "./mockLineups";
 
-interface LineupSidebarProps {
+interface LineupFilterBarProps {
   mapName: string;
-  allPins: LineupPin[];
+  allPins: MapPin[];
   activeCategory: Category | "all";
   onCategoryChange: (category: Category | "all") => void;
   activeTeam: TeamFilter;
@@ -12,23 +13,23 @@ interface LineupSidebarProps {
 }
 
 const CATEGORY_LABEL: Record<Category, string> = {
-  smoke: "Humo",
-  flash: "Flash",
-  molotov: "Molotov",
-  he: "Granada HE",
+  smoke: "Smokes",
+  flash: "Flashbangs",
+  molotov: "Molotovs",
+  he: "HE",
 };
 
 const CATEGORIES: Category[] = ["smoke", "flash", "molotov", "he"];
 
-export function LineupSidebar({
+export function LineupFilterBar({
   mapName,
   allPins,
   activeCategory,
   onCategoryChange,
   activeTeam,
   onTeamChange,
-}: LineupSidebarProps) {
-  // Computar contadores en vivo: categoría filtra por equipo activo.
+}: LineupFilterBarProps) {
+  // Computar contadores en vivo: la burbuja de categoría filtra por equipo activo.
   const categoryCounts = useMemo(() => {
     const counts: Record<Category | "all", number> = {
       smoke: 0,
@@ -49,29 +50,29 @@ export function LineupSidebar({
   }, [allPins, activeTeam]);
 
   return (
-    <aside className="lme-sidebar">
-      <h2 className="lme-sidebar-title">{mapName}</h2>
+    <div className="lme-filterbar">
+      <h2 className="lme-filterbar-title">{mapName}</h2>
 
-      <div className="lme-category-list">
+      <div className="lme-bubble-row">
         <button
-          className={`lme-category-row ${activeCategory === "all" ? "active" : ""}`}
+          type="button"
+          className={`lme-bubble ${activeCategory === "all" ? "active" : ""}`}
           onClick={() => onCategoryChange("all")}
         >
-          <span className="lme-category-label">Todas</span>
-          <span className="lme-category-count">{categoryCounts.all}</span>
+          <span className="lme-bubble-label">Todos</span>
+          <span className="lme-bubble-count">{categoryCounts.all}</span>
         </button>
 
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
-            className={`lme-category-row lme-category-row-${cat} ${
-              activeCategory === cat ? "active" : ""
-            }`}
+            type="button"
+            className={`lme-bubble lme-bubble-${cat} ${activeCategory === cat ? "active" : ""}`}
             onClick={() => onCategoryChange(cat)}
           >
-            <GrenadeIcon category={cat} size={14} />
-            <span className="lme-category-label">{CATEGORY_LABEL[cat]}</span>
-            <span className="lme-category-count">{categoryCounts[cat]}</span>
+            <GrenadeIcon category={cat} size={15} />
+            <span className="lme-bubble-label">{CATEGORY_LABEL[cat]}</span>
+            <span className="lme-bubble-count">{categoryCounts[cat]}</span>
           </button>
         ))}
       </div>
@@ -80,6 +81,7 @@ export function LineupSidebar({
         {(["CT", "T", "ANY"] as const).map((team) => (
           <button
             key={team}
+            type="button"
             className={`lme-team-pill ${activeTeam === team ? "active" : ""}`}
             data-team={team}
             onClick={() => onTeamChange(team)}
@@ -88,6 +90,6 @@ export function LineupSidebar({
           </button>
         ))}
       </div>
-    </aside>
+    </div>
   );
 }

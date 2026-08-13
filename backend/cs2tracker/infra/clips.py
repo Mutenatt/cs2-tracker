@@ -197,7 +197,7 @@ def render_clip(
 
             d.text(
                 (OUT_W // 2, OUT_H - 80),
-                "cStats://SISTEMA",
+                "monkeyStats://SISTEMA",
                 font=font_sub,
                 fill=COLOR_DIM,
                 anchor="mm",

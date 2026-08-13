@@ -25,6 +25,7 @@ from itsdangerous import BadSignature, URLSafeTimedSerializer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from cs2tracker import api_tokens
 from cs2tracker.config import settings
 from cs2tracker.db.models import User
 from cs2tracker.db.session import get_engine
@@ -329,6 +330,30 @@ def get_current_steamid(request: Request) -> str:
     if result is None:
         raise HTTPException(401, "no autenticado")
     return result
+
+
+def get_current_actor(request: Request) -> str:
+    """Como get_current_steamid, pero también acepta un token personal
+    (`Authorization: Bearer cst_...`, ver api_tokens.py) para clientes que no
+    son el navegador -- hoy solo el overlay de escritorio (ver app/), que no
+    puede sostener la cookie de sesión de Steam OpenID por ser un proceso
+    aparte. La cookie se prueba primero porque es el caso común (la propia
+    web); el header es el fallback, nunca al revés, para no pagar el lookup
+    de token en cada request normal del sitio."""
+    decoded = read_session_cookie(request.cookies.get(COOKIE_NAME))
+    if decoded is not None:
+        steamid, epoch = decoded
+        result = _steamid_if_epoch_matches(steamid, epoch)
+        if result is not None:
+            return result
+
+    authorization = request.headers.get("authorization", "")
+    if authorization.lower().startswith("bearer "):
+        steamid = api_tokens.steamid_for_token(authorization[7:].strip())
+        if steamid is not None:
+            return steamid
+
+    raise HTTPException(401, "no autenticado")
 
 
 def get_current_steamid_optional(request: Request) -> str | None:

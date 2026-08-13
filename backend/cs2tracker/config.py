@@ -94,5 +94,16 @@ class Settings(BaseSettings):
     # usuario (descartado para v1).
     app_tz: str = "America/Argentina/Cordoba"
 
+    # Videos de lineups (bucket privado R2, ver infra/r2.py): el bucket no es
+    # público -- GET /lineups firma cada video_url al vuelo (URL presignada,
+    # expira sola) en vez de exponer el endpoint S3 crudo al cliente. Sin
+    # configurar, video_url queda como el path crudo (roto para <video>, pero
+    # no tira abajo el resto de /lineups).
+    r2_account_id: str | None = None
+    r2_bucket: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
+    r2_video_url_ttl: int = 21600  # 6h -- de sobra para una sesión de juego
+
 
 settings = Settings()

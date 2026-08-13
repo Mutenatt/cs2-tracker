@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "plugins/ui-design/skills/interaction-design/SKILL.md",
       "computedHash": "d2e2127b91c76b2ed6706ce78bfc7eddcb6b340333f94d3d53d9f65e3253dea2"
+    },
+    "semgrep": {
+      "source": "trailofbits/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/static-analysis/skills/semgrep/SKILL.md",
+      "computedHash": "93868a010444f55c2c897c43b6c79014023d28b66c2e718e3c9e6af8058d53d1"
     }
   }
 }

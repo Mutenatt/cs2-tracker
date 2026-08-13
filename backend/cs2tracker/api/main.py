@@ -19,6 +19,7 @@ from cs2tracker.api import queries
 from cs2tracker.api.account import router as account_router
 from cs2tracker.api.autofetch import router as autofetch_router
 from cs2tracker.api.internal import router as internal_router
+from cs2tracker.api.lineups import router as lineups_router
 from cs2tracker.api.onboarding import router as onboarding_router
 from cs2tracker.api.scene import router as scene_router
 from cs2tracker.api.schemas import (
@@ -79,6 +80,7 @@ from cs2tracker.api.schemas import (
     WeaponStat,
     WinrateTogetherSummary,
 )
+from cs2tracker.api.tokens import router as tokens_router
 from cs2tracker.auth import fetch_profiles, get_current_steamid
 from cs2tracker.config import settings
 from cs2tracker.db import (
@@ -112,7 +114,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title="cStats API", version="0.1", lifespan=lifespan)
+app = FastAPI(title="monkeyStats API", version="0.1", lifespan=lifespan)
 # allow_credentials + wildcard no son compatibles (los navegadores lo
 # rechazan): la cookie de sesión de auth.py exige un origen explícito.
 app.add_middleware(
@@ -150,6 +152,8 @@ app.include_router(autofetch_router)
 app.include_router(onboarding_router)
 app.include_router(internal_router)
 app.include_router(scene_router)
+app.include_router(lineups_router)
+app.include_router(tokens_router)
 
 
 @app.get("/matches", response_model=list[MatchSummary])
@@ -857,7 +861,7 @@ def download_clip(job_id: int, viewer: str = Depends(get_current_steamid)) -> Fi
         return FileResponse(
             job.file_path,
             media_type="video/mp4",
-            filename=f"cstats_{job.label.replace(' ', '_')}_r{job.round_num + 1}.mp4",
+            filename=f"monkeystats_{job.label.replace(' ', '_')}_r{job.round_num + 1}.mp4",
         )
 
 

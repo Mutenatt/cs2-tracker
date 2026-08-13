@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { SectionLabel } from "../components/SectionLabel";
 import { Topbar } from "../components/Topbar";
 import { cardRise, staggerList } from "../components/motion/presets";
 import { SmoothScroll } from "../components/motion/SmoothScroll";
+import { LineupMapStage } from "../components/lineups/LineupMapStage";
+import { LineupVideoModal } from "../components/lineups/LineupVideoModal";
+import { LineupCoordEditor } from "../components/lineups/LineupCoordEditor";
+import type { MapPin } from "../components/lineups/types";
+import { getLineups } from "../api";
+import type { LineupOut } from "../types";
 
 type Side = "T" | "CT";
 type Category = "smoke" | "flash" | "molotov" | "he";
@@ -11,17 +17,6 @@ type Category = "smoke" | "flash" | "molotov" | "he";
 interface MapEntry {
   key: string;
   name: string;
-}
-
-interface LineupItem {
-  id: string;
-  title: string;
-  side: Side;
-  category: Category;
-  to: string;
-  from?: string;
-  video: string;
-  notes?: string;
 }
 
 // Mismo pool de radares que ya viven en frontend/public/radar -- se reusan
@@ -51,13 +46,6 @@ const UTILITY_EFFECT_DURATION: Record<Category, number> = {
   he: 820,
 };
 
-const CATEGORY_CLASS: Record<Category, string> = {
-  smoke: "lineup-tag-smoke",
-  flash: "lineup-tag-flash",
-  molotov: "lineup-tag-molotov",
-  he: "lineup-tag-he",
-};
-
 const MAP_BACKGROUND_BY_MAP: Record<string, string> = {
   de_ancient: "/fondo-lineups/ancient-fondo-lineup.jpg",
   de_anubis: "/fondo-lineups/anubis-fondo-lineup.jpg",
@@ -68,209 +56,18 @@ const MAP_BACKGROUND_BY_MAP: Record<string, string> = {
   de_inferno: "/fondo-lineups/inferno-fondo-lineups.jpg",
 };
 
-// Cada video vive en frontend/public/lineups/{mapa}/{ct|t}/archivo.mp4 (ver
-// carpeta real en disco). Sumar un mapa nuevo es: 1) tirar los .mp4 en esa
-// ruta, 2) agregar acá una entrada por video. Sin entradas, el mapa cae
-// directo al estado vacío -- el "to" sale del nombre de archivo tal cual lo
-// grabó el usuario, revisar/ajustar el callout si no coincide.
-const LINEUPS: Record<string, LineupItem[]> = {
-  de_mirage: [
-    // ---- CT ----
-    {
-      id: "mirage-ct-deto-caverna",
-      title: "Granada HE — Caverna",
-      side: "CT",
-      category: "he",
-      to: "Caverna",
-      video: "/lineups/de_mirage/ct/deto-ct-caverna.mp4",
-    },
-    {
-      id: "mirage-ct-moli-caverna",
-      title: "Molotov — Caverna",
-      side: "CT",
-      category: "molotov",
-      to: "Caverna",
-      video: "/lineups/de_mirage/ct/moli-ct-caverna.mp4",
-    },
-    {
-      id: "mirage-ct-moli-tapete",
-      title: "Molotov — Tapete",
-      side: "CT",
-      category: "molotov",
-      to: "Tapete",
-      video: "/lineups/de_mirage/ct/moli-ct-tapete.mp4",
-    },
-    {
-      id: "mirage-ct-popflash-mid",
-      title: "Popflash — Mid",
-      side: "CT",
-      category: "flash",
-      to: "Mid",
-      video: "/lineups/de_mirage/ct/popflash-cd-mid.mp4",
-    },
-    {
-      id: "mirage-ct-popflash-medio",
-      title: "Popflash — Medio",
-      side: "CT",
-      category: "flash",
-      to: "Medio",
-      video: "/lineups/de_mirage/ct/popflash-ct-medio.mp4",
-    },
-    {
-      id: "mirage-ct-smoke-l",
-      title: "Humo — Zona L",
-      side: "CT",
-      category: "smoke",
-      to: "Zona L",
-      video: "/lineups/de_mirage/ct/smoke-ct-L.mp4",
-    },
-    {
-      id: "mirage-ct-smoke-spawnpalace",
-      title: "Humo — Spawn Palace",
-      side: "CT",
-      category: "smoke",
-      to: "Spawn Palace",
-      video: "/lineups/de_mirage/ct/smoke-ct-spawnPalace.mp4",
-    },
-    {
-      id: "mirage-ct-smoke-tapete",
-      title: "Humo — Tapete",
-      side: "CT",
-      category: "smoke",
-      to: "Tapete",
-      video: "/lineups/de_mirage/ct/smoke-ct-tapete.mp4",
-    },
-    {
-      id: "mirage-ct-smoke-tapetespawn",
-      title: "Humo — Tapete / Spawn",
-      side: "CT",
-      category: "smoke",
-      to: "Tapete / Spawn",
-      video: "/lineups/de_mirage/ct/smoke-ct-tapetespawn.mp4",
-    },
-    // ---- T ----
-    {
-      id: "mirage-t-moli-arenaoscuro",
-      title: "Molotov — A / Arena oscura",
-      side: "T",
-      category: "molotov",
-      to: "A - Arena oscura",
-      video: "/lineups/de_mirage/t/moli-A-arenaoscuro.mp4",
-    },
-    {
-      id: "mirage-t-moli-mid",
-      title: "Molotov — Mid",
-      side: "T",
-      category: "molotov",
-      to: "Mid",
-      video: "/lineups/de_mirage/t/moli-mid.mp4",
-    },
-    {
-      id: "mirage-t-moli-van",
-      title: "Molotov — Van",
-      side: "T",
-      category: "molotov",
-      to: "Van",
-      video: "/lineups/de_mirage/t/moli-van.mp4",
-    },
-    {
-      id: "mirage-t-popflash-a",
-      title: "Popflash — A",
-      side: "T",
-      category: "flash",
-      to: "A",
-      video: "/lineups/de_mirage/t/popflash-A.mp4",
-    },
-    {
-      id: "mirage-t-popflash-b",
-      title: "Popflash — B",
-      side: "T",
-      category: "flash",
-      to: "B",
-      video: "/lineups/de_mirage/t/popflash-b.mp4",
-    },
-    {
-      id: "mirage-t-popflash-mid",
-      title: "Popflash — Mid",
-      side: "T",
-      category: "flash",
-      to: "Mid",
-      video: "/lineups/de_mirage/t/popflash-mid.mp4",
-    },
-    {
-      id: "mirage-t-smoke-lwall",
-      title: "Humo — L Wall",
-      side: "T",
-      category: "smoke",
-      to: "L Wall",
-      video: "/lineups/de_mirage/t/smoke-Lwall.mp4",
-    },
-    {
-      id: "mirage-t-smoke-bwindow",
-      title: "Humo — B Window",
-      side: "T",
-      category: "smoke",
-      to: "B Window",
-      video: "/lineups/de_mirage/t/smoke-b-window.mp4",
-    },
-    {
-      id: "mirage-t-smoke-cabecinha",
-      title: "Humo — Cabecinha",
-      side: "T",
-      category: "smoke",
-      to: "Cabecinha",
-      video: "/lineups/de_mirage/t/smoke-cabecinha.mp4",
-    },
-    {
-      id: "mirage-t-smoke-forest",
-      title: "Humo — Forest",
-      side: "T",
-      category: "smoke",
-      to: "Forest",
-      video: "/lineups/de_mirage/t/smoke-forest.mp4",
-    },
-    {
-      id: "mirage-t-smoke-jungle",
-      title: "Humo — Jungle",
-      side: "T",
-      category: "smoke",
-      to: "Jungle",
-      video: "/lineups/de_mirage/t/smoke-jungle.mp4",
-    },
-    {
-      id: "mirage-t-smoke-liga",
-      title: "Humo — Liga",
-      side: "T",
-      category: "smoke",
-      to: "Liga",
-      video: "/lineups/de_mirage/t/smoke-liga.mp4",
-    },
-    {
-      id: "mirage-t-smoke-shortmid",
-      title: "Humo — Short / Mid",
-      side: "T",
-      category: "smoke",
-      to: "Short / Mid",
-      video: "/lineups/de_mirage/t/smoke-short-mid.mp4",
-    },
-    {
-      id: "mirage-t-smoke-ticketsct",
-      title: "Humo — Tickets CT",
-      side: "T",
-      category: "smoke",
-      to: "Tickets CT",
-      video: "/lineups/de_mirage/t/smoke-ticketsCT.mp4",
-    },
-    {
-      id: "mirage-t-smoke-ventana",
-      title: "Humo — Ventana",
-      side: "T",
-      category: "smoke",
-      to: "Ventana",
-      video: "/lineups/de_mirage/t/smoke-ventana.mp4",
-    },
-  ],
-};
+// Los datos de lineups (posiciones y video_url ya presignado desde R2) salen
+// de GET /lineups -- ver backend/cs2tracker/api/lineups.py y el seed en
+// backend/scripts/seed_lineups.py (fuente de verdad del contenido).
+function lineupsFor(
+  rows: LineupOut[],
+  category: Category | "all",
+  side: Side
+): LineupOut[] {
+  return rows
+    .filter((r) => category === "all" || r.category === category)
+    .filter((r) => r.team == null || r.team === side);
+}
 
 // Preferencia de bajo consumo (pensada para RAM limitada): apaga los videos
 // de fondo de las tarjetas de mapa. Se guarda en localStorage porque es una
@@ -280,12 +77,6 @@ const BG_ANIMATIONS_KEY = "cstats:lineups-bg-animations";
 function loadBgAnimationsPref(): boolean {
   if (typeof window === "undefined") return true;
   return window.localStorage.getItem(BG_ANIMATIONS_KEY) !== "off";
-}
-
-function itemsFor(mapKey: string, category: Category | "all", side: Side): LineupItem[] {
-  return (LINEUPS[mapKey] ?? [])
-    .filter((i) => category === "all" || i.category === category)
-    .filter((i) => i.side === side);
 }
 
 // Para clips cuyo loop nativo (<video loop>) deja un corte visible una
@@ -483,10 +274,47 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
   const [animationTick, setAnimationTick] = useState(0);
   const [activeSide, setActiveSide] = useState<Side>("T");
   const [bgAnimationsOn, setBgAnimationsOn] = useState(loadBgAnimationsPref);
+  const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
+  const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
+  const [editingCoords, setEditingCoords] = useState(false);
+  // Overrides locales (no persisten a disco): "Ajustar posiciones" permite
+  // arrastrar pines para previsualizar, pero no hay endpoint de escritura
+  // todavía -- ver comentario en backend/cs2tracker/api/lineups.py.
+  const [coordOverrides, setCoordOverrides] = useState<Record<string, { x: number; y: number }>>(
+    {}
+  );
+  const [mapLineups, setMapLineups] = useState<LineupOut[]>([]);
+  const [lineupsLoading, setLineupsLoading] = useState(true);
 
   useEffect(() => {
     window.localStorage.setItem(BG_ANIMATIONS_KEY, bgAnimationsOn ? "on" : "off");
   }, [bgAnimationsOn]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLineupsLoading(true);
+    getLineups(activeMap)
+      .then((rows) => {
+        if (!cancelled) setMapLineups(rows);
+      })
+      .catch((err) => {
+        console.error("GET /lineups falló", err);
+        if (!cancelled) setMapLineups([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLineupsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMap]);
+
+  // Filtrar mapa/categoría/lado deja pines viejos "colgados" en hover o
+  // seleccionados si no se limpia el estado del mapa al cambiar el contexto.
+  useEffect(() => {
+    setHoveredPinId(null);
+    setSelectedPin(null);
+  }, [activeMap, activeCategory, activeSide]);
 
   useEffect(() => {
     if (activeMap === displayedMap) {
@@ -517,8 +345,36 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
   }, [animatingCategory, animationTick]);
 
   const mapName = MAP_POOL.find((m) => m.key === activeMap)?.name ?? activeMap;
-  const items = itemsFor(activeMap, activeCategory, activeSide);
-  const total = (LINEUPS[activeMap] ?? []).length;
+  const items = useMemo(
+    () => lineupsFor(mapLineups, activeCategory, activeSide),
+    [mapLineups, activeCategory, activeSide]
+  );
+  const total = mapLineups.length;
+  const mapPins: MapPin[] = useMemo(
+    () =>
+      items.map((row) => ({
+        id: String(row.id),
+        category: row.category,
+        team: row.team ?? undefined,
+        label: row.label,
+        x: row.x,
+        y: row.y,
+        startX: row.start_x ?? undefined,
+        startY: row.start_y ?? undefined,
+        videoUrl: row.video_url,
+        instructions: row.instructions ?? undefined,
+        crosshairNote: row.crosshair_note ?? undefined,
+      })),
+    [items]
+  );
+  const displayedPins: MapPin[] = useMemo(
+    () =>
+      mapPins.map((pin) => (coordOverrides[pin.id] ? { ...pin, ...coordOverrides[pin.id] } : pin)),
+    [mapPins, coordOverrides]
+  );
+  const handlePinDrag = (id: string, x: number, y: number) => {
+    setCoordOverrides((prev) => ({ ...prev, [id]: { x, y } }));
+  };
   const pageBackgroundStyle = {
     backgroundImage: `linear-gradient(120deg, rgba(6, 12, 20, 0.9) 0%, rgba(6, 12, 20, 0.56) 100%), url(${MAP_BACKGROUND_BY_MAP[displayedMap] ?? "/fondo-lineups/mirage-fondo-lineup.jpg"})`,
     backgroundColor: "#060c14",
@@ -718,7 +574,7 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
               Todas ({total})
             </button>
             {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => {
-              const count = (LINEUPS[activeMap] ?? []).filter((i) => i.category === c).length;
+              const count = mapLineups.filter((i) => i.category === c).length;
               return (
                 <button
                   key={c}
@@ -739,57 +595,47 @@ export function LineUps({ onLogout }: { onLogout: () => void }) {
             })}
           </div>
 
-          {items.length === 0 ? (
+          {lineupsLoading ? null : items.length === 0 ? (
             <div className="lineup-empty">
               <span className="lineup-empty-title">
                 Todavía no hay line ups guardados para {mapName}.
               </span>
               <span className="lineup-empty-sub">
-                Sumá tus grabaciones en <code>frontend/public/lineups/{activeMap}/</code> y
-                agregalas a la lista de este mapa en <code>LineUps.tsx</code>.
+                Sumá entradas en <code>backend/scripts/seed_lineups.py</code> y corré el seed para
+                que aparezcan acá.
               </span>
             </div>
           ) : (
             <motion.div
-              className="lineup-grid"
+              className="lineup-map-section"
               variants={staggerList}
               initial="hidden"
               animate="show"
               key={`${activeMap}:${activeCategory}:${activeSide}`}
             >
-              {items.map((item) => (
-                <motion.div className="lineup-card" variants={cardRise} key={item.id}>
-                  <video
-                    className="lineup-video"
-                    src={item.video}
-                    controls
-                    controlsList="nodownload noremoteplayback"
-                    disablePictureInPicture
-                    preload="metadata"
-                    onContextMenu={(e) => e.preventDefault()}
-                  />
-                  <div className="lineup-card-body">
-                    <div className="lineup-card-head">
-                      <span className={`side-tag ${item.side === "T" ? "t" : "ct"}`}>
-                        {item.side}
-                      </span>
-                      <span className={`lineup-tag ${CATEGORY_CLASS[item.category]}`}>
-                        {CATEGORY_LABEL[item.category]}
-                      </span>
-                    </div>
-                    <div className="lineup-card-title">{item.title}</div>
-                    <div className="lineup-card-route">
-                      {item.from && <>{item.from} </>}
-                      <span className="lineup-card-arrow">→</span> {item.to}
-                    </div>
-                    {item.notes && <div className="lineup-card-notes">{item.notes}</div>}
-                  </div>
-                </motion.div>
-              ))}
+              <LineupCoordEditor
+                pins={displayedPins}
+                editing={editingCoords}
+                onToggle={() => setEditingCoords((v) => !v)}
+              />
+              <motion.div variants={cardRise}>
+                <LineupMapStage
+                  mapKey={activeMap}
+                  pins={displayedPins}
+                  hoveredId={hoveredPinId}
+                  onPinHoverStart={setHoveredPinId}
+                  onPinHoverEnd={() => setHoveredPinId(null)}
+                  onPinSelect={setSelectedPin}
+                  editable={editingCoords}
+                  onPinDrag={handlePinDrag}
+                />
+              </motion.div>
             </motion.div>
           )}
         </div>
       </div>
+
+      {selectedPin && <LineupVideoModal pin={selectedPin} onClose={() => setSelectedPin(null)} />}
     </SmoothScroll>
   );
 }

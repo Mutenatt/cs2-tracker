@@ -18,6 +18,18 @@ class LoginIn(BaseModel):
     password: str
 
 
+class DesktopLoginIn(BaseModel):
+    email: str
+    password: str
+    totp_code: str | None = None
+
+
+class DesktopLoginOut(BaseModel):
+    mfa_required: bool
+    token: str | None = None
+    token_prefix: str | None = None
+
+
 class ForgotPasswordIn(BaseModel):
     email: str
 
@@ -607,3 +619,52 @@ class MonthlySummaryResponse(BaseModel):
     totals: MonthlyTotals
     headline: MonthlyHeadline
     detail: MonthlyDetail
+
+
+class LineupOut(BaseModel):
+    id: int
+    map: str
+    category: Literal["smoke", "flash", "molotov", "he"]
+    team: Literal["CT", "T"] | None
+    label: str
+    x: float
+    y: float
+    start_x: float | None
+    start_y: float | None
+    video_url: str
+    instructions: str | None
+    crosshair_note: str | None
+
+
+class LineupMapEntry(BaseModel):
+    map: str
+    count: int
+
+
+class LineupMapsResponse(BaseModel):
+    maps: list[LineupMapEntry]
+
+
+class ApiTokenCreateIn(BaseModel):
+    name: str
+
+
+class ApiTokenCreatedOut(BaseModel):
+    id: int
+    name: str
+    token: str  # única vez que se devuelve el secreto en claro
+    token_prefix: str
+    created_at: str
+
+
+class ApiTokenOut(BaseModel):
+    id: int
+    name: str
+    token_prefix: str
+    created_at: str
+    last_used_at: str | None
+    revoked_at: str | None
+
+
+class ApiTokensResponse(BaseModel):
+    tokens: list[ApiTokenOut]

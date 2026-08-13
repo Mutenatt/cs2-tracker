@@ -42,7 +42,7 @@ export function LandingView() {
           <div className="landing-label landing-label-signal landing-center">
             Momentos que valen un clip
           </div>
-          <h2 className="landing-h2 landing-center">cStats te marca el minuto exacto</h2>
+          <h2 className="landing-h2 landing-center">monkeyStats te marca el minuto exacto</h2>
           <div className="landing-demo-frame">
             {/* Placeholder — reemplazar por captura real del producto (timeline de clutches / duelos) */}
             <div className="landing-demo-placeholder">
@@ -94,7 +94,7 @@ export function LandingView() {
           <div className="landing-stats-grid">
             <div className="landing-stat">
               <div className="landing-stat-value landing-stat-value-recon">600+</div>
-              <div className="landing-stat-label">creadores usando cStats</div>
+              <div className="landing-stat-label">creadores usando monkeyStats</div>
             </div>
             <div className="landing-stat">
               <div className="landing-stat-value">3.2K</div>
@@ -118,7 +118,8 @@ export function LandingView() {
             Solo falta encontrarlo.
           </h2>
           <p className="landing-final-cta-sub">
-            Perfecciona tu gameplay con cStats y comparti al mundo tus momentos más destacados.{" "}
+            Perfecciona tu gameplay con monkeyStats y comparti al mundo tus momentos más
+            destacados.{" "}
           </p>
           <Link className="cs-btn cs-btn-primary landing-hero-cta" to="/register">
             Crear cuenta

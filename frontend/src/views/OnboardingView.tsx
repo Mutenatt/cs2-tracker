@@ -195,8 +195,8 @@ export function OnboardingView({ mode, onComplete }: Props) {
           <>
             <h2>Contanos un poco de vos</h2>
             <p className="onb-sub">
-              Nos ayuda a entender quién juega cStats. Es obligatorio y solo se usa para estudio de
-              mercado interno.
+              Nos ayuda a entender quién juega monkeyStats. Es obligatorio y solo se usa para
+              estudio de mercado interno.
             </p>
             <div className="onb-field">
               <label>Rango etario</label>
@@ -249,7 +249,7 @@ export function OnboardingView({ mode, onComplete }: Props) {
               </select>
             </div>
             <div className="onb-field">
-              <label>¿Cuál es tu objetivo principal en cStats?</label>
+              <label>¿Cuál es tu objetivo principal en monkeyStats?</label>
               <select
                 className="onb-select"
                 value={demographics.primary_goal ?? ""}
@@ -281,7 +281,7 @@ export function OnboardingView({ mode, onComplete }: Props) {
             <p className="onb-sub">Ya tenés todo conectado. Vamos a tus stats.</p>
             <div className="onb-actions">
               <Button onClick={finish} disabled={busy}>
-                {busy ? "Terminando…" : "Entrar a cStats"}
+                {busy ? "Terminando…" : "Entrar a monkeyStats"}
               </Button>
             </div>
           </>

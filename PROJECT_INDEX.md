@@ -1,4 +1,4 @@
-# cStats cs2-tracker — Project Index
+# monkeyStats cs2-tracker — Project Index
 
 ## Overview
 
@@ -103,7 +103,7 @@ git commit -m "Regenerate project indices"
 | `backend/cs2tracker/domain/badges/` | Subpackage: badge triggers |
 | `frontend/src/api.ts` | HTTP client (hub file, ~20+ importers) |
 | `frontend/src/types.ts` | TypeScript types (hub file, ~30 importers, 65+ exports) |
-| `CLAUDE.md` | Project instructions (from cStats root) |
+| `CLAUDE.md` | Project instructions (from monkeyStats root) |
 
 ---
 

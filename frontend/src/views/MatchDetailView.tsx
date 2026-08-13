@@ -179,7 +179,7 @@ export function MatchDetailView() {
 
           <Heatmap map={match.map} matchId={match.match_id} />
 
-          <footer>cStats://SISTEMA</footer>
+          <footer>monkeyStats://SISTEMA</footer>
         </div>
       </div>
     </SmoothScroll>

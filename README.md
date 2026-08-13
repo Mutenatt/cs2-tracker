@@ -1,4 +1,4 @@
-# CS2 Tracker
+# monkeyStats
 
 Panel de estadísticas de Counter-Strike 2 a partir de demos `.dem`. Parsea la
 demo, guarda los eventos en una base relacional y muestra un panel estilo
@@ -31,6 +31,7 @@ cs2-tracker/
 │   ├── alembic/               # Migraciones de DB
 │   └── tests/                  # pytest
 ├── gc-sidecar/               # Node: sharecode -> URL del demo (Game Coordinator)
+├── app/                      # Electron: overlay de escritorio de lineups (ver app/README.md)
 └── frontend/                 # Vite + React + TypeScript
     └── src/
         ├── views/             # Landing, login/registro, perfil, settings, partidas...
@@ -98,6 +99,15 @@ npm run lint           # eslint + prettier --check
 ```
 
 Levantá el backend (`cs2-api`) en paralelo para datos en vivo.
+
+## Overlay de escritorio (lineups)
+
+`app/` es una app Electron aparte (ventana transparente, siempre-arriba,
+click-through) que muestra los lineups guardados en la misma base que la
+web, leyendo la API real (`GET /lineups`) en vez de tener su propia copia de
+datos. Se autentica con un token personal (no con la cookie de sesión del
+navegador, que no aplica a un proceso separado) generado desde
+`/settings` → "App de escritorio". Detalle completo en `app/README.md`.
 
 ## Auto-fetch de partidas (Camino 2, modelo Leetify)
 

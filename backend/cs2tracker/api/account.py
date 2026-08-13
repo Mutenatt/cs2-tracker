@@ -30,6 +30,8 @@ from cs2tracker.api.schemas import (
     ChangeEmailIn,
     ChangePasswordIn,
     DeleteAccountIn,
+    DesktopLoginIn,
+    DesktopLoginOut,
     ForgotPasswordIn,
     LoginHistoryEntry,
     LoginHistoryResponse,
@@ -46,6 +48,7 @@ from cs2tracker.api.schemas import (
     TotpDisableIn,
     TotpEnrollOut,
 )
+from cs2tracker.api.tokens import MAX_TOKENS_PER_USER
 from cs2tracker.auth import (
     COOKIE_NAME as REAL_COOKIE_NAME,
 )
@@ -87,8 +90,9 @@ from cs2tracker.auth_password import (
     read_relink_cookie,
     verify_password,
 )
+from cs2tracker.api_tokens import create_token
 from cs2tracker.config import settings
-from cs2tracker.db import AccountSignup, ClipJob, LoginEvent, Player, TotpBackupCode, User
+from cs2tracker.db import AccountSignup, ApiToken, ClipJob, LoginEvent, Player, TotpBackupCode, User
 from cs2tracker.db.session import get_engine
 from cs2tracker.infra.mail import send_email
 from cs2tracker.rate_limit import (
@@ -236,7 +240,7 @@ def _maybe_notify_new_login(session: Session, user: User, request: Request) -> N
         return
     send_email(
         user.email,
-        "Nuevo inicio de sesión en cStats",
+        "Nuevo inicio de sesión en monkeyStats",
         f"Se inició sesión en tu cuenta desde una IP nueva ({ip}) el "
         f"{datetime.now(UTC).isoformat()}. Si no fuiste vos, cambiá tu contraseña.",
     )
@@ -272,7 +276,7 @@ def auth_register(body: RegisterIn, request: Request):
         verify_url = f"{settings.api_public_url}/auth/verify-email?token={token}"
         send_email(
             email,
-            "Verificá tu email en cStats",
+            "Verificá tu email en monkeyStats",
             f"Confirmá tu cuenta para seguir con el registro:\n\n{verify_url}",
         )
 
@@ -332,7 +336,7 @@ def auth_resend_verification(request: Request):
         verify_url = f"{settings.api_public_url}/auth/verify-email?token={token}"
         send_email(
             pending.email,
-            "Verificá tu email en cStats",
+            "Verificá tu email en monkeyStats",
             f"Confirmá tu cuenta para seguir con el registro:\n\n{verify_url}",
         )
     return {"ok": True}
@@ -565,7 +569,9 @@ def auth_forgot_password(body: ForgotPasswordIn, request: Request):
             token = create_password_reset_token("user", user.steamid)
             reset_url = f"{settings.frontend_url}/reset-password?token={token}"
             send_email(
-                email, "Restablecer tu contraseña en cStats", f"Elegí una nueva:\n\n{reset_url}"
+                email,
+                "Restablecer tu contraseña en monkeyStats",
+                f"Elegí una nueva:\n\n{reset_url}",
             )
         else:
             pending = s.query(AccountSignup).filter(AccountSignup.email == email).first()
@@ -573,7 +579,9 @@ def auth_forgot_password(body: ForgotPasswordIn, request: Request):
                 token = create_password_reset_token("pending", str(pending.id))
                 reset_url = f"{settings.frontend_url}/reset-password?token={token}"
                 send_email(
-                    email, "Restablecer tu contraseña en cStats", f"Elegí una nueva:\n\n{reset_url}"
+                    email,
+                    "Restablecer tu contraseña en monkeyStats",
+                    f"Elegí una nueva:\n\n{reset_url}",
                 )
     # Respuesta idéntica siempre, exista o no el email -- evita enumeración.
     return {"ok": True}
@@ -676,7 +684,7 @@ def auth_change_email(
         verify_url = f"{settings.api_public_url}/auth/verify-email-change?token={token}"
         send_email(
             new_email,
-            "Confirmá tu nuevo email en cStats",
+            "Confirmá tu nuevo email en monkeyStats",
             f"Confirmá el cambio de email de tu cuenta:\n\n{verify_url}",
         )
     return {"ok": True}
@@ -928,7 +936,9 @@ def auth_totp_enroll(steamid: str = Depends(get_current_steamid)):
         user.totp_secret = secret
         s.commit()
 
-        otpauth_uri = pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name="cStats")
+        otpauth_uri = pyotp.TOTP(secret).provisioning_uri(
+            name=user.email, issuer_name="monkeyStats"
+        )
 
         qr_img = qrcode.make(otpauth_uri)
         buf = io.BytesIO()
@@ -1012,6 +1022,24 @@ def auth_totp_disable(
         return resp
 
 
+def _totp_code_matches(session: Session, user: User, code: str) -> bool:
+    """Chequeo puro (sin lockout/logging, eso lo maneja el caller): código
+    TOTP actual, o -- si no matchea -- un backup code sin usar (y lo marca
+    usado)."""
+    if pyotp.TOTP(user.totp_secret).verify(code, valid_window=1):
+        return True
+    backup_codes = (
+        session.query(TotpBackupCode)
+        .filter(TotpBackupCode.steamid == user.steamid, TotpBackupCode.used_at.is_(None))
+        .all()
+    )
+    for backup in backup_codes:
+        if verify_password(code, backup.code_hash):
+            backup.used_at = datetime.now(UTC).isoformat()
+            return True
+    return False
+
+
 @router.post("/login/totp", response_model=MeOut)
 def auth_login_totp(body: LoginTotpIn, request: Request):
     with Session(get_engine()) as s:
@@ -1035,20 +1063,7 @@ def auth_login_totp(body: LoginTotpIn, request: Request):
             )
             raise HTTPException(423, _ACCOUNT_LOCKED_MSG)
 
-        valid = pyotp.TOTP(user.totp_secret).verify(body.code, valid_window=1)
-        if not valid:
-            # Código TOTP no válido -- probar contra los backup codes no
-            # usados antes de darlo por definitivamente inválido.
-            backup_codes = (
-                s.query(TotpBackupCode)
-                .filter(TotpBackupCode.steamid == steamid, TotpBackupCode.used_at.is_(None))
-                .all()
-            )
-            for backup in backup_codes:
-                if verify_password(body.code, backup.code_hash):
-                    backup.used_at = datetime.now(UTC).isoformat()
-                    valid = True
-                    break
+        valid = _totp_code_matches(s, user, body.code)
 
         if not valid:
             record_totp_failure(user)
@@ -1082,6 +1097,100 @@ def auth_login_totp(body: LoginTotpIn, request: Request):
         )
         resp.delete_cookie(MFA_PENDING_COOKIE_NAME)
         return resp
+
+
+@router.post("/desktop-login", response_model=DesktopLoginOut)
+def auth_desktop_login(body: DesktopLoginIn, request: Request) -> DesktopLoginOut:
+    """Login para el overlay de escritorio (ver app/): mismo email+password
+    que la web, pero en vez de cookie de sesión devuelve un token de API
+    (ver api_tokens.py) -- el overlay es un proceso aparte, no puede
+    sostener la cookie de sesión del navegador. Sin cookie pending
+    intermedia para el segundo factor (a diferencia de /auth/login +
+    /auth/login/totp): acá el código, si hace falta, se manda en el mismo
+    request que la password."""
+    email = normalize_email(body.email)
+
+    with Session(get_engine()) as s:
+        enforce_rate_limit(s, "desktop_login", _client_ip(request), window_seconds=900, max_count=20)
+
+        user = s.query(User).filter(User.email == email).first()
+        if user is None:
+            # Cubre tanto "no existe" como "todavía es un pending sin
+            # vincular Steam" (ese caso no tiene steamid, no puede tener
+            # token) -- mismo mensaje que un login con password incorrecta,
+            # para no filtrar cuál de los dos es.
+            raise HTTPException(401, "credenciales inválidas")
+
+        if is_locked(user):
+            _log_login_event(
+                s, steamid=user.steamid, email=email, request=request, success=False, reason="locked"
+            )
+            raise HTTPException(423, _ACCOUNT_LOCKED_MSG)
+
+        if not verify_password(body.password, user.password_hash):
+            record_login_failure(user)
+            _log_login_event(
+                s,
+                steamid=user.steamid,
+                email=email,
+                request=request,
+                success=False,
+                reason="bad_password",
+            )
+            s.commit()
+            raise HTTPException(401, "credenciales inválidas")
+        record_login_success(user)
+
+        if user.totp_enabled_at is not None:
+            if not body.totp_code:
+                s.commit()
+                return DesktopLoginOut(mfa_required=True)
+
+            if is_totp_locked(user):
+                _log_login_event(
+                    s,
+                    steamid=user.steamid,
+                    email=email,
+                    request=request,
+                    success=False,
+                    reason="locked",
+                )
+                raise HTTPException(423, _ACCOUNT_LOCKED_MSG)
+
+            if not _totp_code_matches(s, user, body.totp_code):
+                record_totp_failure(user)
+                _log_login_event(
+                    s,
+                    steamid=user.steamid,
+                    email=email,
+                    request=request,
+                    success=False,
+                    reason="totp_bad_code",
+                )
+                s.commit()
+                raise HTTPException(401, "código inválido")
+            record_totp_success(user)
+
+        active_tokens = (
+            s.query(ApiToken)
+            .filter(ApiToken.steamid == user.steamid, ApiToken.revoked_at.is_(None))
+            .count()
+        )
+        if active_tokens >= MAX_TOKENS_PER_USER:
+            raise HTTPException(
+                409,
+                f"máximo {MAX_TOKENS_PER_USER} tokens activos -- revocá alguno viejo desde "
+                "monkeyStats → Configuración → App de escritorio",
+            )
+
+        _maybe_notify_new_login(s, user, request)
+        _log_login_event(
+            s, steamid=user.steamid, email=email, request=request, success=True, reason="desktop"
+        )
+        s.commit()
+
+        row, raw = create_token(user.steamid, "Overlay de escritorio")
+        return DesktopLoginOut(mfa_required=False, token=raw, token_prefix=row.token_prefix)
 
 
 @router.get("/me", response_model=MeOut)

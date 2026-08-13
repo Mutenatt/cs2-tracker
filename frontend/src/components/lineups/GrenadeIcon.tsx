@@ -1,5 +1,5 @@
 import { SVGProps } from "react";
-import type { Category } from "./mockLineups";
+import type { Category } from "./types";
 
 interface GrenadeIconProps extends SVGProps<SVGSVGElement> {
   category: Category;

@@ -2,6 +2,7 @@
 
 from cs2tracker.db.models import (
     AccountSignup,
+    ApiToken,
     Base,
     Blind,
     ClipJob,
@@ -9,6 +10,7 @@ from cs2tracker.db.models import (
     GlobalMetricStats,
     Grenade,
     Kill,
+    Lineup,
     LoginEvent,
     Match,
     MatchPlayer,
@@ -28,6 +30,7 @@ from cs2tracker.db.session import get_engine, get_session, init_db
 
 __all__ = [
     "AccountSignup",
+    "ApiToken",
     "Base",
     "Match",
     "Player",
@@ -35,6 +38,7 @@ __all__ = [
     "MatchPlayer",
     "Round",
     "Kill",
+    "Lineup",
     "Damage",
     "Grenade",
     "Blind",

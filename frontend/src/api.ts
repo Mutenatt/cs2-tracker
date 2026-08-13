@@ -1,4 +1,6 @@
 import type {
+  ApiTokenCreatedOut,
+  ApiTokensResponse,
   AutofetchStatus,
   BadgesResponse,
   ClipJob,
@@ -9,6 +11,7 @@ import type {
   HighlightsResponse,
   DuelsResponse,
   KillsResponse,
+  LineupOut,
   LoginHistoryResponse,
   LoginOut,
   MatchDetail,
@@ -333,6 +336,31 @@ export async function unlinkAutofetch(): Promise<AutofetchStatus> {
   return r.json();
 }
 
+export async function listApiTokens(): Promise<ApiTokensResponse> {
+  const r = await fetch(`${BASE}/account/tokens`);
+  if (!r.ok) throw new Error(`GET account/tokens -> ${r.status}`);
+  return r.json();
+}
+
+export async function createApiToken(name: string): Promise<ApiTokenCreatedOut> {
+  const r = await fetch(`${BASE}/account/tokens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!r.ok) {
+    const detail = (await r.json().catch(() => null))?.detail;
+    throw new Error(typeof detail === "string" ? detail : `POST account/tokens -> ${r.status}`);
+  }
+  return r.json();
+}
+
+export async function revokeApiToken(id: number): Promise<ApiTokensResponse> {
+  const r = await fetch(`${BASE}/account/tokens/${id}`, { method: "DELETE" });
+  if (!r.ok) throw new Error(`DELETE account/tokens/${id} -> ${r.status}`);
+  return r.json();
+}
+
 export async function getOnboardingStatus(): Promise<OnboardingStatus> {
   const r = await fetch(`${BASE}/onboarding/status`);
   if (!r.ok) throw new Error(`GET onboarding status -> ${r.status}`);
@@ -346,6 +374,12 @@ export async function postDemographics(body: DemographicsIn): Promise<Onboarding
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`POST onboarding demographics -> ${r.status}`);
+  return r.json();
+}
+
+export async function getLineups(map: string): Promise<LineupOut[]> {
+  const r = await fetch(`${BASE}/lineups?map=${encodeURIComponent(map)}`);
+  if (!r.ok) throw new Error(`GET /lineups -> ${r.status}`);
   return r.json();
 }
 

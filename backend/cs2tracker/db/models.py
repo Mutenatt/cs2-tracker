@@ -516,6 +516,51 @@ class LoginEvent(Base):
     reason: Mapped[str | None] = mapped_column(String)
 
 
+class Lineup(Base):
+    """Granada guardada (smoke/flash/molotov/he) para un mapa, con su clip de
+    referencia. Fuente de verdad única para el explorador de lineups de la
+    web y para el overlay de escritorio (ver app/) -- ambos leen de acá vía
+    GET /lineups en vez de tener cada uno su propia copia hardcodeada."""
+
+    __tablename__ = "lineups"
+    __table_args__ = (Index("idx_lineups_map", "map"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    map: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str] = mapped_column(String, nullable=False)  # smoke|flash|molotov|he
+    team: Mapped[str | None] = mapped_column(String)  # CT|T, None = sirve para ambos
+    label: Mapped[str] = mapped_column(String, nullable=False)  # callout de destino
+    # Posición de destino en el radar (fracción 0-1 por eje, ver maps.py).
+    x: Mapped[float] = mapped_column(Float, nullable=False)
+    y: Mapped[float] = mapped_column(Float, nullable=False)
+    # Posición de origen (dónde parado tirar), opcional -- no todas las
+    # entradas la tienen calibrada todavía.
+    start_x: Mapped[float | None] = mapped_column(Float)
+    start_y: Mapped[float | None] = mapped_column(Float)
+    video_url: Mapped[str] = mapped_column(String, nullable=False)
+    instructions: Mapped[str | None] = mapped_column(String)
+    crosshair_note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class ApiToken(Base):
+    """Token personal (API key) para clientes no-navegador -- hoy solo el
+    overlay de escritorio (ver app/, api_tokens.py). El secreto en claro se
+    muestra una única vez al crearlo; acá solo se guarda su hash."""
+
+    __tablename__ = "api_tokens"
+    __table_args__ = (Index("idx_api_tokens_steamid", "steamid"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    steamid: Mapped[str] = mapped_column(ForeignKey("users.steamid"), nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    token_prefix: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    last_used_at: Mapped[str | None] = mapped_column(String)
+    revoked_at: Mapped[str | None] = mapped_column(String)
+
+
 class TotpBackupCode(Base):
     """Código de respaldo de un solo uso para 2FA/TOTP (ver
     api/account.py::auth_totp_activate). Hasheado con el mismo Argon2 de
