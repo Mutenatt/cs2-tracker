@@ -64,7 +64,9 @@ function acceleratorFromEvent(e) {
   return [...mods, key].join("+");
 }
 
-let settings = { apiBaseUrl: "", apiToken: "" };
+// El proceso principal nunca manda el apiToken en claro por IPC (ver
+// sanitizeSettings en main.js) -- acá solo llega hasToken, un booleano.
+let settings = { apiBaseUrl: "", hasToken: false };
 let state = { map: null, team: "T", category: "smoke" };
 
 const $ = (sel) => document.querySelector(sel);
@@ -91,7 +93,7 @@ function showError(message) {
 }
 
 async function apiFetch(path) {
-  if (!settings.apiToken) {
+  if (!settings.hasToken) {
     throw new Error("Iniciá sesión (⚙ Configuración)");
   }
   // El fetch real corre en el proceso principal (ver main.js) para no
@@ -284,7 +286,7 @@ async function init() {
   settings = await window.overlay.getSettings();
   updateShortcutDisplays();
 
-  if (settings.apiToken) {
+  if (settings.hasToken) {
     showLoggedInUI();
   } else {
     showLoggedOutUI();
@@ -340,7 +342,7 @@ async function init() {
       setLoginStatus("Ingresá el código de tu app de autenticación", false);
       return;
     }
-    if (status !== 200 || !body?.token) {
+    if (status !== 200 || !body?.hasToken) {
       const message =
         body?.detail ||
         (status === 423 ? "cuenta bloqueada temporalmente, probá de nuevo en unos minutos" : null) ||

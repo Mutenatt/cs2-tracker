@@ -38,6 +38,10 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      // Ya no hay ningún secreto en el heap del renderer (ver
+      // sanitizeSettings), pero igual cerramos DevTools en el build
+      // empaquetado -- capa extra, no la única: en dev queda habilitado.
+      devTools: !app.isPackaged,
     },
   });
 
@@ -102,8 +106,20 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-ipcMain.handle("settings:get", () => store.load());
-ipcMain.handle("settings:set", (_event, patch) => store.save(patch));
+// El renderer corre con contextIsolation + nodeIntegration:false, así que no
+// puede leer disco ni Node por su cuenta -- pero igual nunca le mandamos el
+// apiToken en claro por IPC (ni acá ni en auth:login más abajo). No lo
+// necesita: todo fetch autenticado (api:get) lo usa desde acá, en el
+// proceso principal. Así, aunque alguien abra DevTools sobre la ventana,
+// no hay nada que copiar del heap del renderer -- la única copia en claro
+// vive en el settings.json de este proceso (mismo modelo que un .netrc).
+function sanitizeSettings(raw) {
+  const { apiToken, ...rest } = raw;
+  return { ...rest, hasToken: Boolean(apiToken) };
+}
+
+ipcMain.handle("settings:get", () => sanitizeSettings(store.load()));
+ipcMain.handle("settings:set", (_event, patch) => sanitizeSettings(store.save(patch)));
 
 // El GET a la API corre en el proceso principal, no en el renderer: un
 // fetch() del renderer (aunque sea file://) queda sujeto a la política CORS
@@ -140,7 +156,10 @@ ipcMain.handle("auth:login", async (_event, { email, password, totpCode }) => {
     if (res.ok && body?.token) {
       store.save({ apiToken: body.token, accountEmail: email });
     }
-    return { status: res.status, body };
+    // El token nunca sale de este proceso: el renderer solo necesita saber
+    // si el login sirvió, no el secreto en sí (ver sanitizeSettings arriba).
+    const { token: _token, ...safeBody } = body ?? {};
+    return { status: res.status, body: body ? { ...safeBody, hasToken: Boolean(body.token) } : body };
   } catch (err) {
     return { status: 0, body: null, error: String(err) };
   }
